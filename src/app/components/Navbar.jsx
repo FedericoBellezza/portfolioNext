@@ -3,7 +3,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function Navbar() {
-  const [currentPage, setCurrentPage] = useState(window.location.pathname);
+  const [currentPage, setCurrentPage] = useState("");
+  if (typeof window !== "undefined") {
+    window.addEventListener("scroll", () => {
+      setCurrentPage(window.location.pathname);
+    });
+  }
 
   return (
     <nav className="w-screen top-10 left-0 flex justify-center items-center fixed ">
@@ -20,7 +25,7 @@ export default function Navbar() {
           href={"/"}
           onClick={() => setCurrentPage("/")}
         >
-          <span className="nav-label absolute px-2 py-1 bg-white text-gray-800 rounded-2xl right-[-100%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-130%] ">
             Home
           </span>
           <i
@@ -34,7 +39,7 @@ export default function Navbar() {
           href={"/projects"}
           onClick={() => setCurrentPage("/projects")}
         >
-          <span className="nav-label absolute px-2 py-1 bg-white text-gray-800 rounded-2xl right-[-130%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-170%] ">
             Progetti
           </span>
           <i
@@ -48,7 +53,7 @@ export default function Navbar() {
           href={"/contacts"}
           onClick={() => setCurrentPage("/contacts")}
         >
-          <span className="nav-label absolute px-2 py-1 bg-white text-gray-800 rounded-2xl right-[-160%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-190%] ">
             Contatti
           </span>
           <i
