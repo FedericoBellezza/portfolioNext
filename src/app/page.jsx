@@ -55,14 +55,14 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="my-20 px-20">
-        <h3 className="text-7xl text-white text-center font-black mb-10">
+      <div className="my-20 px-10 ">
+        <h3 className="text-6xl text-white text-center font-black mb-10">
           Tecnologie
         </h3>
-        <div className="flex flex-wrap justify-center text-center gap-5 ">
-          <section className="bg-slate-600 p-5 rounded-2xl">
-            <h3 className="text-4xl text-white font-black">Linguaggi</h3>
-            <div className="flex gap-5 justify-center pt-10">
+        <div className="flex flex-wrap justify-center  text-center gap-5 bg-white p-10 rounded-2xl ">
+          <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl ">
+            <h3 className="text-3xl text-white font-thin italic">Linguaggi</h3>
+            <div className="flex gap-5 justify-center pt-10 ">
               <div className="flex flex-col items-center gap-3">
                 <img className="h-20" src="/html.svg" alt="html logo" />
                 <span className="text-white font-bold ">HTML</span>
@@ -81,8 +81,8 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <section className="bg-slate-600 p-5 rounded-2xl">
-            <h3 className="text-4xl  text-white font-black">
+          <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl">
+            <h3 className="text-3xl text-white font-thin italic">
               Framework & Runtime
             </h3>
             <div className="flex gap-5 justify-center pt-10">
@@ -124,8 +124,8 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <section className="bg-slate-600 p-5 rounded-2xl">
-            <h3 className="text-4xl text-white font-black">
+          <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl">
+            <h3 className="text-3xl text-white font-thin italic">
               CSS & librerie UI
             </h3>
             <div className="flex gap-5 justify-center pt-10">
@@ -163,8 +163,10 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <section className="bg-slate-600 p-5 rounded-2xl">
-            <h3 className="text-4xl text-white font-black">Database e BaaS</h3>
+          <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl">
+            <h3 className="text-3xl text-white font-thin italic">
+              Database e BaaS
+            </h3>
             <div className="flex gap-5 justify-center pt-10">
               <div className="flex flex-col items-center gap-3">
                 <img className="h-20" src="mysql.svg" alt="MySql logo" />
@@ -188,8 +190,8 @@ export default function Home() {
               </div>
             </div>
           </section>
-          <section className="bg-slate-600 p-5 rounded-2xl">
-            <h3 className="text-4xl text-white font-black">Templating</h3>
+          <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl">
+            <h3 className="text-3xl text-white font-thin italic">Templating</h3>
             <div className="flex justify-center gap-5 pt-10">
               <div className="flex flex-col items-center  gap-3">
                 <img
