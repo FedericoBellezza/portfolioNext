@@ -64,7 +64,7 @@ export default function Home() {
             <h3 className="text-4xl text-white font-black">Linguaggi</h3>
             <div className="flex gap-5 justify-center pt-10">
               <div className="flex flex-col items-center gap-3">
-                <img className="h-20" src="/html.svg" alt="html" />
+                <img className="h-20" src="/html.svg" alt="html logo" />
                 <span className="text-white font-bold ">HTML</span>
               </div>
               <div className="flex flex-col items-center gap-3">
