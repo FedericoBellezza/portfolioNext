@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="container mx-auto mt-20 py-10">
+    <div className="container mx-auto mt-30">
       <div className="flex gap-5">
         <div className="w-3/6 px-10 py-4">
           <div className="card bg-white text-center p-5 rounded-2xl hover:scale-102 hover:rotate-1 transition duration-500 ">
@@ -18,7 +18,7 @@ export default function Home() {
           </div>
         </div>
         <div className="w-3/4">
-          <div className="text-white min-h-screen">
+          <div className="text-white ">
             <h3 className="text-7xl text-lime-400 font-black">FULL STACK</h3>
             <h2 className="text-7xl font-black">Web Developer</h2>
             <p className="mt-10 text-xl">
@@ -53,6 +53,154 @@ export default function Home() {
               <strong>mettermi alla prova</strong>!
             </p>
           </div>
+        </div>
+      </div>
+      <div className="my-20 px-20">
+        <h3 className="text-7xl text-white text-center font-black mb-10">
+          Tecnologie
+        </h3>
+        <div className="flex flex-wrap justify-center text-center gap-5 ">
+          <section className="bg-slate-600 p-5 rounded-2xl">
+            <h3 className="text-4xl text-white font-black">Linguaggi</h3>
+            <div className="flex gap-5 justify-center pt-10">
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="/html.svg" alt="html" />
+                <span className="text-white font-bold ">HTML</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="/css-alt.svg" alt="css" />
+                <span className="text-white font-bold ">CSS</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="/javascript.svg" alt="css" />
+                <span className="text-white font-bold ">JavaScript</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="/java.svg" alt="css" />
+                <span className="text-white font-bold ">Java</span>
+              </div>
+            </div>
+          </section>
+          <section className="bg-slate-600 p-5 rounded-2xl">
+            <h3 className="text-4xl  text-white font-black">
+              Framework & Runtime
+            </h3>
+            <div className="flex gap-5 justify-center pt-10">
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="/react.svg" alt="React logo" />
+                <span className="text-white font-bold ">React</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20"
+                  src="https://img.icons8.com/fluent-systems-filled/200/FFFFFF/nextjs.png"
+                  alt="next.js logo"
+                />
+                <span className="text-white font-bold ">Next</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 p-1"
+                  src="/node-js.svg"
+                  alt="Node.js logo"
+                />
+                <span className="text-white font-bold ">Node.js</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20"
+                  src="https://netforemost.com/wp-content/uploads/2024/08/1646733543-1.webp"
+                  alt="Express.js logo"
+                />
+                <span className="text-white font-bold ">Express.js</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20"
+                  src="https://www.geekandjob.com/uploads/wiki/3abebb36b664ca8ac4d29397bb9d2705198996a5.png"
+                  alt="Spring logo"
+                />
+                <span className="text-white font-bold ">Spring</span>
+              </div>
+            </div>
+          </section>
+          <section className="bg-slate-600 p-5 rounded-2xl">
+            <h3 className="text-4xl text-white font-black">
+              CSS & librerie UI
+            </h3>
+            <div className="flex gap-5 justify-center pt-10">
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20"
+                  src="/tailwind-css.svg"
+                  alt="Tailwind logo"
+                />
+                <span className="text-white font-bold ">Tailwind</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 p-2 rounded-2xl"
+                  src="https://images.seeklogo.com/logo-png/51/1/shadcn-ui-logo-png_seeklogo-519786.png"
+                  alt="Shadcn ui logo"
+                />
+                <span className="text-white font-bold ">Shadcn UI</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 p-1"
+                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Bootstrap_logo.svg/2560px-Bootstrap_logo.svg.png"
+                  alt="Bootstrap logo"
+                />
+                <span className="text-white font-bold ">Bootstrap</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 w-20"
+                  src="/motion.svg"
+                  alt="Motion logo"
+                />
+                <span className="text-white font-bold ">Motion</span>
+              </div>
+            </div>
+          </section>
+          <section className="bg-slate-600 p-5 rounded-2xl">
+            <h3 className="text-4xl text-white font-black">Database e BaaS</h3>
+            <div className="flex gap-5 justify-center pt-10">
+              <div className="flex flex-col items-center gap-3">
+                <img className="h-20" src="mysql.svg" alt="MySql logo" />
+                <span className="text-white font-bold ">MySQL</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 p-2 rounded-2xl"
+                  src="https://elest.io/images/softwares/284/logo.png"
+                  alt="Supabase logo"
+                />
+                <span className="text-white font-bold ">Supabase</span>
+              </div>
+              <div className="flex flex-col items-center gap-3">
+                <img
+                  className="h-20 p-1"
+                  src="https://brandlogos.net/wp-content/uploads/2025/03/firebase_icon-logo_brandlogos.net_tcvck.png"
+                  alt="Firebase logo"
+                />
+                <span className="text-white font-bold ">Firebase</span>
+              </div>
+            </div>
+          </section>
+          <section className="bg-slate-600 p-5 rounded-2xl">
+            <h3 className="text-4xl text-white font-black">Templating</h3>
+            <div className="flex justify-center gap-5 pt-10">
+              <div className="flex flex-col items-center  gap-3">
+                <img
+                  className="h-20 p-1"
+                  src="https://www.thymeleaf.org/images/thymeleaf.png"
+                  alt="Thymeleaf logo"
+                />
+                <span className="text-white font-bold ">Thymeleaf</span>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

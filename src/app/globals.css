@@ -116,3 +116,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+.nav-label {
+  z-index: -1;
+
+  transition: transform 0.2s ease-in-out;
+}
+
+.nav-link:hover .nav-label {
+  transform: translate(0, 140%);
+}
