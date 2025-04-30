@@ -12,14 +12,14 @@ import { Link } from "lucide-react";
 export default function Projects() {
   return (
     <div className="container mx-auto mt-20 py-10 text-white">
-      <h1 className="text-6xl font-black text-center my-10 mb-20">
+      <h1 className="lg:text-6xl text-4xl font-black text-center my-10 mb-20">
         Progetti personali
       </h1>
-      <div className="flex justify-center w-full gap-5">
+      <div className="flex flex-col lg:flex-row justify-center w-full gap-5 px-5">
         {/* let's play */}
         <Card
           className={
-            "w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
+            "lg:w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
           }
         >
           <CardHeader className={"grow"}>
@@ -61,7 +61,7 @@ export default function Projects() {
         {/* Weather App */}
         <Card
           className={
-            "w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
+            "lg:w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
           }
         >
           <CardHeader className={"grow"}>
@@ -95,7 +95,7 @@ export default function Projects() {
         {/* Task Manager */}
         <Card
           className={
-            "w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
+            "lg:w-1/3 shadow-2xl flex flex-col justify-between hover:scale-101 transition"
           }
         >
           <CardHeader className={"grow"}>

@@ -25,7 +25,7 @@ export default function Navbar() {
           href={"/"}
           onClick={() => setCurrentPage("/")}
         >
-          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-130%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-130%] hidden lg:inline ">
             Home
           </span>
           <i
@@ -39,7 +39,7 @@ export default function Navbar() {
           href={"/projects"}
           onClick={() => setCurrentPage("/projects")}
         >
-          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-170%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-170%] hidden lg:inline ">
             Progetti
           </span>
           <i
@@ -53,7 +53,7 @@ export default function Navbar() {
           href={"/contacts"}
           onClick={() => setCurrentPage("/contacts")}
         >
-          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-190%] ">
+          <span className="nav-label absolute px-3 py-1 bg-white text-gray-800 font-bold rounded-2xl right-[-190%] hidden lg:inline ">
             Contatti
           </span>
           <i
