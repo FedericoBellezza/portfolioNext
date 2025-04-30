@@ -58,11 +58,11 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="my-20 px-10 ">
+      <div className="my-20 lg:px-10 px-5 ">
         <h3 className="lg:text-6xl text-4xl text-white text-center font-black mb-10">
           Tecnologie
         </h3>
-        <div className="flex flex-wrap justify-center  text-center gap-5 bg-white p-10 rounded-2xl ">
+        <div className="flex flex-wrap  justify-center  text-center gap-5 bg-white lg:p-10 p-5 rounded-2xl ">
           <section className="bg-slate-600 p-5 w-full xl:w-max rounded-2xl ">
             <h3 className="text-3xl text-white font-thin italic">Linguaggi</h3>
             <div className="flex flex-wrap gap-5 items-baseline justify-center pt-10 ">
