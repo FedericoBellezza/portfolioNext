@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [currentPage, setCurrentPage] = useState("");
-  if (typeof window !== "undefined") {
-    window.addEventListener("scroll", () => {
+  useEffect(() => {
+    if (typeof window !== "undefined") {
       setCurrentPage(window.location.pathname);
-    });
-  }
+    }
+  });
 
   return (
     <nav className="w-screen top-10 left-0 flex justify-center items-center fixed z-10">
