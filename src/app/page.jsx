@@ -11,7 +11,7 @@ export default function Home() {
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   setTimeout(() => {
-    setCurrentIndex((currentIndex + 1) % typingText.length);
+    // setCurrentIndex((currentIndex + 1) % typingText.length);
   }, 4000);
   function downloadCV() {
     const link = document.createElement("a");
@@ -24,7 +24,13 @@ export default function Home() {
     <div className="container mx-auto mt-30">
       <div className="flex flex-col lg:flex-row justify-center items-center gap-5">
         <div className="lg:w-3/6 lg:px-10 px-5 py-4">
-          <div className="card bg-white text-center p-5 rounded-2xl hover:scale-102 hover:rotate-1 transition duration-500 ">
+          <motion.div
+            layout
+            initial={{ opacity: 0, x: "-800px" }}
+            animate={{ opacity: 1, x: "0" }}
+            transition={{ ease: "linear", duration: 1 }}
+            className="card bg-white text-center p-5 rounded-2xl hover:scale-102 hover:rotate-1 transition duration-500 "
+          >
             <Image
               width={500}
               height={200}
@@ -34,7 +40,7 @@ export default function Home() {
             />
             <h1 className="text-4xl mt-5 font-black">Federico Bellezza</h1>
             <p className="mt-2 italic text-xl">Full Stack Web Developer</p>
-          </div>
+          </motion.div>
         </div>
         <div className="lg:w-3/4 px-8">
           <div className="text-white overflow-hidden ">
