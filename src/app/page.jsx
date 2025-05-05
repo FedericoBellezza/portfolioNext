@@ -67,12 +67,12 @@ export default function Home() {
         </div>
       </div>
       <div className="my-20 lg:px-10 px-5 ">
-        <section className="lg:my-20 my-10 flex flex-col lg:flex-row justify-between gap-5 items-center">
+        <section className="lg:mb-20 mb-10 flex flex-col lg:flex-row justify-between gap-5 items-center">
           <div
             onClick={() => window.open("https://github.com/FedericoBellezza")}
-            className="bg-gradient-to-tr  from-purple-400 to-violet-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+            className="bg-gradient-to-tr  from-purple-400 to-violet-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl hover:shadow-purple-800 duration-500 transition "
           >
-            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+            <h4 className="lg:text-4xl text-2xl text-white font-bold">
               GitHub
             </h4>
           </div>
@@ -80,17 +80,17 @@ export default function Home() {
             onClick={() =>
               window.open("https://www.linkedin.com/in/federicobellezzadev/")
             }
-            className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+            className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl hover:shadow-sky-800 duration-500 transition "
           >
-            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+            <h4 className="lg:text-4xl text-2xl text-white font-bold">
               LinkedIn
             </h4>
           </div>
           <div
             onClick={() => downloadCV()}
-            className="bg-gradient-to-tr from-orange-500 to-red-600 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+            className="bg-gradient-to-tr from-orange-500 to-red-600 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl hover:shadow-orange-800 duration-500 transition "
           >
-            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+            <h4 className="lg:text-4xl text-2xl text-white font-bold">
               Curriculum Vitae
             </h4>
           </div>
