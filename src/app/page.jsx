@@ -1,3 +1,4 @@
+"use client";
 import Image from "next/image";
 
 export default function Home() {
@@ -60,12 +61,20 @@ export default function Home() {
       </div>
       <div className="my-20 lg:px-10 px-5 ">
         <section className="lg:my-20 my-10 flex flex-col lg:flex-row justify-between gap-5 items-center">
-          <div className="bg-gradient-to-tr  from-purple-400 to-violet-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+          <div
+            onClick={() => window.open("https://github.com/FedericoBellezza")}
+            className="bg-gradient-to-tr  from-purple-400 to-violet-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+          >
             <h4 className="lg:text-4xl text-3xl text-white font-bold">
               GitHub
             </h4>
           </div>
-          <div className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+          <div
+            onClick={() =>
+              window.open("https://www.linkedin.com/in/federicobellezzadev/")
+            }
+            className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+          >
             <h4 className="lg:text-4xl text-3xl text-white font-bold">
               LinkedIn
             </h4>
