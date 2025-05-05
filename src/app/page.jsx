@@ -11,7 +11,7 @@ export default function Home() {
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
   setTimeout(() => {
-    // setCurrentIndex((currentIndex + 1) % typingText.length);
+    setCurrentIndex((currentIndex + 1) % typingText.length);
   }, 4000);
   function downloadCV() {
     const link = document.createElement("a");
