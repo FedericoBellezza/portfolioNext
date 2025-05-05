@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const [typingText, setTypingText] = useState([
+    "FULL-STACK",
     "FRONT-END",
     "BACK-END",
-    "FULL-STACK",
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -55,8 +55,8 @@ export default function Home() {
           <div className="text-white overflow-hidden ">
             <motion.div
               key={currentIndex} // Forza il re-render al cambio testo
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "auto", opacity: 1 }}
+              initial={{ width: 0 }}
+              animate={{ width: "auto" }}
               transition={{
                 duration: 1.5,
                 ease: "easeInOut",
@@ -64,16 +64,9 @@ export default function Home() {
                 repeatType: "reverse",
                 repeatDelay: 1,
               }}
-              style={{
-                display: "inline-block",
-                overflow: "hidden",
-                whiteSpace: "nowrap",
-                borderRight: "2px solid lime-100",
-              }}
-              className="lg:text-7xl text-4xl text-lime-400 font-black typing-text "
+              className="lg:text-7xl text-4xl text-lime-400 font-black typing-text italic"
             >
               {typingText[currentIndex]}
-              {"   "}
             </motion.div>
             <h2 className="lg:text-7xl text-4xl font-black">Web Developer</h2>
             <p className="mt-10 lg:text-xl text-">
