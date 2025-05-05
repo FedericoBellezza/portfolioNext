@@ -1,4 +1,5 @@
 "use client";
+import { motion } from "motion/react";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -36,11 +37,22 @@ export default function Home() {
           </div>
         </div>
         <div className="lg:w-3/4 px-8">
-          <div className="text-white">
-            <h3 className="lg:text-7xl text-4xl text-lime-400 font-black typing-text ">
+          <div className="text-white overflow-hidden ">
+            <motion.ul
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{
+                ease: "easeInOut",
+                duration: 1.5,
+                repeat: Infinity,
+                repeatType: "reverse",
+                repeatDelay: 0.5,
+              }}
+              className="lg:text-7xl text-4xl text-lime-400 font-black typing-text animate-pulse"
+            >
               {typingText[currentIndex]}
               {"   "}
-            </h3>
+            </motion.ul>
             <h2 className="lg:text-7xl text-4xl font-black">Web Developer</h2>
             <p className="mt-10 lg:text-xl text-">
               👋 Mi chiamo <strong>Federico Bellezza</strong>, ho 24 anni e vivo

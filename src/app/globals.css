@@ -128,15 +128,15 @@
 }
 
 .typing-text {
-  width: 0;
-  animation: typing 4s infinite;
-  border-right: 5px solid;
+  /* width: 0; */
+  /* animation: typing 4s 2s infinite; */
+  border-right: 3px solid;
   overflow: hidden;
   white-space: nowrap;
   max-width: max-content;
 }
 
-@keyframes typing {
+/* @keyframes typing {
   from {
     width: 0;
   }
@@ -148,4 +148,4 @@
   to {
     width: 0%;
   }
-}
+} */
