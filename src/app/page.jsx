@@ -2,6 +2,13 @@
 import Image from "next/image";
 
 export default function Home() {
+  function downloadCV() {
+    const link = document.createElement("a");
+    link.download = "CV_FedericoBellezza.pdf";
+    link.href = "/CV.pdf";
+    link.click();
+  }
+
   return (
     <div className="container mx-auto mt-30">
       <div className="flex flex-col lg:flex-row justify-center items-center gap-5">
@@ -79,7 +86,10 @@ export default function Home() {
               LinkedIn
             </h4>
           </div>
-          <div className="bg-gradient-to-tr from-orange-500 to-red-600 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+          <div
+            onClick={() => downloadCV()}
+            className="bg-gradient-to-tr from-orange-500 to-red-600 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl"
+          >
             <h4 className="lg:text-4xl text-3xl text-white font-bold">
               Curriculum Vitae
             </h4>
