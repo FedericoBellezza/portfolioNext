@@ -126,3 +126,26 @@
 .nav-link:hover .nav-label {
   transform: translate(0, 140%);
 }
+
+.typing-text {
+  width: 0;
+  animation: typing 4s infinite;
+  border-right: 5px solid;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: max-content;
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+
+  80% {
+    width: 100%;
+  }
+
+  to {
+    width: 0%;
+  }
+}

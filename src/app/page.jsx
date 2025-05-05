@@ -1,7 +1,17 @@
 "use client";
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Home() {
+  const [typingText, setTypingText] = useState([
+    "FRONT-END",
+    "BACK-END",
+    "FULL-STACK",
+  ]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  setTimeout(() => {
+    setCurrentIndex((currentIndex + 1) % typingText.length);
+  }, 4000);
   function downloadCV() {
     const link = document.createElement("a");
     link.download = "CV_FedericoBellezza.pdf";
@@ -21,14 +31,15 @@ export default function Home() {
               src="/profilephoto.jpg"
               alt="foto profilo"
             />
-            <h1 className="text-4xl mt-5 font-black ">Federico Bellezza</h1>
+            <h1 className="text-4xl mt-5 font-black">Federico Bellezza</h1>
             <p className="mt-2 italic text-xl">Full Stack Web Developer</p>
           </div>
         </div>
         <div className="lg:w-3/4 px-8">
-          <div className="text-white ">
-            <h3 className="lg:text-7xl text-4xl text-lime-400 font-black">
-              FULL STACK
+          <div className="text-white">
+            <h3 className="lg:text-7xl text-4xl text-lime-400 font-black typing-text ">
+              {typingText[currentIndex]}
+              {"   "}
             </h3>
             <h2 className="lg:text-7xl text-4xl font-black">Web Developer</h2>
             <p className="mt-10 lg:text-xl text-">
@@ -82,7 +93,7 @@ export default function Home() {
             }
             className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl hover:shadow-sky-800 duration-500 transition "
           >
-            <h4 className="lg:text-4xl text-2xl text-white font-bold">
+            <h4 className="lg:text-4xl text-2xl text-white font-bold ">
               LinkedIn
             </h4>
           </div>
