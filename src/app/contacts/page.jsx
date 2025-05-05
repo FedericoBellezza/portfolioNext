@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import emailjs from "@emailjs/browser";
+import { motion } from "motion/react";
 
 export default function ContactsPage() {
   const [emailSent, setEmailSent] = useState(false);
@@ -37,7 +38,11 @@ export default function ContactsPage() {
   return (
     <>
       <div className="text-white pt-25 min-h-screen">
-        <div className="container px-10   mx-auto flex flex-col xl:flex-row mt-25  justify-evenly items-center xl:items-start relative">
+        <motion.div
+          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 100 }}
+          className="container px-10   mx-auto flex flex-col xl:flex-row mt-25  justify-evenly items-center xl:items-start relative"
+        >
           <h1 className="text-5xl text-center font-extrabold animate-entryfromleft mb-10">
             Contattami
             <span
@@ -92,7 +97,7 @@ export default function ContactsPage() {
               />
             </form>
           </div>
-        </div>
+        </motion.div>
         <p className="text-lg text-gray-400 lg:mt-50 mt-15  text-center">
           Oppure scrivimi alla email:{" "}
           <strong>federico.bellezza2001@gmail.com</strong>
