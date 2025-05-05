@@ -22,6 +22,7 @@ export default function Projects() {
         <motion.div
           className="lg:w-1/3"
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
           <Card
@@ -70,6 +71,7 @@ export default function Projects() {
         <motion.div
           className="lg:w-1/3"
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
           <Card
@@ -114,6 +116,7 @@ export default function Projects() {
         <motion.div
           className="lg:w-1/3 flex"
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
           <Card

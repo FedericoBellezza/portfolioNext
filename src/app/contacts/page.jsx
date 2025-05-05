@@ -40,6 +40,7 @@ export default function ContactsPage() {
       <div className="text-white pt-25 min-h-screen">
         <motion.div
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
           className="container px-10   mx-auto flex flex-col xl:flex-row mt-25  justify-evenly items-center xl:items-start relative"
         >

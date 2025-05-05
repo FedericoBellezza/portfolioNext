@@ -114,6 +114,7 @@ export default function Home() {
       <div className="my-20 lg:px-10 px-5 ">
         <motion.div
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
           className="lg:mb-20 mb-10 flex flex-col lg:flex-row justify-between gap-5 items-center"
         >
@@ -146,6 +147,7 @@ export default function Home() {
         </motion.div>
         <motion.div
           whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
           <h3 className="lg:text-6xl text-4xl text-white text-center font-black mb-10">
