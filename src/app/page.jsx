@@ -59,6 +59,23 @@ export default function Home() {
         </div>
       </div>
       <div className="my-20 lg:px-10 px-5 ">
+        <section className="lg:my-20 my-10 flex flex-col lg:flex-row justify-between gap-5 items-center">
+          <div className="bg-gradient-to-tr  from-purple-400 to-violet-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+              GitHub
+            </h4>
+          </div>
+          <div className="bg-gradient-to-tr from-blue-400 to-sky-700 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+              LinkedIn
+            </h4>
+          </div>
+          <div className="bg-gradient-to-tr from-orange-500 to-red-600 w-full py-10 rounded-xl flex items-center justify-center cursor-pointer shadow-2xl">
+            <h4 className="lg:text-4xl text-3xl text-white font-bold">
+              Curriculum Vitae
+            </h4>
+          </div>
+        </section>
         <h3 className="lg:text-6xl text-4xl text-white text-center font-black mb-10">
           Tecnologie
         </h3>
