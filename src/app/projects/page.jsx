@@ -48,8 +48,8 @@ export default function Projects() {
             <CardContent>
               <img
                 className="w-full rounded-2xl"
-                src="https://media.licdn.com/dms/image/v2/D562DAQGZ_M090-7l5A/profile-treasury-image-shrink_800_800/B56ZY6LX31HoAY-/0/1744732782626?e=1746453600&v=beta&t=iBg8Ooxad2MCv8SbcTgVfdNdykllVhrnPa1sORRgOeY"
-                alt=""
+                src="/letsPlayImage.jpeg"
+                alt="lets play image"
               />
             </CardContent>
             <CardFooter>
