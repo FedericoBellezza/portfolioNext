@@ -197,6 +197,7 @@ export default function Projects() {
                 className="w-full rounded-2xl border border-gray-400 "
                 src="/rubber-duck-screenshot.jpg"
                 alt=""
+                onerror="this.src='https://i1.wp.com/potafiori.com/wp-content/uploads/2020/04/placeholder.png?ssl=1'"
               />
             </CardContent>
             <CardFooter>

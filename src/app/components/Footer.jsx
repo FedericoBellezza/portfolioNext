@@ -7,11 +7,11 @@ export default function Footer() {
           onClick={() =>
             window.open("https://www.linkedin.com/in/federico-bellezza21/")
           }
-          class="fa-brands fa-linkedin text-xl cursor-pointer hover:text-gray-300 transition"
+          className="fa-brands fa-linkedin text-xl cursor-pointer hover:text-gray-300 transition"
         ></i>
         <i
           onClick={() => window.open("https://github.com/FedericoBellezza")}
-          class="fa-brands fa-github text-xl cursor-pointer hover:text-gray-300 transition"
+          className="fa-brands fa-github text-xl cursor-pointer hover:text-gray-300 transition"
         ></i>
       </div>
       <div>
