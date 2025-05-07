@@ -179,8 +179,8 @@ export default function Projects() {
               </CardTitle>
               <CardDescription className={"text-md"}>
                 <p>
-                  🦆 Ho realizzato una pagina responsive utilizzando{" "}
-                  <strong>Next.js</strong>, <strong>React</strong>,{" "}
+                  🦆 Ho realizzato una pagina landing-page responsive
+                  utilizzando <strong>Next.js</strong>, <strong>React</strong>,{" "}
                   <strong>Tailwind CSS</strong>, <strong>Swiper.js</strong> e{" "}
                   <strong>Shadcn/UI</strong>. <br />
                   Include funzionalità come{" "}
