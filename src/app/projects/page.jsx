@@ -17,11 +17,11 @@ export default function Projects() {
           Progetti personali
         </h1>
       </motion.div>
-      <div className="flex flex-col lg:flex-row justify-center w-full  gap-5 px-5">
+      <div className="grid lg:grid-cols-3 gap-5">
         {/* let's play */}
         <motion.div
-          className="lg:w-1/3"
-          whileInView={{ opacity: 1, y: 0 }}
+          className="flex"
+          animate={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
@@ -35,12 +35,12 @@ export default function Projects() {
                 Let's Play
               </CardTitle>
               <CardDescription className={"text-md"}>
-                Ho sviluppato con <strong>Spring e React</strong>, un sito che
-                permette di cercare/filtrare eventi per categoria, prezzo e
+                🥳 Ho sviluppato con <strong>Spring e React</strong>, un sito
+                che permette di cercare/filtrare eventi per categoria, prezzo e
                 ubicazione. <br />
                 Backoffice con <strong>autenticazione</strong> per{" "}
                 <strong>gestione CRUD</strong> di eventi. <br />
-                Integra <strong>MySQL</strong> per il database,{" "}
+                🗃 Integra <strong>MySQL</strong> per il database,{" "}
                 <strong>Tailwind</strong> per la grafica,{" "}
                 <strong>EmailJS</strong> per il form di contatto e animazioni
                 con <strong>Framer Motion</strong>.
@@ -48,7 +48,7 @@ export default function Projects() {
             </CardHeader>
             <CardContent>
               <img
-                className="w-full rounded-2xl"
+                className="w-full rounded-2xl border border-gray-400"
                 src="/letsPlayImage.jpeg"
                 alt="lets play image"
               />
@@ -69,8 +69,8 @@ export default function Projects() {
         </motion.div>
         {/* Weather App */}
         <motion.div
-          className="lg:w-1/3"
-          whileInView={{ opacity: 1, y: 0 }}
+          className="flex"
+          animate={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
@@ -84,18 +84,19 @@ export default function Projects() {
                 Weather App
               </CardTitle>
               <CardDescription className={"text-md"}>
-                Ho voluto sperimentare le <strong>API</strong> di terze parti
-                per realizzare il mio <strong>sito del meteo</strong>. <br /> Un
-                API ti permette di ricevere le coordinate in base all’indirizzo
-                inserito e un API in grado di fornirti le previsioni
-                metereologiche tramite le coordinate fornite. <br />
+                🌩 Ho voluto sperimentare le <strong>API</strong> di terze parti
+                per realizzare il mio <strong>sito del meteo</strong>. <br />
+                Un API ti permette di ricevere le coordinate in base
+                all’indirizzo inserito e un API in grado di fornirti le
+                previsioni metereologiche tramite le coordinate fornite. 🌍{" "}
+                <br />
                 Il sito è realizzato con <strong>React e Tailwind</strong> per
                 la grafica.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <img
-                className="w-full rounded-2xl"
+                className="w-full rounded-2xl border border-gray-400"
                 src="/weatherApp.jpg"
                 alt=""
               />
@@ -114,8 +115,8 @@ export default function Projects() {
         </motion.div>
         {/* Task Manager */}
         <motion.div
-          className="lg:w-1/3 flex"
-          whileInView={{ opacity: 1, y: 0 }}
+          className="flex"
+          animate={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
         >
@@ -129,21 +130,21 @@ export default function Projects() {
                 Task Manager
               </CardTitle>
               <CardDescription className={"text-md"}>
-                Ho sviluppato un sito per imparare ad utilizzare{" "}
+                👨‍🏫 Ho sviluppato un sito per imparare ad utilizzare{" "}
                 <strong>Next.JS</strong>,{" "}
                 <strong>
                   l’autenticazione e il servizio di storage di SupaBase
                 </strong>
                 . <br />
                 Il sito è un semplicissimo task manager che ti permette di
-                gestire la tua lista delle cose da fare. <br />
+                gestire la tua lista delle cose da fare. 🧮 <br />
                 Ho utilizzato <strong>Vercel</strong> per il suo servizio
                 gratuito di <strong>Hosting</strong>.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <img
-                className="w-full rounded-2xl"
+                className="w-full rounded-2xl border border-gray-400"
                 src="/task-manager.jpg"
                 alt=""
               />
@@ -152,6 +153,56 @@ export default function Projects() {
               <a
                 onClick={() =>
                   window.open("https://next-todo-list-swart.vercel.app/")
+                }
+                className="px-3 py-1 bg-lime-500 cursor-pointer  rounded-md hover:bg-lime-600 text-white transition"
+              >
+                <span>Vai al sito</span>
+              </a>
+            </CardFooter>
+          </Card>
+        </motion.div>
+        {/* Rubber Duck */}
+        <motion.div
+          className="flex"
+          animate={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          initial={{ opacity: 0, y: 100 }}
+        >
+          <Card
+            className={
+              "shadow-2xl flex flex-col justify-between hover:scale-101 transition"
+            }
+          >
+            <CardHeader className={"grow"}>
+              <CardTitle className={"text-3xl font-bold italic "}>
+                Rubber Duck
+              </CardTitle>
+              <CardDescription className={"text-md"}>
+                <p>
+                  🦆 Ho realizzato una pagina responsive utilizzando{" "}
+                  <strong>Next.js</strong>, <strong>React</strong>,{" "}
+                  <strong>Tailwind CSS</strong>, <strong>Swiper.js</strong> e{" "}
+                  <strong>Shadcn/UI</strong>. <br />
+                  Include funzionalità come{" "}
+                  <strong>slider per le recensioni</strong>,{" "}
+                  <strong>FAQ interattive</strong> e{" "}
+                  <strong>animazioni fluide</strong> per il menu mobile. <br />
+                  🔗 Scopri come questa paperella può migliorare la tua
+                  esperienza di sviluppo! 🧸
+                </p>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <img
+                className="w-full rounded-2xl border border-gray-400 "
+                src="/rubber-duck-screenshot.jpg"
+                alt=""
+              />
+            </CardContent>
+            <CardFooter>
+              <a
+                onClick={() =>
+                  window.open("https://rubber-duck-lemon.vercel.app/")
                 }
                 className="px-3 py-1 bg-lime-500 cursor-pointer  rounded-md hover:bg-lime-600 text-white transition"
               >
