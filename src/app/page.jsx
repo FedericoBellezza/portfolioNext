@@ -153,27 +153,19 @@ export default function Home() {
               </h3>
               <div className="flex flex-wrap gap-5 items-baseline justify-center pt-10 ">
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    className="lg:h-20 h-15"
-                    src="/html.svg"
-                    alt="html logo"
-                  />
+                  <img className="h-15" src="/html.svg" alt="html logo" />
                   <span className="text-white font-bold ">HTML</span>
                 </div>
                 <div className="flex  flex-col items-center gap-3">
-                  <img className="lg:h-20 h-15" src="/css-alt.svg" alt="css" />
+                  <img className="h-15" src="/css-alt.svg" alt="css" />
                   <span className="text-white font-bold ">CSS</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    className="lg:h-20 h-13"
-                    src="/javascript.svg"
-                    alt="css"
-                  />
+                  <img className="h-13" src="/javascript.svg" alt="css" />
                   <span className="text-white font-bold ">JavaScript</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <img className="lg:h-20 h-15" src="/java.svg" alt="css" />
+                  <img className="h-15" src="/java.svg" alt="css" />
                   <span className="text-white font-bold ">Java</span>
                 </div>
               </div>
@@ -184,16 +176,12 @@ export default function Home() {
               </h3>
               <div className="flex flex-wrap gap-5 items-baseline justify-center pt-10">
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    className="lg:h-20 h-15"
-                    src="/react.svg"
-                    alt="React logo"
-                  />
+                  <img className="h-15" src="/react.svg" alt="React logo" />
                   <span className="text-white font-bold ">React</span>
                 </div>
                 <div className="flex  flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15"
+                    className="h-15"
                     src="https://img.icons8.com/fluent-systems-filled/200/FFFFFF/nextjs.png"
                     alt="next.js logo"
                   />
@@ -201,7 +189,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15 p-1"
+                    className="h-15 p-1"
                     src="/node-js.svg"
                     alt="Node.js logo"
                   />
@@ -209,7 +197,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15"
+                    className="h-15"
                     src="https://netforemost.com/wp-content/uploads/2024/08/1646733543-1.webp"
                     alt="Express.js logo"
                   />
@@ -217,7 +205,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15"
+                    className="h-15"
                     src="https://www.geekandjob.com/uploads/wiki/3abebb36b664ca8ac4d29397bb9d2705198996a5.png"
                     alt="Spring logo"
                   />
@@ -232,7 +220,7 @@ export default function Home() {
               <div className="flex flex-wrap gap-5 items-baseline justify-center pt-10">
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-20"
+                    className="h-20"
                     src="/tailwind-css.svg"
                     alt="Tailwind logo"
                   />
@@ -240,7 +228,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15 lg:p-2 rounded-2xl"
+                    className="h-15 lg:p-2 rounded-2xl"
                     src="https://images.seeklogo.com/logo-png/51/1/shadcn-ui-logo-png_seeklogo-519786.png"
                     alt="Shadcn ui logo"
                   />
@@ -248,7 +236,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15 p-1"
+                    className="h-15 p-1"
                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Bootstrap_logo.svg/2560px-Bootstrap_logo.svg.png"
                     alt="Bootstrap logo"
                   />
@@ -256,7 +244,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="h-18 lg:h-20 w-20"
+                    className="h-18 w-20"
                     src="/motion.svg"
                     alt="Motion logo"
                   />
@@ -270,16 +258,12 @@ export default function Home() {
               </h3>
               <div className="flex flex-wrap gap-5 items-baseline justify-center pt-10">
                 <div className="flex flex-col items-center gap-3">
-                  <img
-                    className="lg:h-20 h-15"
-                    src="mysql.svg"
-                    alt="MySql logo"
-                  />
+                  <img className="h-15" src="mysql.svg" alt="MySql logo" />
                   <span className="text-white font-bold ">MySQL</span>
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15 p-2 rounded-2xl"
+                    className="h-15 p-2 rounded-2xl"
                     src="https://elest.io/images/softwares/284/logo.png"
                     alt="Supabase logo"
                   />
@@ -287,7 +271,7 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col items-center gap-3">
                   <img
-                    className="lg:h-20 h-15 p-1"
+                    className="h-15 p-1"
                     src="https://brandlogos.net/wp-content/uploads/2025/03/firebase_icon-logo_brandlogos.net_tcvck.png"
                     alt="Firebase logo"
                   />
@@ -302,7 +286,7 @@ export default function Home() {
               <div className="flex justify-center gap-5 pt-10">
                 <div className="flex flex-col items-center  gap-3">
                   <img
-                    className="lg:h-20 h-15 p-1"
+                    className="h-15 p-1"
                     src="https://www.thymeleaf.org/images/thymeleaf.png"
                     alt="Thymeleaf logo"
                   />

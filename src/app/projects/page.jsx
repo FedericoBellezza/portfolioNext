@@ -11,7 +11,7 @@ import { motion } from "motion/react";
 
 export default function Projects() {
   return (
-    <div className="container mx-auto mt-20 py-10 text-white">
+    <div className="container mx-auto mt-20 py-10 text-white px-5">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h1 className="lg:text-6xl text-4xl font-black text-center my-10 mb-20">
           Progetti personali
