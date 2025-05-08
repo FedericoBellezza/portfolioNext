@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -47,11 +48,13 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <img
+              <Image
                 className="w-full rounded-2xl border border-gray-400"
+                height={600}
+                width={600}
                 src="/letsPlayImage.jpeg"
-                alt="lets play image"
-              />
+                alt=""
+              ></Image>
             </CardContent>
             <CardFooter>
               <a
@@ -95,11 +98,13 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <img
+              <Image
                 className="w-full rounded-2xl border border-gray-400"
+                height={600}
+                width={600}
                 src="/weatherApp.jpg"
                 alt=""
-              />
+              ></Image>
             </CardContent>
             <CardFooter>
               <a
@@ -143,11 +148,13 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <img
+              <Image
                 className="w-full rounded-2xl border border-gray-400"
+                height={600}
+                width={600}
                 src="/task-manager.jpg"
                 alt=""
-              />
+              ></Image>
             </CardContent>
             <CardFooter>
               <a
@@ -193,11 +200,13 @@ export default function Projects() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <img
-                className="w-full rounded-2xl border border-gray-400 "
+              <Image
+                className="w-full rounded-2xl border border-gray-400"
+                height={600}
+                width={600}
                 src="/rubber-duck-screenshot.JPG"
                 alt=""
-              />
+              ></Image>
             </CardContent>
             <CardFooter>
               <a
