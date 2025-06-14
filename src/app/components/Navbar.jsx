@@ -11,7 +11,7 @@ export default function Navbar() {
   });
 
   return (
-    <nav className="w-screen top-10 left-0 flex justify-center items-center fixed z-10">
+    <nav className="w-screen top-10 left-0 flex justify-center items-center fixed z-100">
       <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
