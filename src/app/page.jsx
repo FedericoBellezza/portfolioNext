@@ -112,7 +112,7 @@ export default function Home() {
               HTML, CSS, JavaScript, React, Bootstrap
               <br />- <strong className="text-lime-300">Back-end</strong>:
               Node.js/Express, MySQL, Java/Spring
-              <br />- Della ptogrammazione amo la sua{" "}
+              <br />- Della programmazione amo la sua{" "}
               <strong className="text-lime-300">evoluzione costante</strong> e
               l'
               <strong className="text-lime-300">impatto concreto</strong> sul
