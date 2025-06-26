@@ -13,6 +13,16 @@ import { ArrowUpRight, Github } from "lucide-react";
 
 const projects = [
   {
+    title: "Fanfara Bersaglieri Settimo Torinese",
+    description: `Ho realizzato il sito per la Fanfara di Bersaglieri di Settimo Torinese.
+Ho utilizzato Next.js, React e TailwindCSS per garantire velocità, efficienza e un design moderno e responsive.
+Mi sono occupato della struttura dell’app, dell’organizzazione del codice, dell’integrazione del calendario eventi e di una UI personalizzata. Ho curato performance, accessibilità e ottimizzazione tramite componentizzazione front-end.`,
+    image: "/FanfaraBersaglieriScreenshot.jpg",
+    url: "https://bersaglierisettimo.vercel.app/",
+    tags: ["Next.js", "React", "Tailwind", "Framer Motion"],
+    emoji: "🎺",
+  },
+  {
     title: "Let's Play",
     description:
       "Ho sviluppato con Spring e React, un sito che permette di cercare/filtrare eventi per categoria, prezzo e ubicazione. Backoffice con autenticazione per gestione CRUD di eventi. Integra MySQL per il database, Tailwind per la grafica, EmailJS per il form di contatto e animazioni con Framer Motion.",
