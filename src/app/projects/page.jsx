@@ -13,6 +13,15 @@ import { ArrowUpRight, Github } from "lucide-react";
 
 const projects = [
   {
+    title: "Cantieri360",
+    description: `Web app dedicata all’edilizia per gestire cantieri, attività di squadra, ore lavorate, costi e riepiloghi in modo semplice e sicuro.
+    Sviluppata in React (Next.js), TailwindCSS, Shadcn, Supabase e Framer Motion. Moderna, mobile-friendly e cloud-first, permette alle imprese di lavorare ovunque senza carta né Excel.`,
+    image: "/Canieri360-Copertina.jpg",
+    url: "https://cantieri360.vercel.app/",
+    tags: ["React", "Next.js", "Tailwind", "Framer Motion", "Supabase"],
+    emoji: "🏗️",
+  },
+  {
     title: "Fanfara Bersaglieri Settimo Torinese",
     description: `Ho realizzato il sito per la Fanfara di Bersaglieri di Settimo Torinese.
 Ho utilizzato Next.js, React e TailwindCSS per garantire velocità, efficienza e un design moderno e responsive.
@@ -118,7 +127,12 @@ export default function Projects() {
                   />
                 </div>
                 <p className="text-gray-300 leading-relaxed">
-                  {project.description}
+                  {project.description.split("\n").map((line, i) => (
+                    <span key={i}>
+                      {line}
+                      <br />
+                    </span>
+                  ))}
                 </p>
               </CardContent>
 
