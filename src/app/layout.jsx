@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Portfolio Federico Bellezza",
+  title: "Portfolio",
   description: "Portfolio Federico Bellezza",
 };
 
