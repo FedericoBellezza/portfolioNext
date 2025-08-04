@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import emailjs from "@emailjs/browser";
 import { motion, AnimatePresence } from "motion/react";
+import toast, { Toaster } from "react-hot-toast";
 import {
   Send,
   Mail,
@@ -32,23 +33,26 @@ export default function ContactsPage() {
         e.target,
         "I5U0ciuEcNnc8z7_k"
       )
-      .then((result) => {
-        console.log(result.text);
-        setEmailStatus({ sending: false, sent: true, error: false });
-        e.target.reset();
-
-        setTimeout(() => {
-          setEmailStatus({ sending: false, sent: false, error: false });
-        }, 5000);
-      })
-      .catch((error) => {
-        console.log(error.text);
-        setEmailStatus({ sending: false, sent: false, error: true });
-      });
+      .then(
+        (result) => {
+          console.log(result.text);
+          setEmailStatus({ sending: false, sent: true, error: false });
+          e.target.reset();
+          toast.success("Messaggio inviato con successo!");
+        },
+        (error) => {
+          console.log(error.text);
+          setEmailStatus({ sending: false, sent: false, error: true });
+          toast.error(
+            "Si è verificato un errore durante l'invio. Riprova più tardi."
+          );
+        }
+      );
   };
 
   return (
-    <div className="min-h-screen py-40 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900 to-slate-950">
+    <div className="min-h-screen py-40 px-4 sm:px-6 lg:px-8">
+      <Toaster position="bottom-right" reverseOrder={false} />
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -281,54 +285,6 @@ export default function ContactsPage() {
                   </button>
                 </div>
               </form>
-
-              {/* Success message */}
-              <AnimatePresence>
-                {emailStatus.sent && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute bottom-8 left-0 right-0 mx-auto w-5/6 bg-green-500/20 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg flex items-center gap-2"
-                  >
-                    <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                    <p>
-                      Messaggio inviato con successo! Ti risponderò al più
-                      presto.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Error message */}
-              <AnimatePresence>
-                {emailStatus.error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute bottom-8 left-0 right-0 mx-auto w-5/6 bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2"
-                  >
-                    <svg
-                      className="h-5 w-5 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <p>
-                      Si è verificato un errore durante l'invio. Riprova più
-                      tardi o contattami direttamente via email.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </motion.div>
         </div>

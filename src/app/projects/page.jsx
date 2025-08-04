@@ -98,48 +98,46 @@ export default function Projects() {
               <div className="absolute top-5 right-5 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent text-white px-3 py-3 rounded-full text-md font-medium z-10">
                 {project.emoji}
               </div>
+              <div className="flex flex-col h-full gap-5">
+                <CardHeader>
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                    {project.title}
+                  </CardTitle>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {project.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-1 text-xs font-medium bg-slate-700 text-slate-300 rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </CardHeader>
 
-              <CardHeader>
-                <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                  {project.title}
-                </CardTitle>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {project.tags.map((tag, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 text-xs font-medium bg-slate-700 text-slate-300 rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <div className="relative overflow-hidden rounded-xl mb-6 group-hover:shadow-lg transition-all duration-300">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"></div>
-                  <Image
-                    className="w-full h-64 object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                    height={600}
-                    width={600}
-                    src={project.image}
-                    alt={`Screenshot del progetto ${project.title}`}
-                  />
-                </div>
-                <p className="text-gray-300 leading-relaxed">
-                  {project.description.split("\n").map((line, i) => (
-                    <span key={i}>
-                      {line}
-                      <br />
-                    </span>
-                  ))}
-                </p>
-              </CardContent>
+                <CardContent>
+                  <div className="relative overflow-hidden rounded-xl mb-6 group-hover:shadow-lg transition-all duration-300">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"></div>
+                    <Image
+                      className="w-full h-64 object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                      height={600}
+                      width={600}
+                      src={project.image}
+                      alt={`Screenshot del progetto ${project.title}`}
+                    />
+                  </div>
+                  <p className="text-gray-300 leading-relaxed">
+                    {project.description.split("\n").map((line, i) => (
+                      <span key={i}>
+                        {line}
+                        <br />
+                      </span>
+                    ))}
+                  </p>
+                </CardContent>
+              </div>
 
               <CardFooter className="flex justify-between items-center border-t border-slate-700 pt-4 mt-2">
-                <div className="text-sm text-slate-400">
-                  <span>Progetto personale</span>
-                </div>
                 <a
                   href={project.url}
                   target="_blank"
