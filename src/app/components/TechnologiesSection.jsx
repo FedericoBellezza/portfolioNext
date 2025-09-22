@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import Image from "next/image";
 
 export default function TechnologiesSection() {
   return (
@@ -127,6 +128,18 @@ export default function TechnologiesSection() {
                 alt="Spring logo"
               />
               <span className="text-white font-medium">Spring</span>
+            </div>
+            <div className="flex flex-col items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors">
+              <Image
+                height={70}
+                width={70}
+                className="object-contain"
+                src={
+                  "https://angular.io/assets/images/logos/angular/angular.svg"
+                }
+                alt="Angular logo"
+              />
+              <span className="text-white font-medium">Angular</span>
             </div>
           </div>
         </div>
