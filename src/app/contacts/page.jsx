@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import emailjs from "@emailjs/browser";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import toast, { Toaster } from "react-hot-toast";
 import {
   Send,
@@ -9,7 +9,6 @@ import {
   User,
   FileText,
   MessageSquare,
-  CheckCircle,
   Loader2,
 } from "lucide-react";
 
@@ -31,7 +30,7 @@ export default function ContactsPage() {
         "service_n4qr5hq",
         "template_gdpzsbm",
         e.target,
-        "I5U0ciuEcNnc8z7_k"
+        "XsBnVOzYdqoFAgYBB"
       )
       .then(
         (result) => {
