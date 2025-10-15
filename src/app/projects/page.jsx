@@ -22,6 +22,14 @@ const projects = [
     emoji: "🏗️",
   },
   {
+    title: "Knit",
+    description: `Sito web per Knit, start-up dedicata agli atleti professionisti, nata per guidarli e sostenerli nel raggiungimento del loro pieno potenziale, durante e dopo la carriera sportiva. \n Supportano gli atleti a prendere decisioni consapevoli e a costruire una rete strategica che favorisca crescita, benessere e opportunità a lungo termine, dentro e fuori dal campo. \n Allo stesso tempo, collaborano con club e organizzazioni sportive per promuovere la loro evoluzione e professionalizzazione, partendo dalla valorizzazione della loro risorsa più importante: l’atleta.`,
+    image: "/knit-screenshot.jpg",
+    url: "https://www.knit-networks.com/",
+    tags: ["React", "Next.js", "Tailwind", "Framer Motion", "DaisyUI"],
+    emoji: "🏋️",
+  },
+  {
     title: "Fanfara Bersaglieri Settimo Torinese",
     description: `Ho realizzato il sito per la Fanfara di Bersaglieri di Settimo Torinese.
 Ho utilizzato Next.js, React e TailwindCSS per garantire velocità, efficienza e un design moderno e responsive.
