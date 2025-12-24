@@ -2,6 +2,8 @@
 import { motion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+// IMPORTIAMO LE ICONE NECESSARIE
+import { FiGithub, FiLinkedin, FiDownload } from "react-icons/fi";
 import TechnologiesSection from "./components/TechnologiesSection";
 
 export default function Home() {
@@ -28,9 +30,18 @@ export default function Home() {
     link.click();
   }
 
+  // Classe riutilizzabile per i nuovi pulsanti per evitare ripetizioni
+  const buttonClass =
+    "group w-full h-24 bg-slate-800 rounded-2xl flex items-center justify-center gap-4 cursor-pointer border border-slate-700 shadow-xl hover:shadow-lime-500/20 hover:border-lime-500/50 hover:-translate-y-1 transition-all duration-300 ease-out px-4";
+
+  // Classe per il testo e le icone che cambiano colore all'hover del gruppo
+  const textIconClass =
+    "text-white group-hover:text-lime-400 transition-colors duration-300";
+
   return (
     <div className="container mx-auto mt-20">
       <div className="flex flex-col lg:flex-row justify-center items-center gap-10 py-10">
+        {/* SEZIONE FOTO PROFILO (Invariata) */}
         <div className="lg:w-3/6 lg:px-10 px-5 py-4">
           <motion.div
             initial={{ opacity: 0 }}
@@ -41,8 +52,8 @@ export default function Home() {
               priority
               width={500}
               height={200}
-              className="rounded-2xl hover:grayscale-0 hover:saturate-150 transition grayscale duration-500 shadow-lg"
-              src="/profilephoto.jpg"
+              className="rounded-2xl hover:grayscale-0  transition grayscale duration-500 shadow-lg"
+              src="/profile.jpg"
               alt="foto profilo"
             />
             <h1 className="text-4xl mt-5 font-black text-white">
@@ -53,6 +64,8 @@ export default function Home() {
             </p>
           </motion.div>
         </div>
+
+        {/* SEZIONE TESTO (Invariata) */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -127,40 +140,49 @@ export default function Home() {
           </div>
         </motion.div>
       </div>
+
       <div className="my-20 lg:px-10 px-5">
+        {/* --- INIZIO SEZIONE PULSANTI MODIFICATA --- */}
         <motion.div
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           initial={{ opacity: 0, y: 100 }}
-          className="lg:mb-20 mb-10 flex flex-col lg:flex-row justify-between gap-8 items-center"
+          className="lg:mb-20 mb-10 flex flex-col lg:flex-row justify-between gap-6 items-center"
         >
+          {/* GitHub Button */}
           <div
             onClick={() => window.open("https://github.com/FedericoBellezza")}
-            className="bg-gradient-to-r from-slate-800 to-slate-900 w-full py-12 rounded-xl flex items-center justify-center cursor-pointer shadow-xl hover:shadow-lime-900/50 duration-300 transition border-l-4 border-lime-500"
+            className={buttonClass}
           >
-            <h4 className="lg:text-3xl text-2xl text-white font-bold">
+            <FiGithub className={`text-4xl ${textIconClass}`} />
+            <h4 className={`lg:text-2xl text-xl font-bold ${textIconClass}`}>
               GitHub
             </h4>
           </div>
+
+          {/* LinkedIn Button */}
           <div
             onClick={() =>
               window.open("https://www.linkedin.com/in/federicobellezzadev/")
             }
-            className="bg-gradient-to-r from-slate-800 to-slate-900 w-full py-12 rounded-xl flex items-center justify-center cursor-pointer shadow-xl hover:shadow-lime-900/50 duration-300 transition border-l-4 border-lime-500"
+            className={buttonClass}
           >
-            <h4 className="lg:text-3xl text-2xl text-white font-bold">
+            <FiLinkedin className={`text-4xl ${textIconClass}`} />
+            <h4 className={`lg:text-2xl text-xl font-bold ${textIconClass}`}>
               LinkedIn
             </h4>
           </div>
-          <div
-            onClick={() => downloadCV()}
-            className="bg-gradient-to-r from-slate-800 to-slate-900 w-full py-12 rounded-xl flex items-center justify-center cursor-pointer shadow-xl hover:shadow-lime-900/50 duration-300 transition border-l-4 border-lime-500"
-          >
-            <h4 className="lg:text-3xl text-2xl text-white font-bold">
-              Curriculum Vitae
+
+          {/* CV Button */}
+          <div onClick={() => downloadCV()} className={buttonClass}>
+            <FiDownload className={`text-4xl ${textIconClass}`} />
+            <h4 className={`lg:text-2xl text-xl font-bold ${textIconClass}`}>
+              Scarica CV
             </h4>
           </div>
         </motion.div>
+        {/* --- FINE SEZIONE PULSANTI MODIFICATA --- */}
+
         <TechnologiesSection />
       </div>
     </div>
