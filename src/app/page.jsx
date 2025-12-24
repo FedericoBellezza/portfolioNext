@@ -52,7 +52,7 @@ export default function Home() {
               priority
               width={500}
               height={200}
-              className="rounded-2xl hover:grayscale-0  transition grayscale duration-500 shadow-lg"
+              className="rounded-2xl hover:grayscale-0 transition grayscale duration-500 shadow-lg"
               src="/profile.jpg"
               alt="foto profilo"
             />
