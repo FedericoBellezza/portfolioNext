@@ -39,6 +39,10 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+.font-clash {
+  font-family: "Clash Display";
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
