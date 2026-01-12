@@ -17,7 +17,7 @@ export default function TechnologiesSection() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 max-w-7xl mx-auto">
         <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-          <h3 className="text-3xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
             <svg
               className="w-6 h-6 mr-2 text-blue-400"
               fill="none"
@@ -71,7 +71,7 @@ export default function TechnologiesSection() {
         </div>
 
         <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-          <h3 className="text-3xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
             <svg
               className="w-6 h-6 mr-2 text-green-400"
               fill="none"
@@ -145,7 +145,7 @@ export default function TechnologiesSection() {
         </div>
 
         <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-          <h3 className="text-3xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
             <svg
               className="w-6 h-6 mr-2 text-purple-400"
               fill="none"
@@ -199,7 +199,53 @@ export default function TechnologiesSection() {
         </div>
 
         <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-          <h3 className="text-3xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+            <svg
+              className="w-6 h-6 mr-2 text-green-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 2v4M5 6h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zm4 6h.01M15 12h.01M9 16h6"
+              />
+            </svg>
+            Automation's tools
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="flex flex-col items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors">
+              <img
+                className="h-16 w-16 object-contain"
+                src="n8n-logo.png"
+                alt="n8n logo"
+              />
+              <span className="text-white font-medium">n8n</span>
+            </div>
+            <div className="flex flex-col items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors">
+              <img
+                className="h-16 w-16 object-contain p-2 rounded-xl"
+                src="/notion-logo.png"
+                alt="Notion logo"
+              />
+              <span className="text-white font-medium">Notion</span>
+            </div>
+            <div className="flex flex-col items-center gap-4 p-4 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-colors">
+              <img
+                className="h-16 w-16 object-contain p-1"
+                src="/ai-logo.svg"
+                alt="AI logo"
+              />
+              <span className="text-white font-medium">AI</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
             <svg
               className="w-6 h-6 mr-2 text-yellow-400"
               fill="none"
@@ -245,7 +291,7 @@ export default function TechnologiesSection() {
         </div>
 
         <div className="bg-gradient-to-br from-slate-700 to-slate-800 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-          <h3 className="text-3xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
+          <h3 className="text-xl text-white font-semibold mb-6 border-b border-slate-500 pb-3 flex items-center">
             <svg
               className="w-6 h-6 mr-2 text-red-400"
               fill="none"

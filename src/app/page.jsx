@@ -8,9 +8,10 @@ import TechnologiesSection from "./components/TechnologiesSection";
 
 export default function Home() {
   const [typingText, setTypingText] = useState([
-    "FULL-STACK",
-    "FRONT-END",
-    "BACK-END",
+    "Full-Stack",
+    "Automation",
+    "Front-end",
+    "Back-end",
   ]);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -90,52 +91,45 @@ export default function Home() {
             <h2 className="lg:text-7xl text-4xl font-black text-white">
               Web Developer
             </h2>
-            <p className="mt-10 lg:text-xl text-slate-300">
-              👋 Mi chiamo{" "}
-              <strong className="text-lime-300">Federico Bellezza</strong>, ho
-              24 anni e vivo a <strong className="text-lime-300">Torino</strong>
-              .<br />
+            <p className="mt-10 lg:text-xl text-slate-300 leading-relaxed">
+              👋 Ciao, sono{" "}
+              <strong className="text-lime-300">Federico Bellezza</strong>.
               <br />
-              🎓 Diplomato in{" "}
+              <br />
+              🚀 La mia missione è{" "}
               <strong className="text-lime-300">
-                Elettronica ed Elettrotecnica
+                aiutare le aziende a evolversi tecnologicamente
               </strong>
-              , ho sempre avuto una passione per la tecnologia.
-              <br />
-              💼 Dopo 1 anno e mezzo come operatore in fabbrica, ho sentito il
-              bisogno di cambiare e...
+              . Non mi limito a scrivere codice: progetto ecosistemi digitali
+              che fanno risparmiare tempo e aumentano il valore del business.
               <br />
               <br />
-              ✈️ <strong className="text-lime-300">Australia per 2 anni</strong>
-              :<br />- Lavori nell'
-              <strong className="text-lime-300">ospitalità</strong>
-              <br />- Scuola di vita:{" "}
-              <strong className="text-lime-300">adattamento</strong> e{" "}
-              <strong className="text-lime-300">indipendenza</strong>
-              <br />
-              <br />
-              💻{" "}
+              💻 Come{" "}
               <strong className="text-lime-300">
-                Svolta nella programmazione
+                Sviluppatore Full Stack
+              </strong>{" "}
+              & <strong className="text-lime-300">Automation Specialist</strong>
+              , mi occupo di:
+              <br />
+              <br />- Sviluppo di{" "}
+              <strong className="text-lime-300">
+                piattaforme gestionali
+              </strong>{" "}
+              e web app su misura.
+              <br />- Creazione di flussi di automazione avanzati con{" "}
+              <strong className="text-lime-300">n8n</strong>.
+              <br />- Integrazione di processi con{" "}
+              <strong className="text-lime-300">
+                Intelligenza Artificiale
+              </strong>{" "}
+              per ottimizzare l'efficienza aziendale.
+              <br />
+              <br />
+              🔥 Trasformo problemi complessi in{" "}
+              <strong className="text-lime-300">
+                soluzioni automatiche e scalabili
               </strong>
-              :<br />- Corso{" "}
-              <strong className="text-lime-300">FullStack Developer</strong>{" "}
-              @Boolean
-              <br />- <strong className="text-lime-300">Front-end</strong>:
-              HTML, CSS, JavaScript, React, Bootstrap
-              <br />- <strong className="text-lime-300">Back-end</strong>:
-              Node.js/Express, MySQL, Java/Spring
-              <br />- Della programmazione amo la sua{" "}
-              <strong className="text-lime-300">evoluzione costante</strong> e
-              l'
-              <strong className="text-lime-300">impatto concreto</strong> sul
-              mondo
-              <br />
-              <br />
-              🔥 Punti di forza:{" "}
-              <strong className="text-lime-300">resilienza</strong>,{" "}
-              <strong className="text-lime-300">curiosità</strong> e voglia di{" "}
-              <strong className="text-lime-300">mettermi alla prova</strong>!
+              .
             </p>
           </div>
         </motion.div>
