@@ -43,6 +43,25 @@
   font-family: "Clash Display";
 }
 
+.font-serif {
+  font-family: "Playfair Display", serif;
+}
+
+/* Dashboard Theme - Elegant Beige/Terracotta */
+.dashboard-theme {
+  --dashboard-bg: #F5F0EB;
+  --dashboard-bg-secondary: #EDE6DF;
+  --dashboard-accent: #C4735B;
+  --dashboard-accent-hover: #B56549;
+  --dashboard-accent-light: #D4A49A;
+  --dashboard-text: #2D2D2D;
+  --dashboard-text-secondary: #6B6B6B;
+  --dashboard-text-muted: #9B9B9B;
+  --dashboard-border: #E0D6CC;
+  --dashboard-card-bg: #FFFFFF;
+  --dashboard-card-border: #E8E0D8;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
