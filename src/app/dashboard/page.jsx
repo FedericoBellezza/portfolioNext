@@ -1,27 +1,41 @@
 import { createClient } from '@/lib/supabase/server'
-import { getEarningsData, aggregateByCompany, aggregateByAutomation, buildDateFilter } from '@/lib/supabase/queries'
+import { getEarningsData, aggregateByCompany, aggregateByAutomation, buildDateFilter, getExecutions } from '@/lib/supabase/queries'
+import { redirect } from 'next/navigation'
 import StatsCard from './components/StatsCard'
 import EarningsChart from './components/EarningsChart'
 import ClientBreakdown from './components/ClientBreakdown'
 import AutomationBreakdown from './components/AutomationBreakdown'
+import ExecutionsLog from './components/ExecutionsLog'
 import PeriodFilter from './components/PeriodFilter'
 
 export default async function DashboardPage({ searchParams }) {
   const supabase = await createClient()
   const params = await searchParams
 
-  // Get date filter from search params
-  const { period, year, month } = params
+  // Default to current month if no period is specified (but allow 'all' to show everything)
+  let { period, year, month } = params
+
+  if (!period) {
+    const now = new Date()
+    const currentYear = now.getFullYear()
+    const currentMonth = now.getMonth()
+    redirect(`/dashboard?period=month&year=${currentYear}&month=${currentMonth}`)
+  }
+
+  // period=all means show all data without date filtering
+
   const dateFilter = buildDateFilter(period, year, month)
 
-  // Fetch all earnings data
+  // Fetch all earnings data and individual executions
   let earningsData = []
+  let executions = []
   let error = null
 
   try {
     earningsData = await getEarningsData(supabase, dateFilter)
+    executions = await getExecutions(supabase, dateFilter)
   } catch (e) {
-    console.error('Error fetching earnings data:', e)
+    console.error('Error fetching data:', e)
     error = e.message
   }
 
@@ -98,6 +112,9 @@ export default async function DashboardPage({ searchParams }) {
 
       {/* Detailed Breakdown */}
       <AutomationBreakdown data={earningsData} />
+
+      {/* Individual Executions Log */}
+      <ExecutionsLog executions={executions} />
     </div>
   )
 }

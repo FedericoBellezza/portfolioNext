@@ -165,3 +165,50 @@ export function buildDateFilter(period, year, month) {
 
   return null
 }
+
+// Get individual executions with full details
+export async function getExecutions(supabase, dateFilter = null) {
+  let query = supabase
+    .from('executions')
+    .select(`
+      id,
+      automation_id,
+      client_id,
+      executed_at,
+      automations (id, name, description),
+      clients (id, name)
+    `)
+    .order('executed_at', { ascending: false })
+
+  if (dateFilter) {
+    query = query.gte('executed_at', dateFilter.start).lte('executed_at', dateFilter.end)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[ERROR] getExecutions:', error.message)
+    return []
+  }
+
+  // Get pricing to calculate earnings per execution
+  const pricing = await getPricing(supabase)
+  const pricingMap = {}
+  for (const p of pricing) {
+    pricingMap[`${p.automation_id}-${p.client_id}`] = Number(p.price_per_execution) || 0
+  }
+
+  // Enrich executions with price info
+  return (data || []).map((exec) => {
+    const key = `${exec.automation_id}-${exec.client_id}`
+    const price = pricingMap[key] || 0
+    return {
+      id: exec.id,
+      executedAt: exec.executed_at,
+      automation: exec.automations?.name || 'N/A',
+      automationDescription: exec.automations?.description || null,
+      client: exec.clients?.name || 'N/A',
+      price,
+    }
+  })
+}

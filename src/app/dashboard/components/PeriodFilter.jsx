@@ -66,7 +66,7 @@ export default function PeriodFilter({ currentPeriod, currentYear, currentMonth 
   }
 
   const clearFilters = () => {
-    router.push(pathname)
+    router.push(`${pathname}?period=all`)
   }
 
   const hasFilters = currentPeriod && currentPeriod !== 'all'
