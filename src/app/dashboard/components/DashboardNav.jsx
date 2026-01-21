@@ -8,9 +8,9 @@ import { LogOut, Home, LayoutDashboard, Settings } from 'lucide-react'
 
 export default function DashboardNav({ user }) {
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogout = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
