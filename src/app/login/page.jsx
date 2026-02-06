@@ -3,9 +3,6 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/app/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 
@@ -36,45 +33,61 @@ export default function LoginPage() {
     }
   }
 
+  const inputClass =
+    "w-full px-4 py-3 bg-transparent border border-[var(--portfolio-border)] text-white placeholder:text-[var(--portfolio-text-muted)] focus:border-[var(--portfolio-accent)] focus:outline-none transition-colors duration-300"
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 dashboard-theme bg-[var(--dashboard-bg)]">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="bg-[var(--dashboard-card-bg)] p-8 rounded-2xl shadow-lg border border-[var(--dashboard-card-border)]">
+        <div className="bg-[var(--portfolio-bg-card)] p-8 border border-[var(--portfolio-border)]">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-serif font-semibold text-[var(--dashboard-text)] mb-2">
+            <h1 className="font-serif text-3xl text-white mb-2">
               Dashboard Login
             </h1>
-            <p className="text-[var(--dashboard-text-secondary)]">Accedi per visualizzare le statistiche</p>
+            <div className="w-12 h-px bg-[var(--portfolio-accent)] mx-auto mt-4 mb-4" />
+            <p className="text-[var(--portfolio-text-secondary)]">
+              Accedi per visualizzare le statistiche
+            </p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[var(--dashboard-text-secondary)]">Email</Label>
-              <Input
+              <label
+                htmlFor="email"
+                className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
+              >
+                Email
+              </label>
+              <input
                 id="email"
                 type="email"
                 placeholder="email@esempio.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-[var(--dashboard-bg)] border-[var(--dashboard-border)] text-[var(--dashboard-text)] placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus:ring-[var(--dashboard-accent)]"
+                className={inputClass}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-[var(--dashboard-text-secondary)]">Password</Label>
-              <Input
+              <label
+                htmlFor="password"
+                className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
+              >
+                Password
+              </label>
+              <input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-[var(--dashboard-bg)] border-[var(--dashboard-border)] text-[var(--dashboard-text)] placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus:ring-[var(--dashboard-accent)]"
+                className={inputClass}
               />
             </div>
 
@@ -82,23 +95,30 @@ export default function LoginPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm"
+                className="p-3 border border-red-500/50 text-red-400 text-sm"
               >
                 {error}
               </motion.div>
             )}
 
-            <Button
+            <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--dashboard-accent)] hover:bg-[var(--dashboard-accent-hover)] text-white font-medium rounded-full py-3"
+              className={`w-full py-4 flex items-center justify-center uppercase tracking-luxury text-sm font-medium transition-all duration-300 cursor-pointer ${
+                loading
+                  ? "bg-[var(--portfolio-bg-secondary)] text-[var(--portfolio-text-muted)] cursor-not-allowed border border-[var(--portfolio-border)]"
+                  : "border border-[var(--portfolio-accent)] text-[var(--portfolio-accent)] hover:bg-[var(--portfolio-accent)] hover:text-black"
+              }`}
             >
               {loading ? 'Accesso in corso...' : 'Accedi'}
-            </Button>
+            </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link href="/" className="text-[var(--dashboard-text-secondary)] hover:text-[var(--dashboard-accent)] text-sm transition-colors">
+          <div className="mt-8 text-center">
+            <Link
+              href="/"
+              className="text-[var(--portfolio-text-muted)] hover:text-[var(--portfolio-accent)] text-sm transition-colors uppercase tracking-wide"
+            >
               Torna al Portfolio
             </Link>
           </div>

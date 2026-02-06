@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body
-        className={`font-clash antialiased bg-linear-to-tr from-slate-700  to-gray-800 text-slate-800 overflow-x-hidden`}
+        className={`font-clash antialiased bg-black text-white overflow-x-hidden portfolio-theme`}
       >
         <Navbar />
         {children}

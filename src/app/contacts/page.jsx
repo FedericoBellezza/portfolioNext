@@ -20,7 +20,6 @@ export default function ContactsPage() {
   });
   const formRef = useRef(null);
 
-  // send email function
   const sendEmail = (e) => {
     e.preventDefault();
     setEmailStatus({ sending: true, sent: false, error: false });
@@ -49,8 +48,11 @@ export default function ContactsPage() {
       );
   };
 
+  const inputClass =
+    "w-full px-4 py-3 bg-transparent border border-[var(--portfolio-border)] text-white placeholder:text-[var(--portfolio-text-muted)] focus:border-[var(--portfolio-accent)] focus:outline-none transition-colors duration-300";
+
   return (
-    <div className="min-h-screen py-40 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8">
       <Toaster position="bottom-right" reverseOrder={false} />
       <div className="max-w-7xl mx-auto">
         <motion.div
@@ -59,74 +61,77 @@ export default function ContactsPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent pb-2">
-            Contattami
+          <h1 className="font-serif text-6xl lg:text-8xl text-white mb-4">
+            Contatti
           </h1>
-          <div className="w-24 h-1 bg-gradient-to-r from-green-500 to-blue-500 mx-auto rounded-full mt-6"></div>
-          <p className="text-gray-400 mt-6 max-w-2xl mx-auto text-lg ">
+          <div className="w-16 h-px bg-[var(--portfolio-accent)] mx-auto mb-8" />
+          <p className="text-[var(--portfolio-text-secondary)] max-w-2xl mx-auto text-lg">
             Hai un progetto in mente o vuoi collaborare? <br /> Compila il form
             e ti risponderò al più presto.
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-start">
+          {/* Contact Info */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2 space-y-8"
+            className="lg:col-span-2"
           >
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl shadow-xl">
-              <h3 className="text-2xl font-bold text-white mb-4">
+            <div className="bg-[var(--portfolio-bg-card)] border border-[var(--portfolio-border)] p-8">
+              <h3 className="font-serif text-2xl text-white mb-8">
                 Informazioni di contatto
               </h3>
 
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="bg-green-500/20 p-3 rounded-full">
-                    <Mail className="h-6 w-6 text-green-500" />
+                  <div className="w-12 h-12 border border-[var(--portfolio-border)] flex items-center justify-center">
+                    <Mail className="h-5 w-5 text-[var(--portfolio-accent)]" />
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm">Email</p>
-                    <p className="text-white font-medium">
-                      federico.bellezza2001@gmail.com
+                    <p className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide">
+                      Email
                     </p>
+                    <p className="text-white">federico.bellezza2001@gmail.com</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="bg-blue-500/20 p-3 rounded-full">
-                    <User className="h-6 w-6 text-blue-500" />
+                  <div className="w-12 h-12 border border-[var(--portfolio-border)] flex items-center justify-center">
+                    <User className="h-5 w-5 text-[var(--portfolio-accent)]" />
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm">Disponibilità</p>
-                    <p className="text-white font-medium">
-                      Full-time / Freelance
+                    <p className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide">
+                      Disponibilità
                     </p>
+                    <p className="text-white">Full-time / Freelance</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="bg-purple-500/20 p-3 rounded-full">
-                    <MessageSquare className="h-6 w-6 text-purple-500" />
+                  <div className="w-12 h-12 border border-[var(--portfolio-border)] flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-[var(--portfolio-accent)]" />
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm">Risposta</p>
-                    <p className="text-white font-medium">Entro 24-48 ore</p>
+                    <p className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide">
+                      Risposta
+                    </p>
+                    <p className="text-white">Entro 24-48 ore</p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-700">
+              <div className="mt-8 pt-6 border-t border-[var(--portfolio-border)]">
                 <div className="flex gap-4 justify-center">
                   <a
                     href="https://www.linkedin.com/in/federicobellezzadev/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-slate-700 hover:bg-slate-600 p-3 rounded-full transition-colors"
+                    className="w-12 h-12 border border-[var(--portfolio-border)] flex items-center justify-center text-[var(--portfolio-text-muted)] hover:text-[var(--portfolio-accent)] hover:border-[var(--portfolio-accent)] transition-colors duration-300"
                   >
                     <svg
-                      className="h-5 w-5 text-white"
+                      className="h-5 w-5"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                       aria-hidden="true"
@@ -138,10 +143,10 @@ export default function ContactsPage() {
                     href="https://github.com/FedericoBellezza"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-slate-700 hover:bg-slate-600 p-3 rounded-full transition-colors"
+                    className="w-12 h-12 border border-[var(--portfolio-border)] flex items-center justify-center text-[var(--portfolio-text-muted)] hover:text-[var(--portfolio-accent)] hover:border-[var(--portfolio-accent)] transition-colors duration-300"
                   >
                     <svg
-                      className="h-5 w-5 text-white"
+                      className="h-5 w-5"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                       aria-hidden="true"
@@ -158,116 +163,97 @@ export default function ContactsPage() {
             </div>
           </motion.div>
 
+          {/* Contact Form */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="lg:col-span-3"
           >
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-xl p-8 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-500 to-blue-500"></div>
-
-              <h3 className="text-2xl font-bold text-white mb-6">
+            <div className="bg-[var(--portfolio-bg-card)] border border-[var(--portfolio-border)] p-8">
+              <h3 className="font-serif text-2xl text-white mb-8">
                 Invia un messaggio
               </h3>
 
-              <form
-                ref={formRef}
-                onSubmit={sendEmail}
-                className="space-y-5 relative z-10"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-1">
+              <form ref={formRef} onSubmit={sendEmail} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
                     <label
                       htmlFor="from_name"
-                      className="text-sm text-gray-400"
+                      className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
                     >
                       Nome
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <User className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <input
-                        required
-                        id="from_name"
-                        type="text"
-                        name="from_name"
-                        placeholder="Il tuo nome"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                      />
-                    </div>
+                    <input
+                      required
+                      id="from_name"
+                      type="text"
+                      name="from_name"
+                      placeholder="Il tuo nome"
+                      className={inputClass}
+                    />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <label
                       htmlFor="from_email"
-                      className="text-sm text-gray-400"
+                      className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
                     >
                       Email
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <Mail className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <input
-                        required
-                        id="from_email"
-                        type="email"
-                        name="from_email"
-                        placeholder="La tua email"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label htmlFor="object" className="text-sm text-gray-400">
-                    Oggetto
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                      <FileText className="h-5 w-5 text-gray-500" />
-                    </div>
                     <input
                       required
-                      id="object"
-                      type="text"
-                      name="object"
-                      placeholder="Oggetto del messaggio"
-                      className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all"
+                      id="from_email"
+                      type="email"
+                      name="from_email"
+                      placeholder="La tua email"
+                      className={inputClass}
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label htmlFor="message" className="text-sm text-gray-400">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="object"
+                    className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
+                  >
+                    Oggetto
+                  </label>
+                  <input
+                    required
+                    id="object"
+                    type="text"
+                    name="object"
+                    placeholder="Oggetto del messaggio"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="message"
+                    className="text-[var(--portfolio-text-muted)] text-xs uppercase tracking-wide"
+                  >
                     Messaggio
                   </label>
-                  <div className="relative">
-                    <div className="absolute top-3 left-0 flex items-start pl-3 pointer-events-none">
-                      <MessageSquare className="h-5 w-5 text-gray-500" />
-                    </div>
-                    <textarea
-                      required
-                      id="message"
-                      name="message"
-                      rows="5"
-                      placeholder="Scrivi il tuo messaggio qui..."
-                      className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all resize-none"
-                    ></textarea>
-                  </div>
+                  <textarea
+                    required
+                    id="message"
+                    name="message"
+                    rows="5"
+                    placeholder="Scrivi il tuo messaggio qui..."
+                    className={`${inputClass} resize-none`}
+                  ></textarea>
                 </div>
 
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={emailStatus.sending}
-                    className={`w-full py-3 px-4 flex items-center justify-center gap-2 rounded-lg text-white font-medium transition-all cursor-pointer ${
+                    className={`w-full py-4 flex items-center justify-center gap-2 uppercase tracking-luxury text-sm font-medium transition-all duration-300 cursor-pointer ${
                       emailStatus.sending
-                        ? "bg-slate-600 cursor-not-allowed"
-                        : "bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                        ? "bg-[var(--portfolio-bg-secondary)] text-[var(--portfolio-text-muted)] cursor-not-allowed border border-[var(--portfolio-border)]"
+                        : "border border-[var(--portfolio-accent)] text-[var(--portfolio-accent)] hover:bg-[var(--portfolio-accent)] hover:text-black"
                     }`}
                   >
                     {emailStatus.sending ? (

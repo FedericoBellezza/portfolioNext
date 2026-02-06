@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -14,30 +13,27 @@ import { ArrowUpRight, Github } from "lucide-react";
 const projects = [
   {
     title: "Cantieri360",
-    description: `Web app dedicata all’edilizia per gestire cantieri, attività di squadra, ore lavorate, costi e riepiloghi in modo semplice e sicuro.
+    description: `Web app dedicata all'edilizia per gestire cantieri, attività di squadra, ore lavorate, costi e riepiloghi in modo semplice e sicuro.
     Sviluppata in React (Next.js), TailwindCSS, Shadcn, Supabase e Framer Motion. Moderna, mobile-friendly e cloud-first, permette alle imprese di lavorare ovunque senza carta né Excel.`,
     image: "/Canieri360-Copertina.jpg",
     url: "https://cantieri360.vercel.app/",
     tags: ["React", "Next.js", "Tailwind", "Framer Motion", "Supabase"],
-    emoji: "🏗️",
   },
   {
     title: "Knit",
-    description: `Sito web per Knit, start-up dedicata agli atleti professionisti, nata per guidarli e sostenerli nel raggiungimento del loro pieno potenziale, durante e dopo la carriera sportiva. \n Supportano gli atleti a prendere decisioni consapevoli e a costruire una rete strategica che favorisca crescita, benessere e opportunità a lungo termine, dentro e fuori dal campo. \n Allo stesso tempo, collaborano con club e organizzazioni sportive per promuovere la loro evoluzione e professionalizzazione, partendo dalla valorizzazione della loro risorsa più importante: l’atleta.`,
+    description: `Sito web per Knit, start-up dedicata agli atleti professionisti, nata per guidarli e sostenerli nel raggiungimento del loro pieno potenziale, durante e dopo la carriera sportiva. \n Supportano gli atleti a prendere decisioni consapevoli e a costruire una rete strategica che favorisca crescita, benessere e opportunità a lungo termine, dentro e fuori dal campo. \n Allo stesso tempo, collaborano con club e organizzazioni sportive per promuovere la loro evoluzione e professionalizzazione, partendo dalla valorizzazione della loro risorsa più importante: l'atleta.`,
     image: "/knit-screenshot.jpg",
     url: "https://www.knit-networks.com/",
     tags: ["React", "Next.js", "Tailwind", "Framer Motion", "DaisyUI"],
-    emoji: "🏋️",
   },
   {
     title: "Fanfara Bersaglieri Settimo Torinese",
     description: `Ho realizzato il sito per la Fanfara di Bersaglieri di Settimo Torinese.
 Ho utilizzato Next.js, React e TailwindCSS per garantire velocità, efficienza e un design moderno e responsive.
-Mi sono occupato della struttura dell’app, dell’organizzazione del codice, dell’integrazione del calendario eventi e di una UI personalizzata. Ho curato performance, accessibilità e ottimizzazione tramite componentizzazione front-end.`,
+Mi sono occupato della struttura dell'app, dell'organizzazione del codice, dell'integrazione del calendario eventi e di una UI personalizzata. Ho curato performance, accessibilità e ottimizzazione tramite componentizzazione front-end.`,
     image: "/FanfaraBersaglieriScreenshot.jpg",
     url: "https://bersaglierisettimo.vercel.app/",
     tags: ["Next.js", "React", "Tailwind", "Framer Motion"],
-    emoji: "🎺",
   },
   {
     title: "Let's Play",
@@ -46,7 +42,6 @@ Mi sono occupato della struttura dell’app, dell’organizzazione del codice, d
     image: "/letsPlayImage.jpeg",
     url: "https://www.linkedin.com/feed/update/urn:li:activity:7318199610559066112/",
     tags: ["Spring", "React", "MySQL", "Tailwind", "EmailJS", "Framer Motion"],
-    emoji: "🥳",
   },
   {
     title: "Weather App",
@@ -55,7 +50,6 @@ Mi sono occupato della struttura dell’app, dell’organizzazione del codice, d
     image: "/weatherApp.jpg",
     url: "https://weatherapp-federicobellezza.web.app/",
     tags: ["React", "Tailwind", "API"],
-    emoji: "🌩",
   },
   {
     title: "Task Manager",
@@ -64,7 +58,6 @@ Mi sono occupato della struttura dell’app, dell’organizzazione del codice, d
     image: "/task-manager.jpg",
     url: "https://next-todo-list-swart.vercel.app/",
     tags: ["Next.js", "SupaBase", "Vercel"],
-    emoji: "👨‍🏫",
   },
   {
     title: "Rubber Duck",
@@ -73,111 +66,108 @@ Mi sono occupato della struttura dell’app, dell’organizzazione del codice, d
     image: "/rubber-duck-screenshot.JPG",
     url: "https://rubber-duck-lemon.vercel.app/",
     tags: ["Next.js", "React", "Tailwind", "Swiper.js", "Shadcn/UI"],
-    emoji: "🦆",
   },
 ];
 
 export default function Projects() {
   return (
-    <div className="container mx-auto mt-40 px-4 sm:px-6 lg:px-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="mb-16"
-      >
-        <h1 className="text-5xl lg:text-7xl font-black text-center bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent pb-4">
-          Progetti personali
-        </h1>
-        <div className="w-24 h-1 bg-gradient-to-r from-green-500 to-blue-500 mx-auto rounded-full mt-4"></div>
-      </motion.div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
-        {projects.map((project, index) => (
-          <motion.div
-            key={index}
-            className="h-full"
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 0.1 }}
-          >
-            <Card className="h-full shadow-xl relative hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 overflow-hidden hover:border-slate-500 group">
-              <div className="absolute top-5 right-5 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent text-white px-3 py-3 rounded-full text-md font-medium z-10">
-                {project.emoji}
-              </div>
-              <div className="flex flex-col h-full gap-5">
-                <CardHeader>
-                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                    {project.title}
-                  </CardTitle>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {project.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-2 py-1 text-xs font-medium bg-slate-700 text-slate-300 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="relative overflow-hidden rounded-xl mb-6 group-hover:shadow-lg transition-all duration-300">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"></div>
-                    <Image
-                      className="w-full h-64 object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                      height={600}
-                      width={600}
-                      src={project.image}
-                      alt={`Screenshot del progetto ${project.title}`}
-                    />
-                  </div>
-                  <p className="text-gray-300 leading-relaxed">
-                    {project.description.split("\n").map((line, i) => (
-                      <span key={i}>
-                        {line}
-                        <br />
-                      </span>
-                    ))}
-                  </p>
-                </CardContent>
-              </div>
-
-              <CardFooter className="flex justify-between items-center border-t border-slate-700 pt-4 mt-2">
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white font-medium hover:from-green-600 hover:to-emerald-700 transition-all"
-                >
-                  <span>Visita</span>
-                  <ArrowUpRight className="h-4 w-4" />
-                </a>
-              </CardFooter>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.5 }}
-        className="mt-16 text-center"
-      >
-        <a
-          href="https://github.com/FedericoBellezza"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-full transition-all duration-300"
+    <div className="min-h-screen pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-16 text-center"
         >
-          <Github className="h-5 w-5" />
-          <span>Visualizza altri progetti su GitHub</span>
-        </a>
-      </motion.div>
+          <h1 className="font-serif text-6xl lg:text-8xl text-white mb-4">
+            Progetti
+          </h1>
+          <div className="w-16 h-px bg-[var(--portfolio-accent)] mx-auto" />
+        </motion.div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {projects.map((project, index) => (
+            <motion.div
+              key={index}
+              className="h-full"
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="h-full bg-[var(--portfolio-bg-card)] border border-[var(--portfolio-border)] overflow-hidden hover:border-[var(--portfolio-accent)]/50 transition-all duration-300 group">
+                <div className="flex flex-col h-full">
+                  <CardHeader>
+                    <CardTitle className="font-serif text-2xl text-white">
+                      {project.title}
+                    </CardTitle>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {project.tags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-3 py-1 text-xs uppercase tracking-wide text-[var(--portfolio-text-muted)] border border-[var(--portfolio-border)]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="flex-1">
+                    <div className="relative overflow-hidden mb-6">
+                      <Image
+                        className="w-full h-64 object-cover object-top grayscale hover:grayscale-0 transition-all duration-500"
+                        height={600}
+                        width={600}
+                        src={project.image}
+                        alt={`Screenshot del progetto ${project.title}`}
+                      />
+                    </div>
+                    <p className="text-[var(--portfolio-text-secondary)] leading-relaxed">
+                      {project.description.split("\n").map((line, i) => (
+                        <span key={i}>
+                          {line}
+                          <br />
+                        </span>
+                      ))}
+                    </p>
+                  </CardContent>
+
+                  <CardFooter className="border-t border-[var(--portfolio-border)] pt-6">
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-[var(--portfolio-accent)] hover:text-[var(--portfolio-accent-light)] transition-colors uppercase tracking-luxury text-sm"
+                    >
+                      <span>View Project</span>
+                      <ArrowUpRight className="h-4 w-4" />
+                    </a>
+                  </CardFooter>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          className="mt-16 text-center"
+        >
+          <a
+            href="https://github.com/FedericoBellezza"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 py-4 px-8 border border-[var(--portfolio-border)] text-white hover:border-[var(--portfolio-accent)] hover:text-[var(--portfolio-accent)] transition-all duration-300 uppercase tracking-luxury text-sm"
+          >
+            <Github className="h-5 w-5" />
+            <span>Altri progetti su GitHub</span>
+          </a>
+        </motion.div>
+      </div>
     </div>
   );
 }
