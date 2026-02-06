@@ -140,7 +140,7 @@ export default function Projects() {
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-[var(--portfolio-accent)] hover:text-[var(--portfolio-accent-light)] transition-colors uppercase tracking-luxury text-sm"
                     >
-                      <span>View Project</span>
+                      <span>Vedi progetto</span>
                       <ArrowUpRight className="h-4 w-4" />
                     </a>
                   </CardFooter>
