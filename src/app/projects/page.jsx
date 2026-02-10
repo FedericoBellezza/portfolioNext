@@ -12,6 +12,14 @@ import { ArrowUpRight, Github } from "lucide-react";
 
 const projects = [
   {
+    title: "Nutrizionista Federica Autretto",
+    description: `Ho realizzato un sito landing page responsive per la Dottoressa Federica Autretto, biologa nutrizionista. Ho utilizzato Next.js, Typescript, e Resend per il form di contatto.
+    Gli indirizzi sono link che fanno direttamente il redirect a Google Maps mentre con il bottone "Scrivimi su WhatsApp" avviene un redirect su WhatsApp con un messaggio preimpostato   `,
+    image: "/federica-autretto.com-screenshot.png",
+    url: "https://federica-autretto.com/",
+    tags: ["React", "Next.js", "Tailwind", "Framer Motion", "Resend"],
+  },
+  {
     title: "Cantieri360",
     description: `Web app dedicata all'edilizia per gestire cantieri, attività di squadra, ore lavorate, costi e riepiloghi in modo semplice e sicuro.
     Sviluppata in React (Next.js), TailwindCSS, Shadcn, Supabase e Framer Motion. Moderna, mobile-friendly e cloud-first, permette alle imprese di lavorare ovunque senza carta né Excel.`,
