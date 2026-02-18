@@ -12,7 +12,8 @@
       "WebFetch(domain:attendflowio.lovable.app)",
       "WebFetch(domain:lovable.dev)",
       "Bash(npm ls:*)",
-      "Bash(npx next build:*)"
+      "Bash(npx next build:*)",
+      "Bash(git config:*)"
     ]
   }
 }
