@@ -59,6 +59,25 @@ const pricingPlans = [
     ],
   },
   {
+    name: "E-Commerce",
+    price: "2.000",
+    description:
+      "Negozio online completo, pronto a vendere con gestione prodotti e pagamenti integrati.",
+    popular: false,
+    features: [
+      "Catalogo Prodotti & Carrello",
+      "Checkout & Pagamenti (Stripe)",
+      "Gestione Ordini",
+      "Design Responsive & Mobile First",
+      "SEO & Performance ottimizzati",
+    ],
+    addOns: [
+      "Autenticazione Utenti",
+      "Dashboard Admin",
+      "Gestione Inventario avanzata",
+    ],
+  },
+  {
     name: "Web App / MVP",
     price: "3.500",
     description:
@@ -78,7 +97,7 @@ const pricingPlans = [
 export default function ScaleSection() {
   return (
     <section className="py-24 px-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -131,7 +150,7 @@ export default function ScaleSection() {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mt-16">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -139,7 +158,7 @@ export default function ScaleSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
-              className={`relative bg-white rounded-2xl p-8 hover:shadow-lg transition-all duration-300 ${
+              className={`relative flex flex-col bg-white rounded-2xl p-8 hover:shadow-lg transition-all duration-300 ${
                 plan.popular
                   ? "border-2 border-slate-900"
                   : "border border-zinc-200 hover:border-zinc-300"
@@ -161,7 +180,9 @@ export default function ScaleSection() {
                 <span className="text-3xl font-bold text-slate-900">
                   &euro; {plan.price}
                 </span>
-                <span className="text-sm text-slate-500"> iva inclusa</span>
+                <span className="text-xs text-slate-400 ml-1">
+                  (Esente IVA)
+                </span>
               </div>
 
               <ul className="space-y-3 mb-6">
@@ -197,7 +218,7 @@ export default function ScaleSection() {
 
               <a
                 href="#contatti"
-                className={`block w-full text-center py-3 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                className={`mt-auto block w-full text-center py-3 rounded-xl text-sm font-medium transition-colors duration-200 ${
                   plan.popular
                     ? "bg-slate-900 text-white hover:bg-slate-800"
                     : "border border-zinc-300 text-slate-700 hover:bg-slate-50"
@@ -219,7 +240,9 @@ export default function ScaleSection() {
         >
           * I prezzi sono indicativi e possono variare in base alle specifiche
           del progetto. Ogni preventivo viene personalizzato dopo
-          un&apos;analisi delle tue esigenze.
+          un&apos;analisi delle tue esigenze. Operazione senza applicazione
+          dell&apos;IVA ai sensi dell&apos;art. 1 comma 58 L. 190/2014 (Regime
+          Forfettario). Risparmi il 22%.
         </motion.p>
       </div>
     </section>

@@ -83,7 +83,7 @@ export default function ProjectsShowcase() {
               transition={{ duration: 0.4, delay: index * 0.1 }}
               className="group"
             >
-              <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-zinc-300 transition-all duration-300">
+              <div className="h-full flex flex-col bg-white border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-zinc-300 transition-all duration-300">
                 {/* Browser mockup */}
                 <div className="bg-zinc-100 px-4 py-3 flex items-center gap-2 border-b border-zinc-200">
                   <div className="flex gap-1.5">
