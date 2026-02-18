@@ -54,7 +54,8 @@ export default function ContactSection() {
           </h2>
           <p className="text-slate-500 max-w-xl mx-auto">
             Hai un&apos;idea da realizzare o vuoi automatizzare un processo? Compila
-            il form e ti risponderò entro 24 ore.
+            il form, ti rispondo prima che tu possa dire
+            &quot;preventivo&quot;.
           </p>
         </motion.div>
 

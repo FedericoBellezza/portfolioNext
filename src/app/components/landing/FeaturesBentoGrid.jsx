@@ -14,6 +14,7 @@ const features = [
     title: "Automazione Processi",
     description:
       "Workflow n8n che fanno risparmiare 20+ ore a settimana",
+    joke: "Perche\u0301 la vita e\u0300 troppo corta per fare copia-incolla.",
     icon: Workflow,
     span: "",
   },
@@ -21,6 +22,7 @@ const features = [
     title: "Integrazione AI",
     description:
       "Soluzioni intelligenti con integrazione AI e automazione",
+    joke: "Si\u0300, parlo con i robot.",
     icon: Sparkles,
     span: "",
   },
@@ -74,6 +76,11 @@ export default function FeaturesBentoGrid() {
               <p className="text-slate-500 leading-relaxed">
                 {feature.description}
               </p>
+              {feature.joke && (
+                <p className="text-xs text-slate-400 italic mt-2">
+                  {feature.joke}
+                </p>
+              )}
             </motion.div>
           ))}
         </div>

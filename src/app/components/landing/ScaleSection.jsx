@@ -1,23 +1,6 @@
 "use client";
 import { motion } from "motion/react";
-import { Monitor, Layers, Check, Plus } from "lucide-react";
-
-const scales = [
-  {
-    title: "Landing Page & Siti Web",
-    description:
-      "Siti vetrina, landing page e presenze online per professionisti, attivita' locali e piccoli business. Veloci, responsive e pronti a convertire.",
-    icon: Monitor,
-    includes: ["Design responsive", "Form contatto", "SEO", "Hosting"],
-  },
-  {
-    title: "Web App & Piattaforme",
-    description:
-      "Applicazioni web complesse con dashboard, autenticazione, database e logica di business. Per startup e aziende che hanno bisogno di scalare.",
-    icon: Layers,
-    includes: ["Dashboard", "Auth", "Database", "API", "Automazioni"],
-  },
-];
+import { Check, Plus } from "lucide-react";
 
 const pricingPlans = [
   {
@@ -96,8 +79,8 @@ const pricingPlans = [
 
 export default function ScaleSection() {
   return (
-    <section className="py-24 px-6">
-      <div className="max-w-7xl mx-auto">
+    <section id="pricing" className="scroll-mt-20 py-24 px-6">
+      <div className="max-w-80/100 mx-auto">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -114,40 +97,6 @@ export default function ScaleSection() {
             per l&apos;azienda: ogni progetto ha la soluzione giusta.
           </p>
         </motion.div>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {scales.map((scale, index) => (
-            <motion.div
-              key={scale.title}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="bg-white border border-zinc-200 rounded-2xl p-8 hover:shadow-lg hover:border-zinc-300 transition-all duration-300 group"
-            >
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-5 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
-                <scale.icon className="w-6 h-6 text-slate-600 group-hover:text-white transition-colors duration-300" />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                {scale.title}
-              </h3>
-              <p className="text-slate-500 leading-relaxed mb-5">
-                {scale.description}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {scale.includes.map((item) => (
-                  <span
-                    key={item}
-                    className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-medium rounded-md"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
 
         {/* Pricing cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mt-16">
@@ -240,9 +189,11 @@ export default function ScaleSection() {
         >
           * I prezzi sono indicativi e possono variare in base alle specifiche
           del progetto. Ogni preventivo viene personalizzato dopo
-          un&apos;analisi delle tue esigenze. Operazione senza applicazione
-          dell&apos;IVA ai sensi dell&apos;art. 1 comma 58 L. 190/2014 (Regime
-          Forfettario). Risparmi il 22%.
+          un&apos;analisi delle tue esigenze.
+          <br />
+          <br />
+          Operazione senza applicazione dell&apos;IVA ai sensi dell&apos;art. 1
+          comma 58 L. 190/2014 (Regime Forfettario). Risparmi il 22%.
         </motion.p>
       </div>
     </section>

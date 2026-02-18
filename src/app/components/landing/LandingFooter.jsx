@@ -7,7 +7,7 @@ export default function LandingFooter() {
       <div className="border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
           <h3 className="text-xl sm:text-2xl font-semibold text-center sm:text-left">
-            Pronto a trasformare il tuo business?
+            Ok, parliamone. Il caff&egrave; lo offro io (anche virtuale).
           </h3>
           <a
             href="#contatti"
