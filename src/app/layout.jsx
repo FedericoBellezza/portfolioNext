@@ -1,10 +1,12 @@
 import "./globals.css";
-import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Portfolio",
-  description: "Portfolio Federico Bellezza",
+  title: "Federico Bellezza | Full Stack Developer & Automation",
+  description:
+    "Ecosistemi digitali automatizzati per il tuo business. Sviluppo Full Stack, automazione processi e integrazione AI.",
 };
 
 export default function RootLayout({ children }) {
@@ -13,26 +15,13 @@ export default function RootLayout({ children }) {
       <head>
         <link
           rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&display=swap"
-        />
-        <link
-          rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-          integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
         />
       </head>
       <body
-        className={`font-clash antialiased bg-black text-white overflow-x-hidden portfolio-theme`}
+        className={`${inter.className} antialiased bg-white text-slate-900 overflow-x-hidden`}
       >
-        <Navbar />
         {children}
-        <Footer />
       </body>
     </html>
   );

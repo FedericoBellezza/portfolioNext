@@ -39,10 +39,6 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.font-clash {
-  font-family: "Clash Display";
-}
-
 .font-serif {
   font-family: "Playfair Display", serif;
 }
@@ -60,48 +56,6 @@
   --dashboard-border: #E0D6CC;
   --dashboard-card-bg: #FFFFFF;
   --dashboard-card-border: #E8E0D8;
-}
-
-/* Portfolio Theme - Black & Gold (Dulcedo-Inspired) */
-.portfolio-theme {
-  --portfolio-bg: #000000;
-  --portfolio-bg-secondary: #0A0A0A;
-  --portfolio-bg-card: #121212;
-  --portfolio-accent: #B8860B;
-  --portfolio-accent-light: #D4AF37;
-  --portfolio-accent-muted: #8B7355;
-  --portfolio-accent-glow: rgba(184, 134, 11, 0.3);
-  --portfolio-text: #FFFFFF;
-  --portfolio-text-secondary: #B0B0B0;
-  --portfolio-text-muted: #6B6B6B;
-  --portfolio-border: #1A1A1A;
-  --portfolio-border-hover: #2A2A2A;
-}
-
-/* Gold utility classes */
-.text-gold {
-  color: var(--portfolio-accent);
-}
-
-.text-gold-light {
-  color: var(--portfolio-accent-light);
-}
-
-.border-gold {
-  border-color: var(--portfolio-accent);
-}
-
-.bg-gold {
-  background-color: var(--portfolio-accent);
-}
-
-/* Luxury typography */
-.tracking-luxury {
-  letter-spacing: 0.1em;
-}
-
-.tracking-luxury-wide {
-  letter-spacing: 0.2em;
 }
 
 :root {
@@ -180,21 +134,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
-.nav-label {
-  z-index: -1;
-
-  transition: transform 0.2s ease-in-out;
-}
-
-.nav-link:hover .nav-label {
-  transform: translate(0, 140%);
-}
-
-.typing-text {
-  border-right: 3px solid;
-  overflow: hidden;
-  white-space: nowrap;
-  max-width: max-content;
+/* Infinite scroll animation for logo strip */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }

@@ -8,7 +8,11 @@
       "Bash(npm install:*)",
       "Bash(npx shadcn:*)",
       "Bash(npm run lint)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "WebFetch(domain:attendflowio.lovable.app)",
+      "WebFetch(domain:lovable.dev)",
+      "Bash(npm ls:*)",
+      "Bash(npx next build:*)"
     ]
   }
 }
