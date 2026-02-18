@@ -12,7 +12,7 @@ export default function AffidiSitoSection() {
         transition={{ duration: 0.5 }}
         className="flex flex-col sm:flex-row items-center gap-6 mt-16 mb-16 justify-center"
       >
-        <div className="w-100 h-120 rounded-xl overflow-hidden shrink-0 border border-zinc-200">
+        <div className="max-w-99/100 w-100 h-120 rounded-xl overflow-hidden shrink-0 border border-zinc-200">
           <Image
             src="/foto-bambino.jpg"
             alt="Federico da bambino"
