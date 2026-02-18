@@ -4,15 +4,14 @@ import Image from "next/image";
 export default function AffidiSitoSection() {
   return (
     <section className="px-6">
-      {" "}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col sm:flex-row items-center gap-6 mt-16 mb-16 justify-center"
+        className="flex flex-col sm:flex-row items-center gap-6  mb-16 justify-center"
       >
-        <div className="max-w-99/100 w-100 h-120 rounded-xl overflow-hidden shrink-0 border border-zinc-200">
+        <div className="max-w-99/100  w-100 h-120 rounded-xl overflow-hidden shrink-0 border border-zinc-200">
           <Image
             src="/foto-bambino.jpg"
             alt="Federico da bambino"
@@ -22,10 +21,12 @@ export default function AffidiSitoSection() {
           />
         </div>
         <div className="text-center sm:text-left">
-          <p className="text-slate-900 text-4xl font-bold">
-            Occhio a chi affidi il tuo sito web.
-          </p>
-          <p className="text-lg text-slate-400 italic mt-1">
+          <span className="text-slate-900 md:text-3xl  font-bold text-balance">
+            Lui è quello a cui stai chiedendo di{" "}
+            <br className="hidden lg:block" /> realizzare il sito web per la tua
+            attività
+          </span>
+          <p className="lg:text-lg text-sm text-slate-400 italic mt-1">
             Crescendo sono rinsanito, lo giuro.
           </p>
         </div>
