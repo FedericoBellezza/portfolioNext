@@ -51,7 +51,7 @@ export async function middleware(request) {
     }
 
     // Owner-only check
-    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza2001@gmail.com'
+    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com'
     if (user.email !== OWNER_EMAIL) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
@@ -61,7 +61,7 @@ export async function middleware(request) {
 
   // Redirect authenticated owner from login to dashboard
   if (request.nextUrl.pathname === '/login' && user) {
-    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza2001@gmail.com'
+    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com'
     if (user.email === OWNER_EMAIL) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'

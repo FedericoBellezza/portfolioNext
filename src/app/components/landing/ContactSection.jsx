@@ -83,7 +83,7 @@ export default function ContactSection() {
                       Email
                     </p>
                     <p className="text-slate-900 text-sm">
-                      federico.bellezza2001@gmail.com
+                      federico.bellezza.dev@gmail.com
                     </p>
                   </div>
                 </div>
