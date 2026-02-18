@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Federico Bellezza | Full Stack Developer & Automation",
   description:
-    "Ecosistemi digitali automatizzati per il tuo business. Sviluppo Full Stack, automazione processi e integrazione AI.",
+    "Soluzioni Tech su Misura per Scalare il Tuo Business. Sviluppo Full Stack, automazione processi e integrazione AI.",
 };
 
 export default function RootLayout({ children }) {

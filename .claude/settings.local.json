@@ -14,7 +14,8 @@
       "Bash(npm ls:*)",
       "Bash(npx next build:*)",
       "Bash(git config:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(node -e:*)"
     ]
   }
 }
