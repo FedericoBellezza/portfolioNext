@@ -79,8 +79,8 @@ const pricingPlans = [
 
 export default function ScaleSection() {
   return (
-    <section id="pricing" className="scroll-mt-20 py-24 px-6">
-      <div className="max-w-80/100 mx-auto">
+    <section id="pricing" className="scroll-mt-20 py-24 px-6 bg-slate-50">
+      <div className="lg:max-w-80/100 mx-auto">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
