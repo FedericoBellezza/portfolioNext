@@ -11,14 +11,16 @@ const projects = [
     image: "/federica-autretto.com-screenshot.png",
     url: "https://federica-autretto.com/",
     tags: ["Next.js", "Tailwind", "Resend"],
+    type: "Landing Page",
   },
   {
     title: "Cantieri360",
     description:
       "Web app gestionale per l'edilizia: cantieri, squadre, ore lavorate e costi. Cloud-first e mobile-friendly.",
     image: "/Canieri360-Copertina.jpg",
-    url: "https://cantieri360.vercel.app/",
+    url: "https://cantieri360.com/",
     tags: ["Next.js", "Supabase", "Tailwind"],
+    type: "Web App",
   },
   {
     title: "Knit",
@@ -27,14 +29,16 @@ const projects = [
     image: "/knit-screenshot.jpg",
     url: "https://www.knit-networks.com/",
     tags: ["Next.js", "Tailwind", "DaisyUI"],
+    type: "Landing Page",
   },
   {
     title: "Fanfara Bersaglieri",
     description:
       "Sito web per la Fanfara di Bersaglieri di Settimo Torinese, con calendario eventi e design responsive ottimizzato.",
     image: "/FanfaraBersaglieriScreenshot.jpg",
-    url: "https://bersaglierisettimo.vercel.app/",
+    url: "https://www.fanfarasettimotorinese.com/",
     tags: ["Next.js", "React", "Tailwind"],
+    type: "Sito Corporate",
   },
   {
     title: "Let's Play",
@@ -43,13 +47,14 @@ const projects = [
     image: "/letsPlayImage.jpeg",
     url: "https://www.linkedin.com/feed/update/urn:li:activity:7318199610559066112/",
     tags: ["Spring", "React", "MySQL"],
+    type: "Web App",
   },
 ];
 
 export default function ProjectsShowcase() {
   return (
     <section id="progetti" className="scroll-mt-20 py-24 px-6 bg-slate-50">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -62,13 +67,13 @@ export default function ProjectsShowcase() {
             Progetti Selezionati
           </h2>
           <p className="text-slate-500 max-w-xl mx-auto">
-            Alcuni dei lavori che rappresentano al meglio il mio approccio
-            allo sviluppo.
+            Alcuni dei lavori che rappresentano al meglio il mio approccio allo
+            sviluppo.
           </p>
         </motion.div>
 
         {/* Projects grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {projects.map((project, index) => (
             <motion.div
               key={project.title}
@@ -106,6 +111,9 @@ export default function ProjectsShowcase() {
 
                 {/* Content */}
                 <div className="p-6">
+                  <span className="inline-block px-2.5 py-0.5 bg-slate-900 text-white text-[11px] font-semibold rounded-md uppercase tracking-wide mb-2">
+                    {project.type}
+                  </span>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2">
                     {project.title}
                   </h3>

@@ -3,6 +3,7 @@ import LandingNavbar from "./components/landing/LandingNavbar";
 import HeroSection from "./components/landing/HeroSection";
 import SocialProofStrip from "./components/landing/SocialProofStrip";
 import FeaturesBentoGrid from "./components/landing/FeaturesBentoGrid";
+import ScaleSection from "./components/landing/ScaleSection";
 import ProjectsShowcase from "./components/landing/ProjectsShowcase";
 import ContactSection from "./components/landing/ContactSection";
 import LandingFooter from "./components/landing/LandingFooter";
@@ -15,6 +16,7 @@ export default function Home() {
         <HeroSection />
         <SocialProofStrip />
         <FeaturesBentoGrid />
+        <ScaleSection />
         <ProjectsShowcase />
         <ContactSection />
       </main>

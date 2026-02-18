@@ -1,50 +1,47 @@
-Voglio fare un restyling completo del mio portfolio attuale trasformandolo in una Landing Page stile SaaS moderno (riferimento visivo: https://attendflowio.lovable.app/).
+**Design Requirements:**
 
-Agisci come un Senior Frontend Engineer & UX Designer specializzato in conversioni.
-L'obiettivo è vendere i miei servizi di sviluppo e automazione come se fossero un prodotto software premium.
+- The layout should be a 3-column grid on desktop, stacking on mobile.
+- Use `framer-motion` for subtle hover effects (if available, otherwise use CSS transitions).
+- Add a badge "Most Popular" to the middle tier.
+- Add a "FAQ" or "Notes" section at the bottom explaining that these are starting prices ("A partire da").
 
-### I Miei Contenuti Attuali (Da Rielaborare)
+**Content Requirements (Must be in Italian):**
 
-- **Ruolo:** Full Stack Web Developer & Automation Specialist.
-- **Mission:** "Non scrivo solo codice: progetto ecosistemi digitali che fanno risparmiare tempo e aumentano il valore del business."
-- **Stack Tecnologico:**
-  - Frontend: React, Next.js, Angular, Tailwind CSS, Shadcn UI, Framer Motion.
-  - Backend: Node.js, Express, Java Spring Boot.
-  - Database: MySQL, Supabase, Firebase.
-  - Automation & AI: n8n, Integrazione AI, Notion.
+Please use exactly these 3 Tiers for the cards:
 
-### Istruzioni di Design (Stile "Lovable/Attendflow")
+1. **Card 1: "Landing Page"**
+   - Price: "da € 700"
+   - Description: "Ideale per convertire visitatori in clienti o lanciare un prodotto."
+   - Features list (Checkmarks):
+     - Sviluppo in Next.js (Ultra veloce)
+     - Design Responsive & Mobile First
+     - SEO Tecnico di base
+     - Integrazione Form contatti
+     - Hosting su Vercel configurato
 
-1.  **Visual Language:**
-    - Usa **Tailwind CSS** con una palette pulita (sfondo bianco/slate-50 o dark mode profondo zinc-950).
-    - Usa **Bento Grids** (griglie asimmetriche con bordi arrotondati `rounded-2xl` e bordi sottili `border-zinc-200`) per mostrare le mie competenze come "Feature".
-    - Tipografia: Inter o Geist Sans, con titoli `tracking-tight` e font-weight `semibold` o `bold`.
-    - Micro-interazioni: Hover states eleganti, fade-in all'entrata (usa Framer Motion).
+2. **Card 2: "Sito Corporate" (Highlight as Most Popular)**
+   - Price: "da € 1.800"
+   - Description: "Sito multipagina per aziende che vogliono una presenza solida e scalabile."
+   - Features list (Checkmarks):
+     - Fino a 5-8 pagine
+     - CMS per gestione contenuti (opzionale)
+     - Ottimizzazione Performance (Core Web Vitals)
+     - Brand Identity base (Colori/Font)
+     - Google Analytics & Cookie Policy setup
 
-2.  **Struttura della Nuova Landing Page:**
-    - **Hero Section ("Above the Fold"):**
-      - **H1:** Grande e impattante. Invece di "Ciao sono Federico", usa: "Building Automated Digital Ecosystems for Modern Business."
-      - **Sub-headline:** Rielabora la mia mission attuale per renderla più punchy.
-      - **CTA:** Due bottoni. Primario: "Book a Consultation" (stile pieno). Secondario: "View Work" (stile outline/ghost).
-      - **Visual:** A destra o sotto, un mockup astratto che mostra un flusso n8n collegato a un'interfaccia React (simboleggia Full Stack + Automation).
+3. **Card 3: "Web App / MVP"**
+   - Price: "da € 4.500"
+   - Description: "Applicazioni complesse, SaaS o Gestionali su misura con logica custom."
+   - Features list (Checkmarks):
+     - Stack: Next.js + Supabase
+     - Autenticazione Utenti & Ruoli
+     - Database & Dashboard Admin
+     - Pagamenti (Stripe integration)
+     - API Development
 
-    - **Social Proof (Logos):**
-      - Striscia scorrevole con i loghi delle tecnologie che padroneggio (React, Spring, n8n, ecc.) in scala di grigi per eleganza.
+**Call to Action:**
+The button on each card should say "Richiedi Preventivo" and link to `#contact`.
 
-    - **"The Features" (Le mie Skill in Bento Grid):**
-      - Non una lista puntata. Crea una griglia dove:
-        - Un blocco grande mostra "Full Stack Development" (icona Code, desc: "Scalable web apps with Next.js & Spring").
-        - Un blocco evidenzia "Process Automation" (icona Workflow, desc: "n8n workflows that save 20+ hours/week").
-        - Un blocco per "AI Integration" (icona Sparkles).
+**Technical constraints:**
 
-    - **Projects Showcase (Come "Use Cases"):**
-      - Sezione dedicata ai progetti. Ogni progetto è una card grande con uno screenshot "tiltato" in prospettiva (stile browser window).
-      - Titolo del progetto, breve descrizione del problema risolto ("How I saved Client X 30% time"), e tag dello stack usato.
-
-    - **Footer Semplice:**
-      - Link rapidi e invito finale all'azione.
-
-### Output Richiesto
-
-Genera il codice React (Next.js App Router) usando Tailwind CSS, Lucide React per le icone e Framer Motion.
-Crea un componente `LandingPage` unico o scomposto in sezioni modulari.
+- Create a clean data array for the pricing plans so I can easily edit text later.
