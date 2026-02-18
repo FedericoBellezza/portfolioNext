@@ -90,7 +90,10 @@ export default function ScaleSection() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-            Un Progetto per Ogni Esigenza
+            Un piano per{" "}
+            <span className="bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 bg-clip-text text-transparent">
+              ogni Esigenza
+            </span>
           </h2>
           <p className="text-slate-500 max-w-xl mx-auto">
             Dalla landing page per il professionista alla piattaforma complessa
