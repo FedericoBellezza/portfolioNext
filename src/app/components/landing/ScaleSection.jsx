@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "motion/react";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, Gift } from "lucide-react";
 
 const pricingPlans = [
   {
@@ -101,8 +101,32 @@ export default function ScaleSection() {
           </p>
         </motion.div>
 
+        {/* Promo banner */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="mt-12 mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 flex items-center gap-4 sm:gap-5 shadow-sm text-balance"
+        >
+          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900 shrink-0">
+            <Gift className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-sm sm:text-base font-semibold text-slate-900">
+              Hai aperto la Partita IVA da meno di 2 mesi?
+            </p>
+            <p className="text-sm text-slate-500 mt-0.5">
+              So quanto può essere impegnativo avviare un&apos;attività, ci sono
+              passato anche io. Per questo offro uno sconto di{" "}
+              <span className="font-semibold text-slate-700">€100</span> su
+              qualsiasi piano.
+            </p>
+          </div>
+        </motion.div>
+
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mt-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mt-10">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
