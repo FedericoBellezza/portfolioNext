@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function LandingFooter() {
   return (
     <footer className="bg-slate-900 text-white">
@@ -101,11 +103,25 @@ export default function LandingFooter() {
         </div>
 
         {/* Copyright */}
-        <div className="border-t border-slate-800 mt-10 pt-6">
-          <p className="text-slate-500 text-sm text-center">
+        <div className="border-t border-slate-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-slate-500 text-sm">
             &copy; {new Date().getFullYear()} Federico Bellezza. Tutti i diritti
             riservati.
           </p>
+          <div className="flex gap-4">
+            <Link
+              href="/privacy"
+              className="text-slate-500 text-sm hover:text-white transition-colors"
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/privacy#cookie"
+              className="text-slate-500 text-sm hover:text-white transition-colors"
+            >
+              Cookie Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
