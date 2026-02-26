@@ -27,7 +27,7 @@ export default function AffidiSitoSection() {
             attività
           </span>
           <p className="lg:text-lg text-sm text-slate-400 italic mt-1">
-            Crescendo sono rinsanito, lo giuro.
+            Crescendo sono rinsavito, lo giuro.
           </p>
         </div>
       </motion.div>
