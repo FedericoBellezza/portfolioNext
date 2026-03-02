@@ -6,9 +6,25 @@ import CookieBanner from "./components/CookieBanner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Federico Bellezza | Full Stack Developer & Automation",
+  metadataBase: new URL("https://federicobellezza.dev"),
+  title: "Federico Bellezza | Siti Web Professionali e Automazioni",
   description:
-    "Soluzioni Tech su Misura per Scalare il Tuo Business. Sviluppo Full Stack, automazione processi e integrazione AI.",
+    "Realizzo siti web, e-commerce e sistemi automatizzati per far crescere il tuo business. Dal sito vetrina all'app web: prezzi chiari, risultati concreti.",
+  openGraph: {
+    title: "Federico Bellezza | Siti Web Professionali e Automazioni",
+    description:
+      "Realizzo siti web, e-commerce e sistemi automatizzati per far crescere il tuo business. Dal sito vetrina all'app web: prezzi chiari, risultati concreti.",
+    url: "https://federicobellezza.dev",
+    siteName: "Federico Bellezza",
+    locale: "it_IT",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Federico Bellezza | Siti Web Professionali e Automazioni",
+    description:
+      "Realizzo siti web, e-commerce e sistemi automatizzati per far crescere il tuo business. Dal sito vetrina all'app web: prezzi chiari, risultati concreti.",
+  },
 };
 
 export default function RootLayout({ children }) {
