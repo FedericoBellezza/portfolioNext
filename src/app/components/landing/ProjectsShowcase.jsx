@@ -5,6 +5,23 @@ import { ArrowUpRight, Github } from "lucide-react";
 
 const projects = [
   {
+    title: "AI.Bandi",
+    description:
+      "Web app che semplifica la ricerca di bandi e finanziamenti per startup, PMI e professionisti. Integrazione con OpenAI per suggerimenti personalizzati e molto altro.",
+    image: "/ai-bandi-screenshot.png",
+    url: "https://ai-bandi.com/",
+    tags: [
+      "Next.js",
+      "Tailwind",
+      "Resend",
+      "Supabase",
+      "OpenAI",
+      "Stripe",
+      "Vercel",
+    ],
+    type: "Web App",
+  },
+  {
     title: "Federica Autretto",
     description:
       "Landing page responsive per una biologa nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
@@ -13,6 +30,7 @@ const projects = [
     tags: ["Next.js", "Tailwind", "Resend"],
     type: "Landing Page",
   },
+
   {
     title: "Cantieri360",
     description:
