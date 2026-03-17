@@ -19,7 +19,7 @@ export default function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-block px-4 py-1.5 bg-slate-100 text-slate-600 text-sm font-medium rounded-full mb-8">
+            <span className="inline-block  px-4 py-1.5 bg-slate-100 text-slate-600 text-xs md:text-sm font-medium rounded-full mb-8">
               Full Stack Developer & Automation Specialist
             </span>
           </motion.div>
