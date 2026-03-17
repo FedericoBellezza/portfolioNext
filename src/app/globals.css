@@ -45,17 +45,17 @@
 
 /* Dashboard Theme - Elegant Beige/Terracotta */
 .dashboard-theme {
-  --dashboard-bg: #F5F0EB;
-  --dashboard-bg-secondary: #EDE6DF;
-  --dashboard-accent: #C4735B;
-  --dashboard-accent-hover: #B56549;
-  --dashboard-accent-light: #D4A49A;
-  --dashboard-text: #2D2D2D;
-  --dashboard-text-secondary: #6B6B6B;
-  --dashboard-text-muted: #9B9B9B;
-  --dashboard-border: #E0D6CC;
-  --dashboard-card-bg: #FFFFFF;
-  --dashboard-card-border: #E8E0D8;
+  --dashboard-bg: #f5f0eb;
+  --dashboard-bg-secondary: #ede6df;
+  --dashboard-accent: #c4735b;
+  --dashboard-accent-hover: #b56549;
+  --dashboard-accent-light: #d4a49a;
+  --dashboard-text: #2d2d2d;
+  --dashboard-text-secondary: #6b6b6b;
+  --dashboard-text-muted: #9b9b9b;
+  --dashboard-border: #e0d6cc;
+  --dashboard-card-bg: #ffffff;
+  --dashboard-card-border: #e8e0d8;
 }
 
 :root {

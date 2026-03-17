@@ -4,61 +4,20 @@ import { Check, Plus, Gift } from "lucide-react";
 
 const pricingPlans = [
   {
-    name: "Landing Page",
+    name: "Sito Web",
     price: "400",
     description:
-      "Ideale per convertire visitatori in clienti o lanciare un prodotto.",
+      "Landing page o sito corporate: dalla singola pagina ad un sito multipagina completo.",
     popular: false,
     features: [
-      "Sviluppo in Next.js (Ultra veloce)",
+      "Sviluppo in Next.js",
       "Design Responsive & Mobile First",
-      "Ottimizzazione SEO (fatti trovare su Google)",
+      "Ottimizzazione SEO",
       "Integrazione Form di contatto",
       "Hosting su Vercel configurato",
     ],
-    addOns: [
-      "Brand Identity (Logo/Colori/Font)",
-      "CMS per gestione contenuti",
-      "Analytics",
-    ],
-  },
-  {
-    name: "Sito Corporate",
-    price: "1.500",
-    description:
-      "Sito multipagina per aziende che vogliono una presenza solida e scalabile.",
-    popular: true,
-    features: [
-      "Fino a 5-8 pagine",
-      "CMS per gestione contenuti (opzionale)",
-      "Ottimizzazione Performance (Core Web Vitals)",
-      "Brand Identity (Logo/Colori/Font)",
-      "Analytics",
-    ],
-    addOns: [
-      "Autenticazione Utenti",
-      "Database & Dashboard",
-      "Pagamenti (Stripe)",
-    ],
-  },
-  {
-    name: "E-Commerce",
-    price: "2.000",
-    description:
-      "Negozio online completo, pronto a vendere con gestione prodotti e pagamenti integrati.",
-    popular: false,
-    features: [
-      "Catalogo Prodotti & Carrello",
-      "Checkout & Pagamenti (Stripe)",
-      "Gestione Ordini",
-      "Design Responsive & Mobile First",
-      "SEO & Performance ottimizzati",
-    ],
-    addOns: [
-      "Autenticazione Utenti",
-      "Dashboard Admin",
-      "Gestione Inventario avanzata",
-    ],
+    addOns: ["Brand Identity ", "CMS per gestione contenuti", "Analytics"],
+    priceNote: "400€ a pagina",
   },
   {
     name: "Web App / MVP",
@@ -74,6 +33,7 @@ const pricingPlans = [
       "API Development",
     ],
     addOns: [],
+    priceNote: null,
   },
 ];
 
@@ -90,10 +50,7 @@ export default function ScaleSection() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-            Un piano per{" "}
-            <span className="bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 bg-clip-text text-transparent">
-              ogni Esigenza
-            </span>
+            Un piano per ogni Esigenza
           </h2>
           <p className="text-slate-500 max-w-xl mx-auto">
             Dalla landing page per il professionista alla piattaforma complessa
@@ -102,7 +59,7 @@ export default function ScaleSection() {
         </motion.div>
 
         {/* Promo banner */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -123,10 +80,10 @@ export default function ScaleSection() {
               qualsiasi piano.
             </p>
           </div>
-        </motion.div>
+        </motion.div> */}
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10 max-w-4xl mx-auto">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -159,6 +116,11 @@ export default function ScaleSection() {
                 <span className="text-xs text-slate-400 ml-1">
                   (Esente IVA)
                 </span>
+                {plan.priceNote && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {plan.priceNote}
+                  </p>
+                )}
               </div>
 
               <ul className="space-y-3 mb-6">

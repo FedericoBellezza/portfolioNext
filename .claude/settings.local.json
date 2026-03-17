@@ -15,7 +15,9 @@
       "Bash(npx next build:*)",
       "Bash(git config:*)",
       "Bash(npm run build:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(curl -s \"https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/supabase.svg\" -o \"c:/Users/Fede/Desktop/Generale/dev/progetti/portfolioNext-1/public/supabase.svg\")",
+      "Bash(ls c:/Users/Fede/Desktop/Generale/dev/progetti/portfolioNext-1/public/*.svg c:/Users/Fede/Desktop/Generale/dev/progetti/portfolioNext-1/public/*.png)"
     ]
   }
 }

@@ -17,7 +17,7 @@ export default function Home() {
         <HeroSection />
         <SocialProofStrip />
         <FeaturesBentoGrid />
-        <AffidiSitoSection />
+        {/* <AffidiSitoSection /> */}
         <ScaleSection />
         <ProjectsShowcase />
         <ContactSection />

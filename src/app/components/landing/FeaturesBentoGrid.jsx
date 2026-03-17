@@ -64,10 +64,9 @@ const aiFeature = {
   ],
 };
 
-
 export default function FeaturesBentoGrid() {
   return (
-    <section id="servizi" className="scroll-mt-20 py-24 px-6">
+    <section id="servizi" className="scroll-mt-20 pt-24 pb-15 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <motion.div
@@ -154,7 +153,6 @@ export default function FeaturesBentoGrid() {
               ))}
             </div>
           </motion.div>
-
         </div>
       </div>
     </section>

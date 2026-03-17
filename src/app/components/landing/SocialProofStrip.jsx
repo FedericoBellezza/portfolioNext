@@ -7,10 +7,12 @@ const techs = [
   { name: "Node.js", src: "/node-js.svg" },
   { name: "Tailwind", src: "/tailwind-css.svg" },
   { name: "n8n", src: "/n8n-logo.png" },
+  { name: "Supabase", src: "/supabase.svg" },
   { name: "MySQL", src: "/mysql.svg" },
   { name: "JavaScript", src: "/javascript.svg" },
   { name: "Java", src: "/java.svg" },
   { name: "Motion", src: "/motion.svg" },
+  { name: "AI", src: "/ai-logo.svg" },
 ];
 
 function TechSet() {
@@ -39,7 +41,7 @@ function TechSet() {
 
 export default function SocialProofStrip() {
   return (
-    <section className="py-16 border-y border-zinc-100">
+    <section className="py-16">
       <p className="text-center text-sm font-medium text-slate-400 uppercase tracking-wider mb-10">
         Le tecnologie che utilizzo
       </p>

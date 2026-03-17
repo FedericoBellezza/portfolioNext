@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function LandingFooter() {
   return (
-    <footer className="bg-slate-900 text-white">
+    <footer className="bg-blue-950 text-white">
       {/* CTA Band */}
       <div className="border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -70,7 +70,7 @@ export default function LandingFooter() {
                 href="https://www.linkedin.com/in/federicobellezzadev/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-900 transition-colors duration-200"
+                className="w-9 h-9 bg-blue-800 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-900 transition-colors duration-200"
               >
                 <svg
                   className="w-4 h-4"
@@ -84,7 +84,7 @@ export default function LandingFooter() {
                 href="https://github.com/FedericoBellezza"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-9 h-9 bg-slate-800 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-900 transition-colors duration-200"
+                className="w-9 h-9 bg-blue-800 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white hover:text-slate-900 transition-colors duration-200"
               >
                 <svg
                   className="w-4 h-4"

@@ -24,7 +24,7 @@ const projects = [
   {
     title: "Federica Autretto",
     description:
-      "Landing page responsive per una biologa nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
+      "Landing page responsive per Federica Autretto, Biologa Nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
     image: "/federica-autretto.com-screenshot.png",
     url: "https://federica-autretto.com/",
     tags: ["Next.js", "Tailwind", "Resend"],
@@ -40,33 +40,33 @@ const projects = [
     tags: ["Next.js", "Supabase", "Tailwind"],
     type: "Web App",
   },
-  {
-    title: "Knit",
-    description:
-      "Piattaforma per una start-up dedicata agli atleti professionisti: networking strategico, crescita e opportunità.",
-    image: "/knit-screenshot.jpg",
-    url: "https://www.knit-networks.com/",
-    tags: ["Next.js", "Tailwind", "DaisyUI"],
-    type: "Landing Page",
-  },
-  {
-    title: "Fanfara Bersaglieri",
-    description:
-      "Sito web per la Fanfara di Bersaglieri di Settimo Torinese, con calendario eventi e design responsive ottimizzato.",
-    image: "/FanfaraBersaglieriScreenshot.jpg",
-    url: "https://www.fanfarasettimotorinese.com/",
-    tags: ["Next.js", "React", "Tailwind"],
-    type: "Sito Corporate",
-  },
-  {
-    title: "Let's Play",
-    description:
-      "Piattaforma eventi con ricerca/filtro per categoria, prezzo e ubicazione. Backoffice con autenticazione e CRUD completo.",
-    image: "/letsPlayImage.jpeg",
-    url: "https://www.linkedin.com/feed/update/urn:li:activity:7318199610559066112/",
-    tags: ["Spring", "React", "MySQL"],
-    type: "Web App",
-  },
+  // {
+  //   title: "Knit",
+  //   description:
+  //     "Piattaforma per una start-up dedicata agli atleti professionisti: networking strategico, crescita e opportunità.",
+  //   image: "/knit-screenshot.jpg",
+  //   url: "https://www.knit-networks.com/",
+  //   tags: ["Next.js", "Tailwind", "DaisyUI"],
+  //   type: "Landing Page",
+  // },
+  // {
+  //   title: "Fanfara Bersaglieri",
+  //   description:
+  //     "Sito web per la Fanfara di Bersaglieri di Settimo Torinese, con calendario eventi e design responsive ottimizzato.",
+  //   image: "/FanfaraBersaglieriScreenshot.jpg",
+  //   url: "https://www.fanfarasettimotorinese.com/",
+  //   tags: ["Next.js", "React", "Tailwind"],
+  //   type: "Sito Corporate",
+  // },
+  // {
+  //   title: "Let's Play",
+  //   description:
+  //     "Piattaforma eventi con ricerca/filtro per categoria, prezzo e ubicazione. Backoffice con autenticazione e CRUD completo.",
+  //   image: "/letsPlayImage.jpeg",
+  //   url: "https://www.linkedin.com/feed/update/urn:li:activity:7318199610559066112/",
+  //   tags: ["Spring", "React", "MySQL"],
+  //   type: "Web App",
+  // },
 ];
 
 export default function ProjectsShowcase() {
@@ -84,7 +84,7 @@ export default function ProjectsShowcase() {
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
             Progetti Selezionati
           </h2>
-          <p className="text-slate-500 max-w-xl mx-auto">
+          <p className="text-slate-500 max-w-xl mx-auto text-balance">
             Alcuni dei lavori che rappresentano al meglio il mio approccio allo
             sviluppo.
           </p>
@@ -99,7 +99,7 @@ export default function ProjectsShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="group"
+              className="group relative"
             >
               <div className="h-full flex flex-col bg-white border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-zinc-300 transition-all duration-300">
                 {/* Browser mockup */}
@@ -140,7 +140,7 @@ export default function ProjectsShowcase() {
                   </p>
 
                   {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-10">
                     {project.tags.map((tag) => (
                       <span
                         key={tag}
@@ -156,9 +156,9 @@ export default function ProjectsShowcase() {
                     href={project.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-900 hover:text-slate-600 transition-colors"
+                    className="absolute flex right-5 bottom-5 items-center gap-1.5 text-sm font-medium text-slate-900 hover:text-slate-600 transition-colors"
                   >
-                    Vedi Progetto
+                    vai al sito
                     <ArrowUpRight className="w-4 h-4" />
                   </a>
                 </div>
@@ -182,7 +182,7 @@ export default function ProjectsShowcase() {
             className="inline-flex items-center gap-2 px-6 py-3 border border-zinc-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 hover:border-zinc-400 transition-all duration-200 text-sm"
           >
             <Github className="w-4 h-4" />
-            Vedi tutti su GitHub
+            Vedi GitHub
           </a>
         </motion.div>
       </div>
