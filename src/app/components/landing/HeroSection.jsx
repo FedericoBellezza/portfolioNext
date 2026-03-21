@@ -4,7 +4,10 @@ import Image from "next/image";
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center md:pt-16 pt-25 px-6 overflow-hidden bg-[#65AFFF]">
+    <section
+      id="hero"
+      className="relative min-h-screen flex items-center justify-center pt-30 lg:pt-25 px-6 overflow-hidden bg-[#65AFFF]"
+    >
       {/* Decorative blobs */}
       <div className="absolute top-20 -left-32 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
       <div className="absolute bottom-20 -right-32 w-96 h-96 bg-violet-100 rounded-full blur-3xl opacity-40 pointer-events-none" />
@@ -100,7 +103,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          className="flex justify-center lg:justify-end"
+          className="flex justify-center lg:justify-end md:hidden lg:flex"
         >
           <div>
             {/* <span className="text-sm text-slate-500 italic mb-4 block ">

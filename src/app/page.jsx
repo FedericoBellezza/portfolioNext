@@ -8,8 +8,12 @@ import ProjectsShowcase from "./components/landing/ProjectsShowcase";
 import ContactSection from "./components/landing/ContactSection";
 import LandingFooter from "./components/landing/LandingFooter";
 import AffidiSitoSection from "./components/landing/AffidiSitoSection";
+import { useEffect } from "react";
 
 export default function Home() {
+  useEffect(() => {
+    window.scroll(0);
+  });
   return (
     <>
       <LandingNavbar />
