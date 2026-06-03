@@ -30,6 +30,10 @@ export const metadata = {
   category: "technology",
   alternates: {
     canonical: BASE_URL,
+    languages: {
+      it: BASE_URL,
+      "x-default": BASE_URL,
+    },
   },
   openGraph: {
     title: "Federico Bellezza | Sviluppatore Web & Automazioni",
@@ -122,6 +126,37 @@ const jsonLd = {
         "Web Application Development",
       ],
       priceRange: "€€",
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Servizi di Sviluppo Web",
+        itemListElement: [
+          {
+            "@type": "Offer",
+            name: "Sito Web",
+            description:
+              "Landing page o sito corporate responsive con Next.js, ottimizzazione SEO e form di contatto.",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: "400",
+              priceCurrency: "EUR",
+              minPrice: "400",
+              unitText: "pagina",
+            },
+          },
+          {
+            "@type": "Offer",
+            name: "Web App / MVP",
+            description:
+              "Applicazione web completa con autenticazione, database, dashboard e pagamenti Stripe.",
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: "3500",
+              priceCurrency: "EUR",
+              minPrice: "3500",
+            },
+          },
+        ],
+      },
     },
   ],
 };
@@ -130,6 +165,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="it">
       <head>
+        <link rel="preconnect" href="https://api.emailjs.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
