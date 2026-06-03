@@ -1,9 +1,16 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Privacy Policy & Cookie Policy | Federico Bellezza",
+  title: "Privacy Policy & Cookie Policy",
   description:
     "Informativa sulla privacy e sull'utilizzo dei cookie del sito federicobellezza.dev",
+  alternates: {
+    canonical: "https://federicobellezza.dev/privacy",
+  },
+  robots: {
+    index: true,
+    follow: false,
+  },
 };
 
 export default function PrivacyPage() {

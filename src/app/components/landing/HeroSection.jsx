@@ -111,7 +111,7 @@ export default function HeroSection() {
             </span> */}
             <Image
               src="/foto-profilo.jpg"
-              alt="Federico Bellezza"
+              alt="Federico Bellezza — sviluppatore web freelance"
               width={480}
               height={480}
               priority

@@ -9,6 +9,7 @@ const projects = [
     description:
       "Web app che semplifica la ricerca di bandi e finanziamenti per startup, PMI e professionisti. Integrazione con OpenAI per suggerimenti personalizzati e molto altro.",
     image: "/ai-bandi-screenshot.png",
+    alt: "Screenshot di AI.Bandi — web app per la ricerca di bandi e finanziamenti con AI",
     url: "https://ai-bandi.com/",
     tags: [
       "Next.js",
@@ -26,16 +27,17 @@ const projects = [
     description:
       "Landing page responsive per Federica Autretto, Biologa Nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
     image: "/federica-autretto.com-screenshot.png",
+    alt: "Screenshot del sito di Federica Autretto, Biologa Nutrizionista — landing page professionale",
     url: "https://federica-autretto.com/",
     tags: ["Next.js", "Tailwind", "Resend"],
     type: "Landing Page",
   },
-
   {
     title: "Cantieri360",
     description:
       "Web app gestionale per l'edilizia: cantieri, squadre, ore lavorate e costi. Cloud-first e mobile-friendly.",
     image: "/Canieri360-Copertina.jpg",
+    alt: "Screenshot di Cantieri360 — gestionale web per l'edilizia con dashboard cantieri e squadre",
     url: "https://cantieri360.com/",
     tags: ["Next.js", "Supabase", "Tailwind"],
     type: "Web App",
@@ -120,7 +122,7 @@ export default function ProjectsShowcase() {
                 <div className="relative overflow-hidden">
                   <Image
                     src={project.image}
-                    alt={project.title}
+                    alt={project.alt || project.title}
                     width={800}
                     height={450}
                     className="w-full h-56 object-cover object-top group-hover:scale-105 transition-transform duration-500"
