@@ -5,6 +5,16 @@ import { ArrowUpRight, Github } from "lucide-react";
 
 const projects = [
   {
+    title: "Alma",
+    description:
+      "Assistente nutrizionale privato e collaboratore del professionista.",
+    image: "/alma-screenshot.png",
+    alt: "Screenshot di Alma — assistente nutrizionale privato e collaboratore del professionista",
+    url: "https://alma-sandy.vercel.app/",
+    tags: ["Next.js", "Supabase", "OpenAI", "Tailwind", "Vercel", "Stripe"],
+    type: "Web App",
+  },
+  {
     title: "AI.Bandi",
     description:
       "Web app che semplifica la ricerca di bandi e finanziamenti per startup, PMI e professionisti. Integrazione con OpenAI per suggerimenti personalizzati e molto altro.",
@@ -31,16 +41,6 @@ const projects = [
     url: "https://federica-autretto.com/",
     tags: ["Next.js", "Tailwind", "Resend"],
     type: "Landing Page",
-  },
-  {
-    title: "Cantieri360",
-    description:
-      "Web app gestionale per l'edilizia: cantieri, squadre, ore lavorate e costi. Cloud-first e mobile-friendly.",
-    image: "/Canieri360-Copertina.jpg",
-    alt: "Screenshot di Cantieri360 — gestionale web per l'edilizia con dashboard cantieri e squadre",
-    url: "https://cantieri360.com/",
-    tags: ["Next.js", "Supabase", "Tailwind"],
-    type: "Web App",
   },
   // {
   //   title: "Knit",
