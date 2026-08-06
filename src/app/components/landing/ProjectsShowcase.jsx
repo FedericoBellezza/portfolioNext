@@ -15,6 +15,35 @@ const projects = [
     type: "Web App",
   },
   {
+    title: "Anduma",
+    description: "Trasforma i ricordi di un viaggio in un sito da condividere.",
+    image: "/anduma-screenshot.jpg",
+    alt: "Screenshot di Anduma — trasforma i ricordi di un viaggio in un sito da condividere",
+    url: "https://anduma-cyan.vercel.app/",
+    tags: ["Next.js", "Supabase", "OpenAI", "Stripe", "Leaflet", "Tailwind"],
+    type: "Web App",
+  },
+  {
+    title: "Federica Autretto",
+    description:
+      "Landing page responsive per Federica Autretto, Biologa Nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
+    image: "/federica-autretto.com-screenshot.png",
+    alt: "Screenshot del sito di Federica Autretto, Biologa Nutrizionista — landing page professionale",
+    url: "https://federica-autretto.com/",
+    tags: ["Next.js", "Tailwind", "Resend"],
+    type: "Landing Page",
+  },
+  {
+    title: "Knit",
+    description:
+      "Piattaforma per una start-up dedicata al mondo dello sport: consulenza strategica, formazione e networking per atleti e organizzazioni sportive.",
+    image: "/knit2-screenshot.png",
+    alt: "Screenshot di Knit — piattaforma di consulenza e formazione per atleti e organizzazioni sportive",
+    url: "https://www.knit-networks.com/",
+    tags: ["Next.js", "Tailwind", "GSAP", "Motion"],
+    type: "Landing Page",
+  },
+  {
     title: "AI.Bandi",
     description:
       "Web app che semplifica la ricerca di bandi e finanziamenti per startup, PMI e professionisti. Integrazione con OpenAI per suggerimenti personalizzati e molto altro.",
@@ -33,24 +62,15 @@ const projects = [
     type: "Web App",
   },
   {
-    title: "Federica Autretto",
+    title: "Weather App",
     description:
-      "Landing page responsive per Federica Autretto, Biologa Nutrizionista, con form contatto Resend, redirect WhatsApp e Google Maps integrati.",
-    image: "/federica-autretto.com-screenshot.png",
-    alt: "Screenshot del sito di Federica Autretto, Biologa Nutrizionista — landing page professionale",
-    url: "https://federica-autretto.com/",
-    tags: ["Next.js", "Tailwind", "Resend"],
-    type: "Landing Page",
+      "App meteo che converte un indirizzo in coordinate geografiche e mostra le previsioni in tempo reale con un'interfaccia moderna e responsive.",
+    image: "/weatherApp.jpg",
+    alt: "Screenshot di Weather App — previsioni meteo in tempo reale a partire da un indirizzo",
+    url: "https://weatherapp-federicobellezza.web.app/",
+    tags: ["React", "Vite", "Tailwind", "Firebase"],
+    type: "Web App",
   },
-  // {
-  //   title: "Knit",
-  //   description:
-  //     "Piattaforma per una start-up dedicata agli atleti professionisti: networking strategico, crescita e opportunità.",
-  //   image: "/knit-screenshot.jpg",
-  //   url: "https://www.knit-networks.com/",
-  //   tags: ["Next.js", "Tailwind", "DaisyUI"],
-  //   type: "Landing Page",
-  // },
   // {
   //   title: "Fanfara Bersaglieri",
   //   description:
