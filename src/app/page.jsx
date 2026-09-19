@@ -1,25 +1,30 @@
-import LandingNavbar from "./components/landing/LandingNavbar";
-import HeroSection from "./components/landing/HeroSection";
-import SocialProofStrip from "./components/landing/SocialProofStrip";
-import FeaturesBentoGrid from "./components/landing/FeaturesBentoGrid";
-import ScaleSection from "./components/landing/ScaleSection";
-import ProjectsShowcase from "./components/landing/ProjectsShowcase";
-import ContactSection from "./components/landing/ContactSection";
-import LandingFooter from "./components/landing/LandingFooter";
+import SiteNav from "./components/landing/SiteNav";
+import Hero from "./components/landing/Hero";
+import StackMarquee from "./components/landing/StackMarquee";
+import Services from "./components/landing/Services";
+import Process from "./components/landing/Process";
+import Work from "./components/landing/Work";
+import Pricing from "./components/landing/Pricing";
+import Contact from "./components/landing/Contact";
+import SiteFooter from "./components/landing/SiteFooter";
 
 export default function Home() {
   return (
     <>
-      <LandingNavbar />
-      <main>
-        <HeroSection />
-        <SocialProofStrip />
-        <FeaturesBentoGrid />
-        <ScaleSection />
-        <ProjectsShowcase />
-        <ContactSection />
+      {/* <a href="#contenuto" className="fb-skip">
+        Vai al contenuto
+      </a> */}
+      <SiteNav />
+      <main id="contenuto">
+        <Hero />
+        <StackMarquee />
+        <Services />
+        <Process />
+        <Work />
+        <Pricing />
+        <Contact />
       </main>
-      <LandingFooter />
+      <SiteFooter />
     </>
   );
 }

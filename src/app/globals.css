@@ -1,7 +1,110 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* ============================================================
+   FB DESIGN SYSTEM
+   Monochrome ink + one saturated accent (electric blue).
+   Consumed only by the landing page. Dashboard, login and privacy
+   keep their own palettes and are untouched by these tokens.
+   ============================================================ */
+
+:root {
+  /* surfaces and ink (light) */
+  --fb-bg: #fbfbfc;
+  --fb-surface: #ffffff;
+  --fb-surface-2: #f3f4f6;
+  --fb-ink: #0b0c0e;
+  --fb-ink-2: #55595f;
+  --fb-ink-3: #666d79;
+  --fb-line: #e3e4e8;
+  --fb-line-strong: #cdcfd5;
+
+  /* the one accent */
+  --fb-accent: #1f5eff;
+  --fb-accent-hover: #1a4fdb;
+  --fb-accent-ink: #ffffff;
+  --fb-accent-soft: #eef2ff;
+
+  /* form errors, the only other hue on the page */
+  --fb-danger: #d92d20;
+  --fb-danger-soft: #fef3f2;
+  --fb-danger-ink: #b42318;
+
+  /* shape: one radius scale, soft */
+  --fb-r-sm: 8px;
+  --fb-r: 14px;
+  --fb-r-lg: 20px;
+
+  /* tinted elevation, never pure black */
+  --fb-shadow: 0 1px 2px rgba(11, 12, 14, 0.04),
+    0 8px 24px -12px rgba(11, 12, 14, 0.14);
+  --fb-shadow-lg: 0 2px 4px rgba(11, 12, 14, 0.05),
+    0 24px 48px -20px rgba(11, 12, 14, 0.22);
+
+  /* z-index scale, no arbitrary values elsewhere */
+  --fb-z-sticky: 20;
+  --fb-z-nav: 50;
+  --fb-z-overlay: 60;
+  --fb-z-toast: 70;
+}
+
+/* Dark follows the system unless the visitor explicitly picked light. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fb-bg: #08090b;
+    --fb-surface: #101115;
+    --fb-surface-2: #171920;
+    --fb-ink: #f4f5f7;
+    --fb-ink-2: #a2a7b0;
+    --fb-ink-3: #7f858f;
+    --fb-line: #212329;
+    --fb-line-strong: #32353e;
+
+    --fb-accent: #4b7dff;
+    --fb-accent-hover: #6b93ff;
+    --fb-accent-ink: #06070a;
+    --fb-accent-soft: #111a33;
+
+    --fb-danger: #ff8078;
+    --fb-danger-soft: #2a1210;
+    --fb-danger-ink: #ffb4ae;
+
+    --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5),
+      0 8px 24px -12px rgba(0, 0, 0, 0.7);
+    --fb-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.55),
+      0 24px 48px -20px rgba(0, 0, 0, 0.8);
+  }
+}
+
+:root[data-theme="dark"] {
+  --fb-bg: #08090b;
+  --fb-surface: #101115;
+  --fb-surface-2: #171920;
+  --fb-ink: #f4f5f7;
+  --fb-ink-2: #a2a7b0;
+  --fb-ink-3: #7f858f;
+  --fb-line: #212329;
+  --fb-line-strong: #32353e;
+
+  --fb-accent: #4b7dff;
+  --fb-accent-hover: #6b93ff;
+  --fb-accent-ink: #06070a;
+  --fb-accent-soft: #111a33;
+
+  --fb-danger: #ff8078;
+  --fb-danger-soft: #2a1210;
+  --fb-danger-ink: #ffb4ae;
+
+  --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  --fb-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.55),
+    0 24px 48px -20px rgba(0, 0, 0, 0.8);
+}
+
 @theme inline {
+  /* Geist + Geist Mono, loaded through next/font in layout.jsx */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -39,11 +142,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-.font-serif {
-  font-family: "Playfair Display", serif;
-}
-
-/* Dashboard Theme - Elegant Beige/Terracotta */
+/* Dashboard theme, unchanged, pinned to its own light palette so the
+   landing dark mode can never leak into it. */
 .dashboard-theme {
   --dashboard-bg: #f5f0eb;
   --dashboard-bg-secondary: #ede6df;
@@ -56,6 +156,8 @@
   --dashboard-border: #e0d6cc;
   --dashboard-card-bg: #ffffff;
   --dashboard-card-border: #e8e0d8;
+  color: var(--dashboard-text);
+  color-scheme: light;
 }
 
 :root {
@@ -93,58 +195,169 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     scroll-behavior: smooth;
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--fb-bg);
+    color: var(--fb-ink);
+  }
+  /* One focus treatment for the whole site, accent coloured. */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--fb-accent);
+    outline-offset: 2px;
+    border-radius: var(--fb-r-sm);
+  }
+  ::selection {
+    background: var(--fb-accent);
+    color: var(--fb-accent-ink);
   }
 }
 
-/* Infinite scroll animation for logo strip */
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
+/* ============================================================
+   Utilities
+   ============================================================ */
+
+/* Skip link for keyboard users */
+.fb-skip {
+  position: absolute;
+  left: 1rem;
+  top: -100%;
+  z-index: var(--fb-z-toast);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--fb-r-sm);
+  background: var(--fb-accent);
+  color: var(--fb-accent-ink);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: top 0.2s ease;
+}
+.fb-skip:focus {
+  top: 1rem;
+}
+
+/* Tabular figures for prices and metrics */
+.fb-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Dot field used to give one bento cell real surface variation */
+.fb-dots {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    var(--fb-line-strong) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+/* Logos are knocked down to a single ink tone so a strip of mixed-colour
+   brand assets reads as one row. Colour comes back on hover. */
+.fb-logo {
+  filter: grayscale(1) brightness(0);
+  opacity: 0.55;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+.fb-logo:hover {
+  filter: none;
+  opacity: 1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .fb-logo {
+    filter: grayscale(1) brightness(0) invert(1);
   }
-  100% {
-    transform: translateX(-50%);
+}
+:root[data-theme="dark"] .fb-logo {
+  filter: grayscale(1) brightness(0) invert(1);
+}
+:root[data-theme="dark"] .fb-logo:hover,
+:root:not([data-theme="light"]) .fb-logo:hover {
+  filter: none;
+}
+
+/* Infinite marquee for the stack strip */
+@keyframes fb-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.fb-marquee-track {
+  animation: fb-marquee 46s linear infinite;
+  will-change: transform;
+}
+.fb-marquee:hover .fb-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Hero intro start state.
+   This ships inside the server-rendered HTML, so the first paint already has
+   the copy hidden. Without it GSAP would reset the elements on hydration and
+   the headline would flash in, out, then animate. The attribute is cleared in
+   the same frame GSAP takes over, and reduced motion clears it immediately. */
+[data-hero="pending"] .hero-eyebrow,
+[data-hero="pending"] .hero-sub,
+[data-hero="pending"] .hero-cta {
+  opacity: 0;
+}
+[data-hero="pending"] .hero-word {
+  opacity: 0;
+  transform: translateY(110%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-hero] .hero-eyebrow,
+  [data-hero] .hero-sub,
+  [data-hero] .hero-cta,
+  [data-hero] .hero-word {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Clip reveal used by the hero portrait */
+@keyframes fb-clip-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: scale(1.06);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: scale(1);
+  }
+}
+.fb-clip-up {
+  animation: fb-clip-up 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .fb-marquee-track,
+  .fb-clip-up {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

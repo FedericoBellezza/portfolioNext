@@ -265,7 +265,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="list-disc list-inside space-y-2 ml-2">
               <li>
-                <strong>Vercel</strong> (hosting & analytics) —{" "}
+                <strong>Vercel</strong> (hosting & analytics) -{" "}
                 <a
                   href="https://vercel.com/legal/privacy-policy"
                   target="_blank"
@@ -276,7 +276,7 @@ export default function PrivacyPage() {
                 </a>
               </li>
               <li>
-                <strong>Supabase</strong> (database & autenticazione) —{" "}
+                <strong>Supabase</strong> (database & autenticazione) -{" "}
                 <a
                   href="https://supabase.com/privacy"
                   target="_blank"
@@ -287,7 +287,7 @@ export default function PrivacyPage() {
                 </a>
               </li>
               <li>
-                <strong>EmailJS</strong> (invio email) —{" "}
+                <strong>EmailJS</strong> (invio email) -{" "}
                 <a
                   href="https://www.emailjs.com/legal/privacy-policy/"
                   target="_blank"

@@ -26,31 +26,53 @@ export default function CookieBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6 z-10000">
-      <div className="max-w-4xl mx-auto bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="flex-1 text-sm text-slate-300 leading-relaxed">
-          <span className="font-semibold text-white">
+    <div
+      className="fixed inset-x-0 bottom-0 p-4 sm:p-6"
+      style={{ zIndex: "var(--fb-z-toast)" }}
+    >
+      <div
+        className="mx-auto flex max-w-4xl flex-col items-start gap-4 rounded-[var(--fb-r-lg)] border p-5 sm:flex-row sm:items-center sm:p-6"
+        style={{
+          background: "var(--fb-surface)",
+          borderColor: "var(--fb-line-strong)",
+          boxShadow: "var(--fb-shadow-lg)",
+        }}
+      >
+        <div
+          className="flex-1 text-sm leading-relaxed"
+          style={{ color: "var(--fb-ink-2)" }}
+        >
+          <span className="font-semibold" style={{ color: "var(--fb-ink)" }}>
             Questo sito utilizza i cookie.
           </span>{" "}
           Usiamo cookie tecnici e di analytics (Vercel Analytics) per migliorare
           la tua esperienza. Puoi accettare o rifiutare i cookie non essenziali.{" "}
           <Link
             href="/privacy"
-            className="text-white underline underline-offset-2 hover:text-slate-300 transition-colors"
+            className="underline underline-offset-2 transition-colors"
+            style={{ color: "var(--fb-ink)" }}
           >
             Privacy Policy
           </Link>
         </div>
-        <div className="flex gap-3 shrink-0">
+        <div className="flex shrink-0 gap-3">
           <button
             onClick={handleDecline}
-            className="cursor-pointer px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded-lg transition-colors duration-200"
+            className="cursor-pointer rounded-[var(--fb-r-sm)] border px-4 py-2 text-sm font-medium transition-colors duration-200"
+            style={{
+              borderColor: "var(--fb-line-strong)",
+              color: "var(--fb-ink-2)",
+            }}
           >
             Rifiuta
           </button>
           <button
             onClick={handleAccept}
-            className="cursor-pointer px-4 py-2 text-sm font-medium bg-white text-slate-900 rounded-lg hover:bg-slate-100 transition-colors duration-200"
+            className="cursor-pointer rounded-[var(--fb-r-sm)] px-4 py-2 text-sm font-medium transition-colors duration-200"
+            style={{
+              background: "var(--fb-accent)",
+              color: "var(--fb-accent-ink)",
+            }}
           >
             Accetta
           </button>

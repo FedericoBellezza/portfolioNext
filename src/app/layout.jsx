@@ -1,9 +1,19 @@
 import "./globals.css";
-import { Sora } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import CookieBanner from "./components/CookieBanner";
 
-const sora = Sora({ subsets: ["latin"] });
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 const BASE_URL = "https://federicobellezza.dev";
 
@@ -48,7 +58,7 @@ export const metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Federico Bellezza — Sviluppatore Web & Automazioni",
+        alt: "Federico Bellezza, sviluppatore web e automazioni",
       },
     ],
   },
@@ -112,7 +122,7 @@ const jsonLd = {
     {
       "@type": "ProfessionalService",
       "@id": `${BASE_URL}/#service`,
-      name: "Federico Bellezza — Sviluppo Web & Automazioni",
+      name: "Federico Bellezza, sviluppo web e automazioni",
       url: BASE_URL,
       description:
         "Realizzo siti web, e-commerce, web app e automazioni su misura per aziende e professionisti italiani.",
@@ -161,19 +171,21 @@ const jsonLd = {
   ],
 };
 
+// Applies the stored theme before paint so the page never flashes the wrong mode.
+const themeInit = `(function(){try{var t=localStorage.getItem("fb-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})();`;
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="it">
+    <html lang="it" className={`${geist.variable} ${geistMono.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.emailjs.com" />
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body
-        className={`${sora.className} antialiased bg-white text-blue-900 overflow-x-hidden`}
-      >
+      <body className="font-sans antialiased overflow-x-hidden">
         {children}
         <Analytics />
         <CookieBanner />
