@@ -37,7 +37,7 @@ export default function StackMarquee() {
         className="mb-8 px-5 text-center text-sm sm:px-8"
         style={{ color: "var(--fb-ink-3)" }}
       >
-        Lo stack con cui lavoro tutti i giorni
+        Lo stack con cui lavoro
       </p>
 
       <div className="fb-marquee relative overflow-hidden">

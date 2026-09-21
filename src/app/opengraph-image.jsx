@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
+// No edge runtime: on edge this image is rendered per request, which is a
+// cold start in front of every scraper that fetches it. On the default
+// runtime Next bakes it into a static PNG at build time.
 export const alt = "Federico Bellezza - Siti web e automazioni professionali";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -22,30 +24,29 @@ export default async function Image() {
           overflow: "hidden",
         }}
       >
-        {/* Blob decorativo in alto a destra */}
+        {/* Blob decorativi. Satori non implementa filter: blur, quindi la
+            sfumatura sta nel gradiente: con il blur ignorato questi due
+            restavano rettangoli a bordo netto sopra lo sfondo. */}
         <div
           style={{
             position: "absolute",
-            top: -80,
-            right: -80,
-            width: 420,
-            height: 420,
-            borderRadius: "50%",
-            background: "rgba(99, 102, 241, 0.2)",
-            filter: "blur(80px)",
+            top: -140,
+            right: -140,
+            width: 620,
+            height: 620,
+            background:
+              "radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(99, 102, 241, 0) 65%)",
           }}
         />
-        {/* Blob decorativo in basso a sinistra */}
         <div
           style={{
             position: "absolute",
-            bottom: -60,
-            left: 200,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background: "rgba(59, 130, 246, 0.15)",
-            filter: "blur(60px)",
+            bottom: -180,
+            left: 120,
+            width: 520,
+            height: 520,
+            background:
+              "radial-gradient(circle, rgba(59, 130, 246, 0.32) 0%, rgba(59, 130, 246, 0) 65%)",
           }}
         />
 
@@ -80,9 +81,13 @@ export default async function Image() {
           Federico Bellezza
         </div>
 
-        {/* Tagline */}
+        {/* Tagline. Satori refuses a div with more than one child unless the
+            display is spelled out, and this one holds text plus a span. */}
         <div
           style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0 10px",
             fontSize: 30,
             color: "#94a3b8",
             maxWidth: 720,

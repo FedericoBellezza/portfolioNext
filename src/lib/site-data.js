@@ -3,8 +3,26 @@
  * Edit text here, never inside the section components.
  */
 
+/**
+ * Identity of the site itself. Metadata, sitemap, robots, llms.txt and the
+ * JSON-LD graph all read from here, so the canonical host is written once.
+ */
+export const SITE = {
+  url: "https://federicobellezza.dev",
+  name: "Federico Bellezza",
+  role: "Sviluppatore web freelance e specialista di automazioni",
+  locale: "it_IT",
+  lang: "it-IT",
+  // No office is declared anywhere on the site: the work is remote and the
+  // service area is the whole country. Schema and copy must agree on this.
+  areaServed: "Italia",
+  areaServedCode: "IT",
+};
+
 export const CONTACT = {
   email: "federico.bellezza.dev@gmail.com",
+  // Same number behind the WhatsApp link, in E.164 for schema.org.
+  phone: "+393314508880",
   whatsapp:
     "https://wa.me/393314508880?text=Ciao%20Federico%2C%20sono%20passato%20dal%20tuo%20sito%2C%20ti%20scrivo%20per%20",
   linkedin: "https://www.linkedin.com/in/federicobellezzadev/",
@@ -39,6 +57,7 @@ export const STACK = [
   { name: "Supabase", src: "/supabase.svg" },
   { name: "MySQL", src: "/mysql.svg" },
   { name: "JavaScript", src: "/javascript.svg" },
+  { name: "Directus", src: "/directus-logo.svg" },
   { name: "Java", src: "/java.svg" },
   { name: "Motion", src: "/motion.svg" },
 ];

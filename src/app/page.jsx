@@ -7,10 +7,18 @@ import Work from "./components/landing/Work";
 import Pricing from "./components/landing/Pricing";
 import Contact from "./components/landing/Contact";
 import SiteFooter from "./components/landing/SiteFooter";
+import { homeGraph } from "@/lib/structured-data";
 
 export default function Home() {
   return (
     <>
+      {/* The FAQ and the project list are marked up here, not in the root
+          layout: they describe this page, not the site. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeGraph()) }}
+      />
+
       {/* <a href="#contenuto" className="fb-skip">
         Vai al contenuto
       </a> */}

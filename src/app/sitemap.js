@@ -1,15 +1,15 @@
-export default function sitemap() {
-  const BASE_URL = "https://federicobellezza.dev";
+import { SITE } from "@/lib/site-data";
 
+export default function sitemap() {
   return [
     {
-      url: BASE_URL,
+      url: SITE.url,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 1,
     },
     {
-      url: `${BASE_URL}/privacy`,
+      url: `${SITE.url}/privacy`,
       lastModified: new Date("2025-02-01"),
       changeFrequency: "yearly",
       priority: 0.3,

@@ -1,15 +1,9 @@
-"use client";
-
-import { useRef, useEffect, useLayoutEffect } from "react";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ArrowRightIcon, WhatsappLogoIcon } from "@phosphor-icons/react";
+import {
+  ArrowRightIcon,
+  WhatsappLogoIcon,
+} from "@phosphor-icons/react/dist/ssr";
 import { CTA, CONTACT } from "@/lib/site-data";
-
-// Runs before paint on the client, falls back to useEffect during SSR so
-// React does not warn about useLayoutEffect on the server.
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 // Seven words, so it lands on two lines at desktop instead of three.
 const HEADLINE = [
@@ -23,80 +17,28 @@ const HEADLINE = [
   { text: "azienda." },
 ];
 
+// The intro used to be a GSAP timeline built inside a layout effect, which tied
+// the first frame of the hero to hydration: the animation could only start once
+// the client bundle for the whole landing page had parsed and run, and then it
+// competed with that same work for the main thread, so it played in steps.
+// It is plain CSS now. The keyframes are transform/opacity only, so the
+// compositor runs them off the main thread and the hero is a server component
+// shipping zero JS. Every delay below is in seconds and mirrors the old
+// timeline: headline first, then the supporting copy, then the buttons.
+const WORD_START = 0.14;
+const WORD_STAGGER = 0.035;
+const SUB_START = 0.7;
+const CTA_START = 0.84;
+const CTA_STAGGER = 0.06;
+
+const delay = (seconds) => ({ "--fb-hero-delay": `${seconds}s` });
+
 export default function Hero() {
-  const root = useRef(null);
-
-  // Empty dependency list on purpose. useReducedMotion() reports null on the
-  // first render and only resolves on the second, and letting that re-run the
-  // effect reverted the timeline mid-flight: opacity finished at 1 while the
-  // words stayed translated 110% down, clipped out of sight by their wrapper.
-  // The preference is read straight from matchMedia instead, so this runs once.
-  useIsomorphicLayoutEffect(() => {
-    const el = root.current;
-    if (!el) return;
-
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    // The hidden start state ships in the HTML via [data-hero="pending"], so
-    // there is no flash of the finished hero before GSAP takes over. Whatever
-    // happens next, the attribute is cleared and the copy ends up visible.
-    if (prefersReduced) {
-      el.dataset.hero = "ready";
-      return;
-    }
-
-    // Motivation: the headline lands first, then the supporting copy, so the
-    // value proposition is read in the order it was written.
-    const ctx = gsap.context(() => {
-      el.dataset.hero = "ready";
-
-      // fromTo, not from: both ends are declared, so nothing is inferred from
-      // whatever the element happens to look like when the tween is built.
-      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
-
-      tl.fromTo(
-        ".hero-eyebrow",
-        { y: 10, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.4 },
-      )
-        .fromTo(
-          ".hero-word",
-          { yPercent: 110, opacity: 0 },
-          { yPercent: 0, opacity: 1, duration: 0.65, stagger: 0.035 },
-          "-=0.25",
-        )
-        .fromTo(
-          ".hero-sub",
-          { y: 14, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.45 },
-          "-=0.35",
-        )
-        // Kept under ~1.1s end to end: the primary CTA must be on screen fast.
-        .fromTo(
-          ".hero-cta",
-          { y: 14, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.4, stagger: 0.06 },
-          "-=0.3",
-        );
-    }, root);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
     <section
       id="hero"
-      ref={root}
-      data-hero="pending"
       className="relative flex min-h-[100dvh] items-center px-5 pb-16 pt-24 sm:px-8"
     >
-      {/* Without JS the intro never runs, so reveal the copy immediately. */}
-      <noscript>
-        <style>{`[data-hero="pending"] .hero-word,[data-hero="pending"] .hero-eyebrow,[data-hero="pending"] .hero-sub,[data-hero="pending"] .hero-cta{opacity:1;transform:none}`}</style>
-      </noscript>
-
       <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-7">
           <p
@@ -114,7 +56,10 @@ export default function Hero() {
               >
                 <span
                   className="hero-word inline-block"
-                  style={word.accent ? { color: "var(--fb-accent)" } : undefined}
+                  style={{
+                    ...delay(WORD_START + i * WORD_STAGGER),
+                    ...(word.accent ? { color: "var(--fb-accent)" } : null),
+                  }}
                 >
                   {word.text}
                 </span>
@@ -125,7 +70,7 @@ export default function Hero() {
 
           <p
             className="hero-sub mb-10 max-w-[52ch] text-lg leading-relaxed"
-            style={{ color: "var(--fb-ink-2)" }}
+            style={{ ...delay(SUB_START), color: "var(--fb-ink-2)" }}
           >
             Siti, e-commerce, gestionali e automazioni. Sviluppo da solo,
             consegno funzionante, resto raggiungibile dopo.
@@ -136,6 +81,7 @@ export default function Hero() {
               href="#contatti"
               className="hero-cta group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--fb-r)] px-7 py-4 text-sm font-medium transition-colors duration-200"
               style={{
+                ...delay(CTA_START),
                 background: "var(--fb-accent)",
                 color: "var(--fb-accent-ink)",
               }}
@@ -151,6 +97,7 @@ export default function Hero() {
               href="#progetti"
               className="hero-cta hidden items-center justify-center whitespace-nowrap rounded-[var(--fb-r)] border px-7 py-4 text-sm font-medium transition-colors duration-200 sm:inline-flex"
               style={{
+                ...delay(CTA_START + CTA_STAGGER),
                 borderColor: "var(--fb-line-strong)",
                 color: "var(--fb-ink)",
               }}
@@ -164,6 +111,7 @@ export default function Hero() {
               rel="noopener noreferrer"
               className="hero-cta inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--fb-r)] border px-7 py-4 text-sm font-medium sm:hidden"
               style={{
+                ...delay(CTA_START + CTA_STAGGER),
                 borderColor: "var(--fb-line-strong)",
                 color: "var(--fb-ink)",
               }}
@@ -183,15 +131,21 @@ export default function Hero() {
               className="absolute -bottom-5 -right-5 h-full w-full rounded-[var(--fb-r-lg)] border"
               style={{ borderColor: "var(--fb-accent)" }}
             />
-            <Image
-              src="/foto-profilo.jpg"
-              alt="Federico Bellezza, sviluppatore web freelance"
-              width={840}
-              height={1050}
-              priority
-              sizes="(max-width: 1024px) 0px, 420px"
-              className="fb-clip-up relative aspect-[4/5] w-full rounded-[var(--fb-r-lg)] object-cover"
-            />
+            {/* The mask does the reveal with overflow instead of animating
+                clip-path on the image: clip-path repaints the whole portrait
+                every frame, a transform does not. */}
+            <div className="relative overflow-hidden rounded-[var(--fb-r-lg)]">
+              <Image
+                src="/foto-profilo.jpg"
+                alt="Federico Bellezza, sviluppatore web freelance"
+                width={840}
+                height={1050}
+                priority
+                fetchPriority="high"
+                sizes="(max-width: 1024px) 0px, 420px"
+                className="fb-hero-portrait aspect-[4/5] w-full object-cover"
+              />
+            </div>
           </div>
         </div>
       </div>
