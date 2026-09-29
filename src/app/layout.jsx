@@ -42,6 +42,12 @@ export const metadata = {
   authors: [{ name: "Federico Bellezza", url: BASE_URL }],
   creator: "Federico Bellezza",
   category: "technology",
+  icons: {
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+  },
   alternates: {
     canonical: BASE_URL,
     languages: {

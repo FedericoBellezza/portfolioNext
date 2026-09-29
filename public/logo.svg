@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Livello_2" data-name="Livello 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 478.56 327.67">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: url(#Sfumatura_senza_nome_18);
+      }
+
+      .cls-2 {
+        fill: url(#Sfumatura_senza_nome_18-2);
+      }
+
+      .cls-3 {
+        fill: url(#Sfumatura_senza_nome_18-3);
+      }
+    </style>
+    <linearGradient id="Sfumatura_senza_nome_18" data-name="Sfumatura senza nome 18" x1="-341.84" y1="721.79" x2="322.34" y2="-24.4" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5c9d85"/>
+      <stop offset=".94" stop-color="#38745b"/>
+      <stop offset=".99" stop-color="#367259"/>
+    </linearGradient>
+    <linearGradient id="Sfumatura_senza_nome_18-2" data-name="Sfumatura senza nome 18" x1="-237.14" y1="814.98" x2="427.04" y2="68.79" xlink:href="#Sfumatura_senza_nome_18"/>
+    <linearGradient id="Sfumatura_senza_nome_18-3" data-name="Sfumatura senza nome 18" x1="-402.35" y1="667.93" x2="261.82" y2="-78.26" xlink:href="#Sfumatura_senza_nome_18"/>
+  </defs>
+  <g id="Livello_1-2" data-name="Livello 1">
+    <g>
+      <rect class="cls-1" x="167.28" y="66.94" width="91.28" height="63.19"/>
+      <path class="cls-2" d="M464.28,189.58c-9.52-13.41-22.94-23.64-40.26-30.66-1.75-.71-3.54-1.38-5.35-2.01,13.05-6.85,23.35-15.77,30.86-26.77,8.73-12.79,13.11-27.62,13.11-44.47,0-25.28-10.61-45.87-31.83-61.79C409.59,7.96,377.29,0,333.92,0h-75.36v66.94h63.66c15.6,0,27.3,2.57,35.11,7.72,7.8,5.15,11.7,13.19,11.7,24.11,0,10.3-3.91,18.1-11.7,23.4-7.8,5.31-19.51,7.96-35.11,7.96h0c-35.16,0-63.66,28.5-63.66,63.66v.47h77.7c16.22,0,28.39,2.74,36.51,8.19,8.11,5.46,12.17,13.81,12.17,25.04s-4.06,19.59-12.17,25.04c-8.12,5.46-20.29,8.19-36.51,8.19h-77.7v-66.47h-91.28v133.41h176c44.31,0,77.94-7.96,100.88-23.87,22.94-15.92,34.4-37.92,34.4-66,0-18.72-4.76-34.79-14.28-48.21Z"/>
+      <path class="cls-3" d="M92.68,130.13v-63.19h74.59V0H0v234.98c0,51.19,41.5,92.68,92.68,92.68h0v-133.41h74.59v-64.13h-74.59Z"/>
+    </g>
+  </g>
+</svg>

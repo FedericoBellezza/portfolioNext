@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 
 // No edge runtime: on edge this image is rendered per request, which is a
@@ -8,11 +10,19 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
+  // Inlined as a data URI so the render never depends on a network fetch:
+  // the logo is read once from disk at build time.
+  const logoSvg = await readFile(
+    path.join(process.cwd(), "public", "logo.svg"),
+    "utf-8"
+  );
+  const logoDataUri = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          background: "linear-gradient(135deg, #0a1712 0%, #16332a 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -35,7 +45,7 @@ export default async function Image() {
             width: 620,
             height: 620,
             background:
-              "radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(99, 102, 241, 0) 65%)",
+              "radial-gradient(circle, rgba(92, 157, 133, 0.45) 0%, rgba(92, 157, 133, 0) 65%)",
           }}
         />
         <div
@@ -46,9 +56,12 @@ export default async function Image() {
             width: 520,
             height: 520,
             background:
-              "radial-gradient(circle, rgba(59, 130, 246, 0.32) 0%, rgba(59, 130, 246, 0) 65%)",
+              "radial-gradient(circle, rgba(56, 115, 90, 0.35) 0%, rgba(56, 115, 90, 0) 65%)",
           }}
         />
+
+        {/* Logo mark */}
+        <img src={logoDataUri} width={64} height={44} style={{ marginBottom: 28 }} />
 
         {/* URL badge */}
         <div
@@ -62,7 +75,7 @@ export default async function Image() {
             marginBottom: 36,
           }}
         >
-          <span style={{ color: "#94a3b8", fontSize: 20, fontFamily: "monospace" }}>
+          <span style={{ color: "#a9c2b8", fontSize: 20, fontFamily: "monospace" }}>
             federicobellezza.dev
           </span>
         </div>
@@ -89,14 +102,14 @@ export default async function Image() {
             flexWrap: "wrap",
             gap: "0 10px",
             fontSize: 30,
-            color: "#94a3b8",
+            color: "#a9c2b8",
             maxWidth: 720,
             lineHeight: 1.45,
             marginBottom: 52,
           }}
         >
           Siti web e automazioni che fanno{" "}
-          <span style={{ color: "#818cf8", fontWeight: 600 }}>
+          <span style={{ color: "#79af9b", fontWeight: 600 }}>
             crescere il tuo business
           </span>
         </div>

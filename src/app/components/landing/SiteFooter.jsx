@@ -21,9 +21,12 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-[1400px]">
         <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="font-mono text-[15px] font-medium tracking-tight">
+            <p className="flex items-center gap-2.5 font-mono text-[15px] font-medium tracking-tight">
+              <img src="/logo.svg" alt="" className="h-6 w-auto" />
+              <div>
               federico<span style={{ color: "var(--fb-accent)" }}>.</span>
               bellezza
+              </div>
             </p>
             <p
               className="mt-2 max-w-[38ch] text-sm leading-relaxed"

@@ -54,10 +54,13 @@ export default function SiteNav() {
       <div className="mx-auto flex h-[68px] max-w-[1400px] items-center justify-between px-5 sm:px-8">
         <a
           href="#hero"
-          className="font-mono text-[15px] font-medium tracking-tight"
+          className="flex items-center gap-2.5 font-mono text-[15px] font-medium tracking-tight"
           style={{ color: "var(--fb-ink)" }}
         >
+          <img src="/logo.svg" alt="" className="h-7 w-auto" />
+          <div>
           federico<span style={{ color: "var(--fb-accent)" }}>.</span>bellezza
+          </div>
         </a>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Principale">

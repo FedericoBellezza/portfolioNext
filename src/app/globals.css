@@ -3,7 +3,8 @@
 
 /* ============================================================
    FB DESIGN SYSTEM
-   Monochrome ink + one saturated accent (electric blue).
+   Monochrome ink + one saturated accent (brand green, matching
+   the logo gradient: #5c9d85 -> #38735a).
    Consumed only by the landing page. Dashboard, login and privacy
    keep their own palettes and are untouched by these tokens.
    ============================================================ */
@@ -20,10 +21,10 @@
   --fb-line-strong: #cdcfd5;
 
   /* the one accent */
-  --fb-accent: #1f5eff;
-  --fb-accent-hover: #1a4fdb;
+  --fb-accent: #39735a;
+  --fb-accent-hover: #2f5e4a;
   --fb-accent-ink: #ffffff;
-  --fb-accent-soft: #eef2ff;
+  --fb-accent-soft: #ebf0ef;
 
   /* form errors, the only other hue on the page */
   --fb-danger: #d92d20;
@@ -60,10 +61,10 @@
     --fb-line: #212329;
     --fb-line-strong: #32353e;
 
-    --fb-accent: #4b7dff;
-    --fb-accent-hover: #6b93ff;
+    --fb-accent: #5c9d85;
+    --fb-accent-hover: #79af9b;
     --fb-accent-ink: #06070a;
-    --fb-accent-soft: #111a33;
+    --fb-accent-soft: #141e1c;
 
     --fb-danger: #ff8078;
     --fb-danger-soft: #2a1210;
@@ -86,10 +87,10 @@
   --fb-line: #212329;
   --fb-line-strong: #32353e;
 
-  --fb-accent: #4b7dff;
-  --fb-accent-hover: #6b93ff;
+  --fb-accent: #5c9d85;
+  --fb-accent-hover: #79af9b;
   --fb-accent-ink: #06070a;
-  --fb-accent-soft: #111a33;
+  --fb-accent-soft: #141e1c;
 
   --fb-danger: #ff8078;
   --fb-danger-soft: #2a1210;
