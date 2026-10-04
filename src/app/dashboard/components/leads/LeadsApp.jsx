@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
-import { Play, Plus, RefreshCw } from 'lucide-react'
+import { Play, Plus, RefreshCw, RotateCcw, Undo2 } from 'lucide-react'
 import './leads.css'
 import { fraunces } from './fonts'
 import PipelineStrip from './PipelineStrip'
@@ -37,6 +37,8 @@ export default function LeadsApp() {
   const [addOpen, setAddOpen] = useState(false)
 
   const [running, setRunning] = useState(false) // chiamata al webhook in corso
+  const [retrying, setRetrying] = useState(false) // reset dei lead falliti in corso
+  const [reviving, setReviving] = useState(false) // riattivazione dei lead scartati in corso
   const [watching, setWatching] = useState(false) // dopo l'avvio: aggiornamento periodico
   const quietReload = useRef(false) // ricarica senza sfarfallio della lista
 
@@ -107,6 +109,38 @@ export default function LeadsApp() {
       toast.error(e.message)
     } finally {
       setRunning(false)
+    }
+  }
+
+  // ---- lead con analisi fallita → di nuovo "nuovo"
+  const retryFailed = async () => {
+    if (retrying) return
+    setRetrying(true)
+    try {
+      const { updated } = await api('/riprova-falliti', { method: 'POST', body: {} })
+      toast.success(updated === 1 ? '1 lead riportato a Nuovo' : `${updated} lead riportati a Nuovo`)
+      reloadAll()
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  // ---- lead scartati → di nuovo "nuovo"
+  const reviveDiscarded = async () => {
+    if (reviving) return
+    const n = stats?.stati?.scartato ?? 0
+    if (!window.confirm(`Riportare a Nuovo ${n === 1 ? '1 lead scartato' : `${n} lead scartati`}?`)) return
+    setReviving(true)
+    try {
+      const { updated } = await api('/riattiva-scartati', { method: 'POST', body: {} })
+      toast.success(updated === 1 ? '1 lead riportato a Nuovo' : `${updated} lead riportati a Nuovo`)
+      reloadAll()
+    } catch (e) {
+      toast.error(e.message)
+    } finally {
+      setReviving(false)
     }
   }
 
@@ -193,6 +227,40 @@ export default function LeadsApp() {
           >
             {loading ? <Spinner /> : <RefreshCw aria-hidden="true" />}
           </button>
+          {stats?.stati?.errore_analisi > 0 && (
+            <button
+              type="button"
+              className="ld-btn flex-1 sm:flex-none"
+              onClick={retryFailed}
+              disabled={retrying}
+              title="Riporta in stato Nuovo tutti i lead con analisi fallita"
+            >
+              {retrying ? <Spinner /> : <RotateCcw aria-hidden="true" />}
+              {retrying ? 'Ripristino…' : 'Riprova falliti'}
+              {!retrying && (
+                <span className="ld-mono rounded-full bg-[var(--ld-accent-soft)] px-1.5 text-xs text-[var(--ld-accent-ink)]">
+                  {stats.stati.errore_analisi}
+                </span>
+              )}
+            </button>
+          )}
+          {stats?.stati?.scartato > 0 && (
+            <button
+              type="button"
+              className="ld-btn flex-1 sm:flex-none"
+              onClick={reviveDiscarded}
+              disabled={reviving}
+              title="Riporta in stato Nuovo tutti i lead scartati"
+            >
+              {reviving ? <Spinner /> : <Undo2 aria-hidden="true" />}
+              {reviving ? 'Ripristino…' : 'Riattiva scartati'}
+              {!reviving && (
+                <span className="ld-mono rounded-full bg-[var(--ld-accent-soft)] px-1.5 text-xs text-[var(--ld-accent-ink)]">
+                  {stats.stati.scartato}
+                </span>
+              )}
+            </button>
+          )}
           <button
             type="button"
             className="ld-btn flex-1 sm:flex-none"
