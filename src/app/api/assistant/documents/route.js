@@ -14,28 +14,43 @@ export async function GET() {
   }
 }
 
+/**
+ * Elimina un documento (?id=) oppure tutti i documenti di un corso (?course=).
+ * Prima i file, poi le righe (i chunk cadono a cascata). Se un file è già sparito si prosegue.
+ */
 export async function DELETE(request) {
   try {
     const { supabase } = await requireOwner();
 
-    const id = new URL(request.url).searchParams.get("id");
-    const parsed = z.string().uuid().safeParse(id);
-    if (!parsed.success) throw new AssistantError("ID documento non valido", 422);
+    const params = new URL(request.url).searchParams;
+    const course = params.get("course");
 
-    const { data: document, error: readError } = await supabase
+    let query = supabase.from("assistant_documents").select("id, file_path");
+    if (course !== null) {
+      const parsed = z.string().trim().min(1).max(100).safeParse(course);
+      if (!parsed.success) throw new AssistantError("Nome corso non valido", 422);
+      query = query.eq("course", parsed.data);
+    } else {
+      const parsed = z.string().uuid().safeParse(params.get("id"));
+      if (!parsed.success) throw new AssistantError("ID documento non valido", 422);
+      query = query.eq("id", parsed.data);
+    }
+
+    const { data: documents, error: readError } = await query;
+    if (readError) throw new AssistantError(`Lettura documenti: ${readError.message}`, 500);
+    if (!documents?.length) throw new AssistantError(course !== null ? "Corso non trovato" : "Documento non trovato", 404);
+
+    await supabase.storage.from(ASSISTANT_BUCKET).remove(documents.map((document) => document.file_path));
+    const { error: deleteError } = await supabase
       .from("assistant_documents")
-      .select("id, file_path")
-      .eq("id", parsed.data)
-      .maybeSingle();
-    if (readError) throw new AssistantError(`Lettura documento: ${readError.message}`, 500);
-    if (!document) throw new AssistantError("Documento non trovato", 404);
+      .delete()
+      .in(
+        "id",
+        documents.map((document) => document.id),
+      );
+    if (deleteError) throw new AssistantError(`Eliminazione documenti: ${deleteError.message}`, 500);
 
-    // Prima il file, poi la riga (i chunk cadono a cascata). Se il file è già sparito si prosegue.
-    await supabase.storage.from(ASSISTANT_BUCKET).remove([document.file_path]);
-    const { error: deleteError } = await supabase.from("assistant_documents").delete().eq("id", document.id);
-    if (deleteError) throw new AssistantError(`Eliminazione documento: ${deleteError.message}`, 500);
-
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, deleted: documents.length });
   } catch (error) {
     return errorResponse(error);
   }

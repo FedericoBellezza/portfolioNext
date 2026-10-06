@@ -23,6 +23,10 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   const [course, setCourse] = useState('')
   const [uploads, setUploads] = useState([])
 
+  // Documenti e corsi in eliminazione: il pannello mostra uno spinner finché l'elenco non è aggiornato.
+  const [deletingDocs, setDeletingDocs] = useState(() => new Set())
+  const [deletingCourses, setDeletingCourses] = useState(() => new Set())
+
   // Analisi delle figure (grafici, schemi, immagini delle slide): costa qualche centesimo a documento.
   const [analyzeFigures, setAnalyzeFigures] = useState(true)
   const [visualProgress, setVisualProgress] = useState({})
@@ -181,12 +185,51 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     }
   }
 
+  function setBusy(setter, keys, busy) {
+    setter((current) => {
+      const next = new Set(current)
+      for (const key of keys) {
+        if (busy) next.add(key)
+        else next.delete(key)
+      }
+      return next
+    })
+  }
+
   async function deleteDocument(doc) {
     if (!window.confirm(`Eliminare "${doc.name}" e tutti i suoi passaggi indicizzati?`)) return
-    const response = await fetch(`/api/assistant/documents?id=${doc.id}`, { method: 'DELETE' })
-    if (response.ok) {
-      if (doc.id === documentId) changeDocument('')
-      await refreshDocuments()
+    setBusy(setDeletingDocs, [doc.id], true)
+    try {
+      const response = await fetch(`/api/assistant/documents?id=${doc.id}`, { method: 'DELETE' })
+      if (response.ok) {
+        if (doc.id === documentId) changeDocument('')
+        await refreshDocuments()
+      }
+    } finally {
+      setBusy(setDeletingDocs, [doc.id], false)
+    }
+  }
+
+  // Elimina il corso con tutti i suoi documenti (file e passaggi indicizzati compresi).
+  async function deleteCourse(courseName) {
+    const ids = documents.filter((doc) => doc.course === courseName).map((doc) => doc.id)
+    const label = ids.length === 1 ? '1 documento' : `${ids.length} documenti`
+    if (!window.confirm(`Eliminare il corso "${courseName}" e tutti i suoi documenti (${label})?`)) return
+
+    setBusy(setDeletingCourses, [courseName], true)
+    setBusy(setDeletingDocs, ids, true)
+    try {
+      const response = await fetch(`/api/assistant/documents?course=${encodeURIComponent(courseName)}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        if (course === courseName) changeCourse('')
+        if (ids.includes(documentId)) changeDocument('')
+        await refreshDocuments()
+      }
+    } finally {
+      setBusy(setDeletingCourses, [courseName], false)
+      setBusy(setDeletingDocs, ids, false)
     }
   }
 
@@ -300,6 +343,9 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           uploads={uploads}
           onUpload={uploadFiles}
           onDelete={deleteDocument}
+          onDeleteCourse={deleteCourse}
+          deletingDocs={deletingDocs}
+          deletingCourses={deletingCourses}
           analyzeFigures={analyzeFigures}
           onAnalyzeFiguresChange={setAnalyzeFigures}
           visualProgress={visualProgress}

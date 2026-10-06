@@ -159,6 +159,9 @@ export default function SourcesPanel({
   uploads,
   onUpload,
   onDelete,
+  onDeleteCourse,
+  deletingDocs,
+  deletingCourses,
   analyzeFigures,
   onAnalyzeFiguresChange,
   visualProgress,
@@ -168,6 +171,15 @@ export default function SourcesPanel({
 }) {
   const [uploadCourse, setUploadCourse] = useState('')
   const [dragging, setDragging] = useState(false)
+  const [openCourses, setOpenCourses] = useState(() => new Set())
+
+  function toggleCourse(name) {
+    setOpenCourses((current) => {
+      const next = new Set(current)
+      if (!next.delete(name)) next.add(name)
+      return next
+    })
+  }
 
   const targetCourse = (uploadCourse || course).trim()
   const visible = course ? documents.filter((doc) => doc.course === course) : documents
@@ -294,56 +306,111 @@ export default function SourcesPanel({
         {visible.length === 0 ? (
           <p className="text-sm text-[var(--dashboard-text-muted)]">Nessun documento caricato.</p>
         ) : (
-          <div className="max-h-[22rem] space-y-4 overflow-y-auto pr-1">
-            {Object.entries(grouped).map(([courseName, docs]) => (
-              <div key={courseName}>
-                <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dashboard-text-secondary)]">
-                  {courseName}
-                </h3>
-                <ul className="space-y-1">
-                  {docs.map((doc) => (
-                    <li
-                      key={doc.id}
-                      className="group flex items-start gap-2 rounded-md px-1.5 py-1.5 hover:bg-[var(--dashboard-bg)]"
+          <div className="max-h-[22rem] space-y-1 overflow-y-auto pr-1">
+            {Object.entries(grouped).map(([courseName, docs], index) => {
+              const isOpen = openCourses.has(courseName)
+              const courseDeleting = deletingCourses.has(courseName)
+              const listId = `assistant-course-docs-${index}`
+              return (
+                <div key={courseName}>
+                  <div className="group flex items-center gap-1 rounded-md hover:bg-[var(--dashboard-bg)]">
+                    <button
+                      type="button"
+                      onClick={() => toggleCourse(courseName)}
+                      aria-expanded={isOpen}
+                      aria-controls={listId}
+                      className="flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left"
                     >
-                      <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
-                          {doc.name}
-                        </p>
-                        <p className="text-xs text-[var(--dashboard-text-muted)]">
-                          {[
-                            FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type,
-                            doc.page_count ? `${doc.page_count} pag.` : null,
-                            formatBytes(doc.file_size),
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </p>
-                        {doc.status === 'error' && doc.error_msg && (
-                          <p className="mt-0.5 text-xs text-red-600">{doc.error_msg}</p>
-                        )}
-                        <FigureStatus
-                          doc={doc}
-                          progress={visualProgress[doc.id]}
-                          error={visualErrors[doc.id]}
-                          onAnalyze={() => onAnalyzeVisuals(doc)}
-                        />
-                      </div>
-                      <StatusIcon status={doc.status} title={doc.error_msg} />
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)] transition-transform ${
+                          isOpen ? '' : '-rotate-90'
+                        }`}
+                      />
+                      <span
+                        className="truncate text-xs font-semibold uppercase tracking-wide text-[var(--dashboard-text-secondary)]"
+                        title={courseName}
+                      >
+                        {courseName}
+                      </span>
+                      <span className="shrink-0 text-xs text-[var(--dashboard-text-muted)]">({docs.length})</span>
+                    </button>
+                    {courseDeleting ? (
+                      <span role="status" aria-label={`Eliminazione di ${courseName}…`} className="shrink-0 p-1">
+                        <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                      </span>
+                    ) : (
                       <button
                         type="button"
-                        onClick={() => onDelete(doc)}
-                        aria-label={`Elimina ${doc.name}`}
+                        onClick={() => onDeleteCourse(courseName)}
+                        aria-label={`Elimina il corso ${courseName} e tutti i suoi documenti`}
                         className="shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+                    )}
+                  </div>
+
+                  {isOpen && (
+                    <ul id={listId} className="mb-2 mt-1 space-y-1 pl-3">
+                      {docs.map((doc) => {
+                        const deleting = deletingDocs.has(doc.id)
+                        return (
+                          <li
+                            key={doc.id}
+                            aria-busy={deleting}
+                            className={`group flex items-start gap-2 rounded-md px-1.5 py-1.5 hover:bg-[var(--dashboard-bg)] ${
+                              deleting ? 'opacity-60' : ''
+                            }`}
+                          >
+                            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
+                                {doc.name}
+                              </p>
+                              <p className="text-xs text-[var(--dashboard-text-muted)]">
+                                {[
+                                  FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type,
+                                  doc.page_count ? `${doc.page_count} pag.` : null,
+                                  formatBytes(doc.file_size),
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                              </p>
+                              {doc.status === 'error' && doc.error_msg && (
+                                <p className="mt-0.5 text-xs text-red-600">{doc.error_msg}</p>
+                              )}
+                              <FigureStatus
+                                doc={doc}
+                                progress={visualProgress[doc.id]}
+                                error={visualErrors[doc.id]}
+                                onAnalyze={() => onAnalyzeVisuals(doc)}
+                              />
+                            </div>
+                            {deleting ? (
+                              <span role="status" aria-label={`Eliminazione di ${doc.name}…`} className="shrink-0 p-1">
+                                <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                              </span>
+                            ) : (
+                              <>
+                                <StatusIcon status={doc.status} title={doc.error_msg} />
+                                <button
+                                  type="button"
+                                  onClick={() => onDelete(doc)}
+                                  aria-label={`Elimina ${doc.name}`}
+                                  className="shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </section>
