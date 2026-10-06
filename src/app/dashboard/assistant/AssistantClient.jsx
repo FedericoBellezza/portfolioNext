@@ -54,6 +54,9 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     [documents, course],
   )
 
+  const readyCount = documents.filter((doc) => doc.status === 'ready').length
+  const processingCount = documents.filter((doc) => doc.status !== 'ready' && doc.status !== 'error').length
+
   async function refreshDocuments() {
     const response = await fetch('/api/assistant/documents', { cache: 'no-store' })
     const data = await response.json().catch(() => null)
@@ -203,7 +206,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   }
 
   async function deleteDocument(doc) {
-    if (!window.confirm(`Eliminare "${doc.name}" e tutti i suoi passaggi indicizzati?`)) return
+    // La conferma è inline nel pannello dei materiali.
     setBusy(setDeletingDocs, [doc.id], true)
     try {
       const response = await fetch(`/api/assistant/documents?id=${doc.id}`, { method: 'DELETE' })
@@ -219,9 +222,6 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   // Elimina il corso con tutti i suoi documenti (file e passaggi indicizzati compresi).
   async function deleteCourse(courseName) {
     const ids = documents.filter((doc) => doc.course === courseName).map((doc) => doc.id)
-    const label = ids.length === 1 ? '1 documento' : `${ids.length} documenti`
-    if (!window.confirm(`Eliminare il corso "${courseName}" e tutti i suoi documenti (${label})?`)) return
-
     setBusy(setDeletingCourses, [courseName], true)
     setBusy(setDeletingDocs, ids, true)
     try {
@@ -380,17 +380,28 @@ export default function AssistantClient({ initialDocuments, dbError }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-[var(--dashboard-text)] sm:text-4xl">
-          Assistente di studio
-        </h1>
-        <p className="mt-1 text-[var(--dashboard-text-secondary)]">
-          Interroga slide, trascrizioni e riassunti dei tuoi corsi. Risposte basate solo sui tuoi materiali, con le fonti.
-        </p>
-      </div>
+      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+        <div className="max-w-2xl">
+          <h1 className="text-balance font-serif text-3xl font-semibold tracking-tight text-[var(--dashboard-text)] sm:text-4xl">
+            Assistente di studio
+          </h1>
+          <p className="mt-1.5 text-pretty leading-relaxed text-[var(--dashboard-text-secondary)]">
+            Interroga slide, trascrizioni e riassunti dei tuoi corsi. Risposte basate solo sui tuoi materiali, con le fonti.
+          </p>
+        </div>
+        {documents.length > 0 && (
+          <p className="text-sm tabular-nums text-[var(--dashboard-text-muted)]">
+            <span className="font-medium text-[var(--dashboard-text-secondary)]">{readyCount}</span>{' '}
+            {readyCount === 1 ? 'documento pronto' : 'documenti pronti'} in{' '}
+            <span className="font-medium text-[var(--dashboard-text-secondary)]">{courses.length}</span>{' '}
+            {courses.length === 1 ? 'corso' : 'corsi'}
+            {processingCount > 0 && ` · ${processingCount} in elaborazione`}
+          </p>
+        )}
+      </header>
 
       {dbError && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">Database non pronto</p>
@@ -402,7 +413,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[23rem_minmax(0,1fr)]">
         <SourcesPanel
           documents={documents}
           courses={courses}

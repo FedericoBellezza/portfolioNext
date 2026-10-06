@@ -21,7 +21,7 @@ export default function Markdown({ children, onSourceClick }) {
               <button
                 type="button"
                 onClick={() => onSourceClick?.(n)}
-                className="mx-0.5 inline-flex items-center rounded-md bg-[var(--dashboard-bg-secondary)] px-1.5 py-0.5 align-baseline text-xs font-semibold text-[var(--dashboard-accent)] transition-colors hover:bg-[var(--dashboard-accent)] hover:text-white"
+                className="mx-0.5 inline-flex items-center rounded-md bg-[var(--dashboard-accent)]/10 px-1.5 py-0.5 align-baseline text-xs font-semibold tabular-nums text-[var(--dashboard-accent)] transition-colors hover:bg-[var(--dashboard-accent)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/40"
               >
                 F{n}
               </button>
@@ -38,12 +38,12 @@ export default function Markdown({ children, onSourceClick }) {
             </a>
           )
         },
-        p: ({ children: c }) => <p className="mb-3 leading-relaxed last:mb-0">{c}</p>,
-        ul: ({ children: c }) => <ul className="mb-3 list-disc space-y-1 pl-5">{c}</ul>,
-        ol: ({ children: c }) => <ol className="mb-3 list-decimal space-y-1 pl-5">{c}</ol>,
+        p: ({ children: c }) => <p className="mb-3 text-pretty leading-relaxed last:mb-0">{c}</p>,
+        ul: ({ children: c }) => <ul className="mb-3 list-disc space-y-1 pl-5 marker:text-[var(--dashboard-accent-light)]">{c}</ul>,
+        ol: ({ children: c }) => <ol className="mb-3 list-decimal space-y-1 pl-5 marker:font-medium marker:text-[var(--dashboard-accent)]">{c}</ol>,
         li: ({ children: c }) => <li className="leading-relaxed">{c}</li>,
-        h1: ({ children: c }) => <h3 className="mb-2 mt-4 font-serif text-xl font-semibold first:mt-0">{c}</h3>,
-        h2: ({ children: c }) => <h3 className="mb-2 mt-4 font-serif text-lg font-semibold first:mt-0">{c}</h3>,
+        h1: ({ children: c }) => <h3 className="mb-2 mt-4 text-balance font-serif text-xl font-semibold tracking-tight first:mt-0">{c}</h3>,
+        h2: ({ children: c }) => <h3 className="mb-2 mt-4 text-balance font-serif text-lg font-semibold tracking-tight first:mt-0">{c}</h3>,
         h3: ({ children: c }) => <h4 className="mb-2 mt-3 font-serif text-base font-semibold first:mt-0">{c}</h4>,
         h4: ({ children: c }) => <h4 className="mb-1 mt-3 text-sm font-semibold first:mt-0">{c}</h4>,
         strong: ({ children: c }) => <strong className="font-semibold">{c}</strong>,
@@ -63,7 +63,7 @@ export default function Markdown({ children, onSourceClick }) {
         ),
         table: ({ children: c }) => (
           <div className="mb-3 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">{c}</table>
+            <table className="w-full border-collapse text-sm tabular-nums">{c}</table>
           </div>
         ),
         th: ({ children: c }) => (
