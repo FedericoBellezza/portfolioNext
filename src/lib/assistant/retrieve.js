@@ -145,12 +145,13 @@ function takeWithinBudget(passages, { limit, charBudget, limitTruncates = false 
 }
 
 /**
- * Ricerca ibrida (vettori + full-text italiano) con filtri opzionali su corso e documento.
+ * Ricerca ibrida (vettori + full-text italiano) con filtri opzionali su corso e documenti.
+ * `documentIds` vuoto = tutti i documenti del corso.
  */
-export async function searchPassages({ supabase, query, course, documentId, limit = 8, charBudget = 60000 }) {
+export async function searchPassages({ supabase, query, course, documentIds = [], limit = 8, charBudget = 60000 }) {
   const embedding = await embedQuery(query);
   const terms = extractTerms(query);
-  const filters = { p_course: course || null, p_document_id: documentId || null };
+  const filters = { p_course: course || null, p_document_ids: documentIds.length ? documentIds : null };
 
   const [vector, fulltext] = await Promise.all([
     supabase.rpc("assistant_search", {
@@ -174,7 +175,7 @@ export async function searchPassages({ supabase, query, course, documentId, limi
 /**
  * Per riassunti e quiz su un documento scelto: i chunk in ordine, non i più simili.
  */
-export async function loadDocumentPassages({ supabase, documentId, pageFrom, pageTo, charBudget = 60000 }) {
+export async function loadDocumentPassages({ supabase, documentId, charBudget = 60000 }) {
   let query = supabase
     .from("assistant_chunks")
     .select("id, document_id, content, page_start, page_end, ts_start, heading, chunk_index")
@@ -183,14 +184,28 @@ export async function loadDocumentPassages({ supabase, documentId, pageFrom, pag
     .order("page_start", { ascending: true, nullsFirst: false })
     .order("chunk_index", { ascending: true })
     .limit(600);
-  if (pageFrom != null) query = query.gte("page_end", pageFrom);
-  if (pageTo != null) query = query.lte("page_start", pageTo);
 
   const { data, error } = await query;
   if (error) throw new Error(`Lettura chunk: ${error.message}`);
 
   const passages = await attachDocuments(supabase, data ?? []);
   return takeWithinBudget(passages, { limit: 200, charBudget, limitTruncates: true });
+}
+
+/**
+ * Più documenti scelti per riassunti e quiz: ognuno si legge in ordine con la sua quota del budget,
+ * così nessuno prende tutto lo spazio.
+ */
+export async function loadDocumentsPassages({ supabase, documentIds, charBudget = 60000 }) {
+  const share = Math.floor(charBudget / documentIds.length);
+  const results = await Promise.all(
+    documentIds.map((documentId) => loadDocumentPassages({ supabase, documentId, charBudget: share })),
+  );
+  const merged = mergePassages(
+    results.map((result) => result.passages),
+    { limit: 200, charBudget },
+  );
+  return { passages: merged.passages, truncated: merged.truncated || results.some((result) => result.truncated) };
 }
 
 /**
@@ -203,7 +218,7 @@ export async function loadNamedPassages({ supabase, documents, query, charBudget
     documents.map(async (doc) => {
       const whole = await loadDocumentPassages({ supabase, documentId: doc.id, charBudget: share });
       if (!whole.truncated) return whole;
-      const best = await searchPassages({ supabase, query, documentId: doc.id, limit: 8, charBudget: share });
+      const best = await searchPassages({ supabase, query, documentIds: [doc.id], limit: 8, charBudget: share });
       return { passages: best.passages, truncated: true };
     }),
   );

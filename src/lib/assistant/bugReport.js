@@ -66,7 +66,7 @@ function formatMessage(message) {
  * @param {object} input
  * @param {Array} input.messages    messaggi della chat così come li tiene AssistantClient
  * @param {Array} input.documents   tutti i documenti dell'utente (anche non pronti)
- * @param {object} input.filters    { mode, course, documentName, pageFrom, pageTo, count }
+ * @param {object} input.filters    { mode, course, documentNames, count }
  */
 export function buildBugReport({ messages, documents, filters }) {
   const when = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
@@ -74,8 +74,9 @@ export function buildBugReport({ messages, documents, filters }) {
   const activeFilters = [
     `Modalità: ${modeLabel(filters.mode)}`,
     `Corso: ${filters.course || "tutti i corsi"}`,
-    `Documento: ${filters.documentName || "tutti i documenti"}`,
-    filters.pageFrom || filters.pageTo ? `Pagine: ${filters.pageFrom || "…"}-${filters.pageTo || "…"}` : null,
+    filters.documentNames?.length > 1
+      ? `Documenti: ${filters.documentNames.join(", ")}`
+      : `Documento: ${filters.documentNames?.[0] || "tutti i documenti"}`,
     filters.count ? `Quantità: ${filters.count}` : null,
   ].filter(Boolean);
 

@@ -32,7 +32,7 @@ import {
   formatBytes,
 } from '@/lib/assistant/constants'
 import { copyToClipboard } from '@/lib/assistant/bugReport'
-import AssistantSelect from './AssistantSelect'
+import AssistantMultiSelect from './AssistantMultiSelect'
 import Markdown from './Markdown'
 import { citedNumbers, stripCitations, stripCitationsInFences } from '../citations'
 
@@ -278,12 +278,9 @@ export default function ChatPanel({
   onModeChange,
   course,
   readyDocuments,
-  documentId,
-  onDocumentChange,
-  pageFrom,
-  pageTo,
+  documentIds,
+  onDocumentsChange,
   count,
-  onRangeChange,
   onCountChange,
   onOpenSource,
   onReportBug,
@@ -479,37 +476,14 @@ export default function ChatPanel({
             </span>
             <span aria-hidden>/</span>
           </span>
-          <AssistantSelect
-            value={documentId}
-            onChange={onDocumentChange}
+          <AssistantMultiSelect
+            value={documentIds}
+            onChange={onDocumentsChange}
             options={readyDocuments.map((doc) => ({ value: doc.id, label: doc.name }))}
             allLabel={mode === 'ask' ? 'Tutti i documenti' : 'Cerca nei materiali'}
-            aria-label="Documento"
-            size="sm"
-            className="w-auto min-w-40 max-w-64 px-2 text-xs"
+            aria-label="Documenti"
+            className="w-auto min-w-40 max-w-64"
           />
-          {documentId && mode !== 'ask' && (
-            <>
-              <input
-                type="number"
-                min={1}
-                value={pageFrom}
-                onChange={(event) => onRangeChange(event.target.value, pageTo)}
-                placeholder="da pag."
-                aria-label="Da pagina"
-                className={`${FIELD} w-20`}
-              />
-              <input
-                type="number"
-                min={1}
-                value={pageTo}
-                onChange={(event) => onRangeChange(pageFrom, event.target.value)}
-                placeholder="a pag."
-                aria-label="A pagina"
-                className={`${FIELD} w-20`}
-              />
-            </>
-          )}
           {showCount && (
             <input
               type="number"

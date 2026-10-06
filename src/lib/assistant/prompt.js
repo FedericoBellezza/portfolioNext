@@ -77,8 +77,11 @@ function formatDocumentList(documents) {
 }
 
 // Dice al modello dove ha cercato gli estratti, così non scambia un filtro per l'intero archivio.
-function formatScope({ course, documentName }) {
-  if (documentName) return `Gli estratti qui sotto provengono solo dal documento "${documentName}".`;
+function formatScope({ course, documentNames = [] }) {
+  if (documentNames.length === 1) return `Gli estratti qui sotto provengono solo dal documento "${documentNames[0]}".`;
+  if (documentNames.length > 1) {
+    return `Gli estratti qui sotto provengono solo da questi documenti: ${documentNames.map((name) => `"${name}"`).join(", ")}.`;
+  }
   if (course) return `Gli estratti qui sotto provengono solo dal corso "${course}".`;
   return "Gli estratti qui sotto sono cercati in tutti i corsi.";
 }

@@ -7,7 +7,7 @@ import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
 import {
   listCourseDocuments,
-  loadDocumentPassages,
+  loadDocumentsPassages,
   loadNamedPassages,
   mergePassages,
   searchPassages,
@@ -34,9 +34,7 @@ const BodySchema = z.object({
   message: z.string().trim().min(1).max(MAX_MESSAGE_CHARS),
   mode: z.enum(["ask", "summary", "quiz", "flashcards", "plan"]).default("ask"),
   course: z.string().trim().max(100).nullish(),
-  documentId: z.string().uuid().nullish(),
-  pageFrom: z.number().int().min(1).nullish(),
-  pageTo: z.number().int().min(1).nullish(),
+  documentIds: z.array(z.string().uuid()).max(50).default([]),
   count: z.number().int().min(1).max(20).nullish(),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
@@ -65,7 +63,7 @@ export async function POST(request) {
       const issue = parsed.error.issues[0];
       throw new AssistantError(`Richiesta non valida: ${issue?.path.join(".") || "body"} ${issue?.message ?? ""}`, 422);
     }
-    const { message, mode, course, documentId, pageFrom, pageTo, history } = parsed.data;
+    const { message, mode, course, documentIds, history } = parsed.data;
     const settings = MODE_SETTINGS[mode];
     const count = Math.min(parsed.data.count ?? DEFAULT_COUNTS[mode] ?? 0, MAX_COUNTS[mode] ?? 20);
 
@@ -78,7 +76,7 @@ export async function POST(request) {
     // negli altri casi si cercano i passaggi più pertinenti alla richiesta.
     // Le domande sull'archivio ("ho documenti duplicati?") non servono estratti: senza ricerca il prompt resta
     // piccolo e la risposta arriva ben prima del timeout.
-    const catalog = mode === "ask" && !documentId && !attachments.length && isCatalogQuestion(message);
+    const catalog = mode === "ask" && !documentIds.length && !attachments.length && isCatalogQuestion(message);
 
     // L'elenco dei materiali è sempre completo (tutti i corsi) anche se la ricerca è filtrata:
     // senza, il modello scambia i pochi estratti recuperati per l'intero archivio.
@@ -87,23 +85,21 @@ export async function POST(request) {
     let found;
     if (catalog) {
       found = { passages: [], truncated: false };
-    } else if (documentId && mode !== "ask") {
-      found = await loadDocumentPassages({
+    } else if (documentIds.length && mode !== "ask") {
+      found = await loadDocumentsPassages({
         supabase,
-        documentId,
-        pageFrom,
-        pageTo,
+        documentIds,
         charBudget: contextChars,
       });
     } else {
       const query = mode === "plan" ? `${message} ${course ?? ""}`.trim() : retrievalQuery(message, history);
       // "La lezione 6" non è una frase che la ricerca per significato associ al file "6 lesson.txt":
       // i documenti nominati per numero si leggono comunque, e la ricerca riempie lo spazio che resta.
-      const named = documentId
+      const named = documentIds.length
         ? []
         : findNamedDocuments(message, documents.filter((doc) => !course || doc.course === course));
       const [searched, namedFound] = await Promise.all([
-        searchPassages({ supabase, query, course, documentId, limit: settings.limit, charBudget: contextChars }),
+        searchPassages({ supabase, query, course, documentIds, limit: settings.limit, charBudget: contextChars }),
         named.length
           ? loadNamedPassages({ supabase, documents: named, query, charBudget: contextChars })
           : Promise.resolve(null),
@@ -121,7 +117,7 @@ export async function POST(request) {
 
     const scope = {
       course: course || null,
-      documentName: documentId ? documents.find((doc) => doc.id === documentId)?.name : null,
+      documentNames: documents.filter((doc) => documentIds.includes(doc.id)).map((doc) => doc.name),
     };
 
     // Se con storia e elenco materiali si supera il tetto si tolgono i passaggi meno rilevanti.

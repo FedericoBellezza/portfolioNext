@@ -40,9 +40,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState('ask')
-  const [documentId, setDocumentId] = useState('')
-  const [pageFrom, setPageFrom] = useState('')
-  const [pageTo, setPageTo] = useState('')
+  const [documentIds, setDocumentIds] = useState([])
   const [count, setCount] = useState('')
 
   // Allegati del prossimo messaggio: { id, name, size, status: 'uploading' | 'ready' | 'error', path?, message? }
@@ -81,19 +79,13 @@ export default function AssistantClient({ initialDocuments, dbError }) {
 
   function changeCourse(next) {
     setCourse(next)
-    // Un documento di un altro corso non è più selezionabile.
-    const stillValid = documents.some((doc) => doc.id === documentId && (!next || doc.course === next))
-    if (!stillValid) {
-      setDocumentId('')
-      setPageFrom('')
-      setPageTo('')
-    }
+    // I documenti di un altro corso non sono più selezionabili.
+    const kept = documentIds.filter((id) => documents.some((doc) => doc.id === id && (!next || doc.course === next)))
+    if (kept.length !== documentIds.length) changeDocuments(kept)
   }
 
-  function changeDocument(next) {
-    setDocumentId(next)
-    setPageFrom('')
-    setPageTo('')
+  function changeDocuments(next) {
+    setDocumentIds(next)
   }
 
   function patchUpload(id, patch) {
@@ -227,7 +219,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     try {
       const response = await fetch(`/api/assistant/documents?id=${doc.id}`, { method: 'DELETE' })
       if (response.ok) {
-        if (doc.id === documentId) changeDocument('')
+        if (documentIds.includes(doc.id)) changeDocuments(documentIds.filter((id) => id !== doc.id))
         await refreshDocuments()
       }
     } finally {
@@ -246,7 +238,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
       })
       if (response.ok) {
         if (course === courseName) changeCourse('')
-        if (ids.includes(documentId)) changeDocument('')
+        if (documentIds.some((id) => ids.includes(id))) changeDocuments(documentIds.filter((id) => !ids.includes(id)))
         await refreshDocuments()
       }
     } finally {
@@ -315,9 +307,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
       filters: {
         mode,
         course,
-        documentName: documents.find((doc) => doc.id === documentId)?.name,
-        pageFrom,
-        pageTo,
+        documentNames: documentIds.map((id) => documents.find((doc) => doc.id === id)?.name).filter(Boolean),
         count,
       },
     })
@@ -362,9 +352,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           message: text,
           mode,
           course: course || null,
-          documentId: documentId || null,
-          pageFrom: toInt(pageFrom),
-          pageTo: toInt(pageTo),
+          documentIds,
           count: toInt(count),
           history,
           attachments: sent.map((item) => ({ path: item.path, name: item.name })),
@@ -467,15 +455,9 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           onModeChange={setMode}
           course={course}
           readyDocuments={readyDocuments}
-          documentId={documentId}
-          onDocumentChange={changeDocument}
-          pageFrom={pageFrom}
-          pageTo={pageTo}
+          documentIds={documentIds}
+          onDocumentsChange={changeDocuments}
           count={count}
-          onRangeChange={(from, to) => {
-            setPageFrom(from)
-            setPageTo(to)
-          }}
           onCountChange={setCount}
           onOpenSource={openSource}
           onReportBug={copyBugReport}
