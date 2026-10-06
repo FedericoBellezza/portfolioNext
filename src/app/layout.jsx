@@ -90,11 +90,19 @@ const themeInit = `(function(){try{var t=localStorage.getItem("fb-theme");if(t==
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="it" className={`${geist.variable} ${geistMono.variable}`}>
+    <html
+      lang="it"
+      className={`${geist.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <link rel="preconnect" href="https://api.emailjs.com" />
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: themeInit }}
+        />
+        <script
+          suppressHydrationWarning
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteGraph()) }}
         />

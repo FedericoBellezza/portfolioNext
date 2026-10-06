@@ -52,10 +52,11 @@ function SelectContent({
   children,
   position = "item-aligned",
   align = "center",
+  container,
   ...props
 }) {
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={container}>
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(

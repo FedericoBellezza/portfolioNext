@@ -10,12 +10,7 @@ export async function middleware(request) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error('Missing Supabase environment variables')
-    // If on dashboard without env vars, redirect to home
-    if (request.nextUrl.pathname.startsWith('/dashboard')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
-    }
+    // Let the page render: the dashboard layout shows a connection error
     return supabaseResponse
   }
 
@@ -40,7 +35,18 @@ export async function middleware(request) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    user = data?.user ?? null
+    if (error && (error.name === 'AuthRetryableFetchError' || error.status === 0 || error.status >= 500)) {
+      throw error
+    }
+  } catch (e) {
+    // Supabase unreachable: don't block, the dashboard layout shows the error
+    console.error('Supabase unreachable in middleware:', e?.message)
+    return supabaseResponse
+  }
 
   // Protected routes - dashboard
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
@@ -51,8 +57,8 @@ export async function middleware(request) {
     }
 
     // Owner-only check
-    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com'
-    if (user.email !== OWNER_EMAIL) {
+    const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').trim().toLowerCase()
+    if ((user.email || '').toLowerCase() !== OWNER_EMAIL) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
@@ -61,8 +67,8 @@ export async function middleware(request) {
 
   // Redirect authenticated owner from login to dashboard
   if (request.nextUrl.pathname === '/login' && user) {
-    const OWNER_EMAIL = process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com'
-    if (user.email === OWNER_EMAIL) {
+    const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').trim().toLowerCase()
+    if ((user.email || '').toLowerCase() === OWNER_EMAIL) {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
