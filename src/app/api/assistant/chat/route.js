@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/auth";
 import { loadAttachments } from "@/lib/assistant/attachments";
+import { isCatalogQuestion } from "@/lib/assistant/catalog";
 import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
@@ -69,8 +70,14 @@ export async function POST(request) {
 
     // Riassunti, quiz e flashcard su un documento scelto leggono il documento in ordine;
     // negli altri casi si cercano i passaggi più pertinenti alla richiesta.
+    // Le domande sull'archivio ("ho documenti duplicati?") non servono estratti: senza ricerca il prompt resta
+    // piccolo e la risposta arriva ben prima del timeout.
+    const catalog = mode === "ask" && !documentId && !attachments.length && isCatalogQuestion(message);
+
     let found;
-    if (documentId && mode !== "ask") {
+    if (catalog) {
+      found = { passages: [], truncated: false };
+    } else if (documentId && mode !== "ask") {
       found = await loadDocumentPassages({
         supabase,
         documentId,
@@ -100,7 +107,7 @@ export async function POST(request) {
     // Se con storia e elenco materiali si supera il tetto si tolgono i passaggi meno rilevanti.
     let passages = found.passages;
     let truncated = found.truncated;
-    const promptInput = { mode, message, history, documents, scope, count, attachments };
+    const promptInput = { mode, message, history, documents, scope, count, attachments, catalog };
     let built = buildPrompts({ ...promptInput, passages, truncated });
     while (built.system.length + built.prompt.length > TOTAL_CHAR_BUDGET && passages.length > 1) {
       passages = passages.slice(0, -1);

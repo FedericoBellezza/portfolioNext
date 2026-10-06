@@ -200,7 +200,7 @@ export function formatContext(passages) {
 export async function listCourseDocuments({ supabase, course }) {
   let query = supabase
     .from("assistant_documents")
-    .select("id, name, course, file_type, page_count")
+    .select("id, name, course, file_type, file_size, page_count")
     .eq("status", "ready")
     .order("course", { ascending: true })
     .order("name", { ascending: true })

@@ -1,3 +1,4 @@
+import { formatDuplicateCandidates } from "./catalog";
 import { FILE_TYPE_LABELS } from "./constants";
 import { formatContext } from "./retrieve";
 
@@ -32,6 +33,9 @@ const MODE_RULES = {
     "MODALITÀ: piano di ripasso. Usa l'elenco dei materiali disponibili e gli estratti per individuare gli argomenti; se la sezione \"Materiali\" indica che gli estratti provengono da un solo corso o documento, limita il piano a quello. Se l'utente indica una data d'esame, distribuisci il lavoro sui giorni che restano da oggi; altrimenti proponi un piano in sessioni numerate. Per ogni sessione indica obiettivo, argomenti, materiali da riprendere (nome file e pagine o minuti) e un'attività di verifica (autointerrogazione). Cita [F#] quando indichi contenuti specifici.",
 };
 
+const CATALOG_RULES =
+  'DOMANDA SUI DOCUMENTI: la richiesta riguarda i file caricati, non il loro contenuto, e in questa richiesta non ci sono estratti. Rispondi dall\'elenco "Materiali disponibili" e dalla sezione "Controllo duplicati", senza citare fonti [F#] e senza scrivere "Non lo trovo nei materiali caricati". Per i duplicati: segnala quelli del controllo automatico e, in un elenco a parte, i file che dai nomi sembrano coprire lo stesso argomento (per esempio un riassunto in più formati, le slide di una lezione e il testo della stessa lezione), dicendo chiaramente che è un\'ipotesi dal nome e che il contenuto non è stato confrontato. Sii sintetico.';
+
 const HISTORY_TURNS = 6;
 const HISTORY_CHARS = 1500;
 
@@ -50,7 +54,7 @@ function formatHistory(history) {
 
 function formatDocumentList(documents) {
   const byCourse = new Map();
-  for (const doc of documents.slice(0, 80)) {
+  for (const doc of documents.slice(0, 200)) {
     if (!byCourse.has(doc.course)) byCourse.set(doc.course, []);
     byCourse.get(doc.course).push(doc);
   }
@@ -59,7 +63,8 @@ function formatDocumentList(documents) {
       const lines = docs.map((doc) => {
         const type = FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type;
         const pages = doc.page_count ? `, ${doc.page_count} pagine` : "";
-        return `- ${doc.name} (${type}${pages})`;
+        const size = doc.file_size ? `, ${Math.max(1, Math.round(doc.file_size / 1024))} KB` : "";
+        return `- ${doc.name} (${type}${pages}${size})`;
       });
       return `Corso "${course}":\n${lines.join("\n")}`;
     })
@@ -95,9 +100,10 @@ export function buildPrompts({
   count,
   truncated,
   attachments = [],
+  catalog = false,
 }) {
   const rules = (MODE_RULES[mode] ?? MODE_RULES.ask)({ count });
-  const system = `${BASE_RULES}\n\n${rules}`;
+  const system = `${BASE_RULES}\n\n${catalog ? `${rules}\n\n${CATALOG_RULES}` : rules}`;
 
   const sections = [];
 
@@ -116,10 +122,15 @@ export function buildPrompts({
     `## Materiali disponibili\n${documents?.length ? formatDocumentList(documents) : "(nessun documento caricato)"}`,
   );
 
-  sections.push(
-    `## Materiali\n${formatScope(scope ?? {})}\n\n${passages.length ? formatContext(passages) : "(nessun estratto pertinente trovato)"}`,
-  );
-  if (truncated) {
+  if (catalog) {
+    sections.push(`## Controllo duplicati\n${formatDuplicateCandidates(documents ?? [])}`);
+    if (scope?.course) sections.push(`Il filtro attivo è il corso "${scope.course}": rispondi su quel corso.`);
+  } else {
+    sections.push(
+      `## Materiali\n${formatScope(scope ?? {})}\n\n${passages.length ? formatContext(passages) : "(nessun estratto pertinente trovato)"}`,
+    );
+  }
+  if (truncated && !catalog) {
     sections.push("(Nota: gli estratti sono stati limitati per dimensione: potrebbero non coprire tutto il documento.)");
   }
 
