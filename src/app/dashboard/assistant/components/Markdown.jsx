@@ -19,7 +19,7 @@ export default function Markdown({ children, onSourceClick }) {
               <button
                 type="button"
                 onClick={() => onSourceClick?.(n)}
-                className="mx-0.5 inline-flex items-center rounded-md bg-[var(--dashboard-accent)]/10 px-1.5 py-0.5 align-baseline text-xs font-semibold tabular-nums text-[var(--dashboard-accent)] transition-colors hover:bg-[var(--dashboard-accent)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/40"
+                className="mx-0.5 inline-flex cursor-pointer items-center rounded-md bg-[var(--dashboard-accent)]/10 px-1.5 py-0.5 align-baseline text-xs font-semibold tabular-nums text-[var(--dashboard-accent)] transition-colors hover:bg-[var(--dashboard-accent)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/40"
               >
                 F{n}
               </button>

@@ -75,7 +75,7 @@ function FigureStatus({ doc, progress, error, onAnalyze }) {
       <button
         type="button"
         onClick={onAnalyze}
-        className={`inline-flex items-center gap-1 rounded text-[var(--dashboard-accent)] hover:underline ${FOCUS_RING}`}
+        className={`inline-flex cursor-pointer items-center gap-1 rounded text-[var(--dashboard-accent)] hover:underline ${FOCUS_RING}`}
       >
         <Sparkles className="h-3 w-3" />
         {done > 0 ? `Riprendi analisi figure (${done}/${total})` : `Analizza figure (${total})`}
@@ -93,14 +93,14 @@ function ConfirmDelete({ label, onConfirm, onCancel }) {
         type="button"
         autoFocus
         onClick={onConfirm}
-        className={`rounded bg-red-600 px-2 py-0.5 font-medium text-white transition-colors hover:bg-red-700 active:scale-95 ${FOCUS_RING}`}
+        className={`cursor-pointer rounded bg-red-600 px-2 py-0.5 font-medium text-white transition-colors hover:bg-red-700 active:scale-95 ${FOCUS_RING}`}
       >
         Sì
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className={`rounded px-2 py-0.5 font-medium text-[var(--dashboard-text-secondary)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] active:scale-95 ${FOCUS_RING}`}
+        className={`cursor-pointer rounded px-2 py-0.5 font-medium text-[var(--dashboard-text-secondary)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] active:scale-95 ${FOCUS_RING}`}
       >
         No
       </button>
@@ -403,7 +403,7 @@ export default function SourcesPanel({
                         onClick={() => toggleCourse(courseName)}
                         aria-expanded={isOpen}
                         aria-controls={listId}
-                        className={`flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-left ${FOCUS_RING}`}
+                        className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1.5 text-left ${FOCUS_RING}`}
                       >
                         <ChevronDown
                           className={`h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)] transition-transform duration-200 ${
@@ -435,7 +435,7 @@ export default function SourcesPanel({
                           type="button"
                           onClick={() => setConfirming(`course:${courseName}`)}
                           aria-label={`Elimina il corso ${courseName} e tutti i suoi documenti`}
-                          className={`shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                          className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -496,7 +496,7 @@ export default function SourcesPanel({
                                     type="button"
                                     onClick={() => setConfirming(`doc:${doc.id}`)}
                                     aria-label={`Elimina ${doc.name}`}
-                                    className={`shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                                    className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </button>

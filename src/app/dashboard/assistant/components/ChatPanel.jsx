@@ -106,7 +106,7 @@ function ActionButton({ onClick, children, label, className = '' }) {
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--dashboard-text-muted)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-text)] active:scale-[0.97] ${FOCUS_RING} ${className}`}
+      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--dashboard-text-muted)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-text)] active:scale-[0.97] ${FOCUS_RING} ${className}`}
     >
       {children}
     </button>
@@ -211,7 +211,7 @@ function Message({ message, course, onOpenSource }) {
                 type="button"
                 onClick={() => onOpenSource(source)}
                 title="Apri il file"
-                className={`inline-flex max-w-full items-center gap-1.5 rounded-md border border-[var(--dashboard-border)] bg-[var(--dashboard-card-bg)] px-2 py-1 text-xs text-[var(--dashboard-text-secondary)] transition-colors hover:border-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent)] active:scale-[0.98] ${FOCUS_RING}`}
+                className={`inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border border-[var(--dashboard-border)] bg-[var(--dashboard-card-bg)] px-2 py-1 text-xs text-[var(--dashboard-text-secondary)] transition-colors hover:border-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent)] active:scale-[0.98] ${FOCUS_RING}`}
               >
                 <FileText className="h-3 w-3 shrink-0" />
                 <span className="font-semibold tabular-nums">F{source.n}</span>
@@ -423,7 +423,7 @@ export default function ChatPanel({
                 aria-selected={active}
                 onClick={() => onModeChange(item.id)}
                 title={item.hint}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all active:scale-[0.97] ${FOCUS_RING} ${
+                className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all active:scale-[0.97] ${FOCUS_RING} ${
                   active
                     ? 'bg-[var(--dashboard-accent)] text-white shadow-[0_4px_10px_-4px_rgba(150,70,45,0.6)]'
                     : 'text-[var(--dashboard-text-secondary)] hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-text)]'
@@ -528,7 +528,7 @@ export default function ChatPanel({
                     <button
                       type="button"
                       onClick={() => pickSuggestion(suggestion)}
-                      className={`group flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-4 py-3 text-sm text-[var(--dashboard-text-secondary)] transition-all hover:-translate-y-px hover:border-[var(--dashboard-accent-light)] hover:text-[var(--dashboard-text)] hover:shadow-[0_8px_18px_-12px_rgba(120,80,60,0.35)] active:translate-y-0 active:scale-[0.99] ${FOCUS_RING}`}
+                      className={`group flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-4 py-3 text-sm text-[var(--dashboard-text-secondary)] transition-all hover:-translate-y-px hover:border-[var(--dashboard-accent-light)] hover:text-[var(--dashboard-text)] hover:shadow-[0_8px_18px_-12px_rgba(120,80,60,0.35)] active:translate-y-0 active:scale-[0.99] ${FOCUS_RING}`}
                     >
                       {suggestion}
                       <ArrowRight className="h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--dashboard-accent)]" />
@@ -539,7 +539,7 @@ export default function ChatPanel({
             ) : (
               <a
                 href="#assistant-sources"
-                className={`mt-6 inline-flex items-center gap-2 rounded-lg bg-[var(--dashboard-accent)] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[var(--dashboard-accent-hover)] active:scale-[0.98] ${FOCUS_RING}`}
+                className={`mt-6 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[var(--dashboard-accent)] px-4 py-2 text-sm font-medium text-white transition-all hover:bg-[var(--dashboard-accent-hover)] active:scale-[0.98] ${FOCUS_RING}`}
               >
                 Vai ai materiali
                 <ArrowRight className="h-4 w-4" />
@@ -602,7 +602,7 @@ export default function ChatPanel({
                     type="button"
                     onClick={() => onRemoveAttachment(item.id)}
                     aria-label={`Rimuovi ${item.name}`}
-                    className={`shrink-0 rounded p-0.5 transition-colors hover:bg-black/10 ${FOCUS_RING}`}
+                    className={`shrink-0 cursor-pointer rounded p-0.5 transition-colors hover:bg-black/10 ${FOCUS_RING}`}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -643,7 +643,7 @@ export default function ChatPanel({
                   : `Massimo ${MAX_ATTACHMENTS} allegati`
               }
               aria-label="Allega file"
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--dashboard-text-secondary)] transition-all hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-accent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--dashboard-text-secondary)] ${FOCUS_RING}`}
+              className={`flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-[var(--dashboard-text-secondary)] transition-all hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-accent)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--dashboard-text-secondary)] ${FOCUS_RING}`}
             >
               <Paperclip className="h-4 w-4" />
             </button>
@@ -668,7 +668,7 @@ export default function ChatPanel({
               size="icon"
               disabled={!canSend}
               aria-label="Invia messaggio"
-              className="h-9 w-9 shrink-0 rounded-lg bg-[var(--dashboard-accent)] text-white transition-all hover:bg-[var(--dashboard-accent-hover)] active:scale-95 disabled:bg-[var(--dashboard-bg-secondary)] disabled:text-[var(--dashboard-text-muted)] disabled:opacity-100"
+              className="h-9 w-9 shrink-0 cursor-pointer rounded-lg bg-[var(--dashboard-accent)] text-white transition-all hover:bg-[var(--dashboard-accent-hover)] active:scale-95 disabled:bg-[var(--dashboard-bg-secondary)] disabled:text-[var(--dashboard-text-muted)] disabled:opacity-100"
             >
               {loading || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
             </Button>

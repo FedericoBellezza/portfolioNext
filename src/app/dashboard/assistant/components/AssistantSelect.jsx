@@ -45,7 +45,7 @@ export default function AssistantSelect({
       <SelectTrigger
         ref={triggerRef}
         className={cn(
-          'w-full border-[var(--dashboard-border)] bg-white text-[var(--dashboard-text)] shadow-none hover:bg-white focus-visible:border-[var(--dashboard-accent)] focus-visible:ring-0 dark:bg-white dark:hover:bg-white',
+          'w-full cursor-pointer border-[var(--dashboard-border)] bg-white text-[var(--dashboard-text)] shadow-none hover:bg-white focus-visible:border-[var(--dashboard-accent)] focus-visible:ring-0 dark:bg-white dark:hover:bg-white',
           className,
         )}
         {...rest}

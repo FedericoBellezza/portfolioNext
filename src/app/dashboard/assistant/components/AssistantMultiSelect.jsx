@@ -39,7 +39,7 @@ export default function AssistantMultiSelect({ value, onChange, options, allLabe
           type="button"
           title={label}
           className={cn(
-            'flex h-8 items-center justify-between gap-2 rounded-md border border-[var(--dashboard-border)] bg-white px-2 text-xs text-[var(--dashboard-text)] outline-none transition-colors hover:bg-white focus-visible:border-[var(--dashboard-accent)] data-[state=open]:border-[var(--dashboard-accent)]',
+            'flex h-8 cursor-pointer items-center justify-between gap-2 rounded-md border border-[var(--dashboard-border)] bg-white px-2 text-xs text-[var(--dashboard-text)] outline-none transition-colors hover:bg-white focus-visible:border-[var(--dashboard-accent)] data-[state=open]:border-[var(--dashboard-accent)]',
             className,
           )}
           {...rest}
@@ -60,7 +60,7 @@ export default function AssistantMultiSelect({ value, onChange, options, allLabe
               type="button"
               onClick={() => onChange([])}
               disabled={!value.length}
-              className="font-medium text-[var(--dashboard-accent)] transition-opacity hover:underline disabled:pointer-events-none disabled:opacity-40"
+              className="cursor-pointer font-medium text-[var(--dashboard-accent)] transition-opacity hover:underline disabled:pointer-events-none disabled:opacity-40"
             >
               Deseleziona tutti
             </button>
