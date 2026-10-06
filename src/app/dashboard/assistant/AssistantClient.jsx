@@ -9,6 +9,7 @@ import {
   isAcceptedFile,
   sanitizeFileName,
 } from '@/lib/assistant/constants'
+import { buildBugReport, copyToClipboard } from '@/lib/assistant/bugReport'
 import ChatPanel from './components/ChatPanel'
 import SourcesPanel from './components/SourcesPanel'
 
@@ -128,6 +129,22 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  function copyBugReport() {
+    const report = buildBugReport({
+      messages,
+      documents,
+      filters: {
+        mode,
+        course,
+        documentName: documents.find((doc) => doc.id === documentId)?.name,
+        pageFrom,
+        pageTo,
+        count,
+      },
+    })
+    return copyToClipboard(report)
+  }
+
   async function send() {
     const text = input.trim()
     if (!text || loading) return
@@ -238,6 +255,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           }}
           onCountChange={setCount}
           onOpenSource={openSource}
+          onReportBug={copyBugReport}
           hasDocuments={readyDocuments.length > 0}
         />
       </div>

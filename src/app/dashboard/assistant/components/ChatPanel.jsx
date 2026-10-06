@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { Download, FileText, Loader2, RotateCcw, Send } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Bug, Check, Download, FileText, Loader2, RotateCcw, Send } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { MAX_MESSAGE_CHARS, MODES } from '@/lib/assistant/constants'
 import Markdown from './Markdown'
@@ -145,13 +145,25 @@ export default function ChatPanel({
   onRangeChange,
   onCountChange,
   onOpenSource,
+  onReportBug,
   hasDocuments,
 }) {
   const bottomRef = useRef(null)
+  const [reportState, setReportState] = useState('idle')
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, loading])
+
+  useEffect(() => {
+    if (reportState === 'idle') return
+    const timer = setTimeout(() => setReportState('idle'), 2500)
+    return () => clearTimeout(timer)
+  }, [reportState])
+
+  async function handleReportBug() {
+    setReportState((await onReportBug()) ? 'copied' : 'failed')
+  }
 
   const currentMode = MODES.find((item) => item.id === mode) ?? MODES[0]
   const showCount = mode === 'quiz' || mode === 'flashcards'
@@ -182,16 +194,27 @@ export default function ChatPanel({
             {item.label}
           </button>
         ))}
-        {messages.length > 0 && (
+        <div className="ml-auto flex items-center gap-3">
           <button
             type="button"
-            onClick={onReset}
-            className="ml-auto inline-flex items-center gap-1 text-xs text-[var(--dashboard-text-muted)] hover:text-[var(--dashboard-accent)]"
+            onClick={handleReportBug}
+            title="Copia chat, filtri e documenti caricati per segnalare un problema"
+            className="inline-flex items-center gap-1 text-xs text-[var(--dashboard-text-muted)] hover:text-[var(--dashboard-accent)]"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Nuova chat
+            {reportState === 'copied' ? <Check className="h-3.5 w-3.5" /> : <Bug className="h-3.5 w-3.5" />}
+            {reportState === 'copied' ? 'Copiato!' : reportState === 'failed' ? 'Copia non riuscita' : 'Riporta bug'}
           </button>
-        )}
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex items-center gap-1 text-xs text-[var(--dashboard-text-muted)] hover:text-[var(--dashboard-accent)]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Nuova chat
+            </button>
+          )}
+        </div>
       </div>
 
       {showDocumentOptions && (
