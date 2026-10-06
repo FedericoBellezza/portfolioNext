@@ -1,15 +1,12 @@
 import { z } from "zod";
 import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/auth";
-import { ASSISTANT_BUCKET, DOCUMENT_COLUMNS } from "@/lib/assistant/constants";
+import { ASSISTANT_BUCKET } from "@/lib/assistant/constants";
+import { listDocuments } from "@/lib/assistant/documents";
 
 export async function GET() {
   try {
     const { supabase } = await requireOwner();
-    const { data, error } = await supabase
-      .from("assistant_documents")
-      .select(DOCUMENT_COLUMNS)
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const { data, error } = await listDocuments(supabase);
     if (error) throw new AssistantError(`Lettura documenti: ${error.message}`, 500);
     return Response.json({ ok: true, documents: data });
   } catch (error) {

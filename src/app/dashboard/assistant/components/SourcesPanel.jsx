@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle2, ChevronDown, FileText, Loader2, Trash2, Upload } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronDown, FileText, Loader2, Sparkles, Trash2, Upload } from 'lucide-react'
 import { ACCEPTED_EXTENSIONS, FILE_TYPE_LABELS, formatBytes } from '@/lib/assistant/constants'
+import AssistantSelect from './AssistantSelect'
 
 const ACCEPT = ACCEPTED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
 
@@ -10,6 +11,46 @@ function StatusIcon({ status, title }) {
   if (status === 'ready') return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-label="Pronto" />
   if (status === 'error') return <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-label={title ?? 'Errore'} />
   return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--dashboard-text-muted)]" aria-label="In elaborazione" />
+}
+
+// Stato dell'analisi delle figure di un documento (grafici, schemi, immagini): in corso, finita,
+// da avviare o da riprendere. Il testo del documento è usabile anche prima che finisca.
+function FigureStatus({ doc, progress, error, onAnalyze }) {
+  const total = doc.visual_total ?? 0
+  if (doc.status !== 'ready' || !total) return null
+
+  if (progress) {
+    return (
+      <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--dashboard-text-muted)]">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Figure: {progress.done}/{progress.total}
+      </p>
+    )
+  }
+  if (doc.visual_status === 'done') {
+    return (
+      <p className="mt-0.5 flex items-center gap-1 text-xs text-emerald-700">
+        <Sparkles className="h-3 w-3" />
+        Figure analizzate ({total})
+      </p>
+    )
+  }
+
+  const failure = error ?? (doc.visual_status === 'error' ? doc.visual_error : null)
+  const done = doc.visual_done ?? 0
+  return (
+    <div className="mt-0.5 text-xs">
+      {failure && <p className="text-red-600">{failure}</p>}
+      <button
+        type="button"
+        onClick={onAnalyze}
+        className="inline-flex items-center gap-1 text-[var(--dashboard-accent)] hover:underline"
+      >
+        <Sparkles className="h-3 w-3" />
+        {done > 0 ? `Riprendi analisi figure (${done}/${total})` : `Analizza figure (${total})`}
+      </button>
+    </div>
+  )
 }
 
 function CourseCombobox({ id, value, onChange, courses, placeholder }) {
@@ -82,7 +123,7 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
           id={listId}
           role="listbox"
           onMouseDown={(event) => event.preventDefault()}
-          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-[var(--dashboard-border)] bg-white py-1 text-sm shadow-md"
+          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-[var(--dashboard-border)] bg-[var(--dashboard-card-bg)] p-1 text-sm shadow-md"
         >
           {matches.map((name, index) => (
             <li
@@ -92,7 +133,7 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
               aria-selected={index === active}
               onClick={() => select(name)}
               onMouseEnter={() => setActive(index)}
-              className={`cursor-pointer truncate px-3 py-1.5 text-[var(--dashboard-text)] ${
+              className={`cursor-pointer truncate rounded-sm px-2 py-1.5 text-[var(--dashboard-text)] ${
                 index === active ? 'bg-[var(--dashboard-bg-secondary)]' : ''
               }`}
             >
@@ -100,7 +141,7 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
             </li>
           ))}
           {isNew && (
-            <li role="presentation" className="truncate px-3 py-1.5 text-xs text-[var(--dashboard-text-muted)]">
+            <li role="presentation" className="truncate px-2 py-1.5 text-xs text-[var(--dashboard-text-muted)]">
               Nuovo corso: &quot;{value.trim()}&quot;
             </li>
           )}
@@ -118,6 +159,11 @@ export default function SourcesPanel({
   uploads,
   onUpload,
   onDelete,
+  analyzeFigures,
+  onAnalyzeFiguresChange,
+  visualProgress,
+  visualErrors,
+  onAnalyzeVisuals,
   disabled,
 }) {
   const [uploadCourse, setUploadCourse] = useState('')
@@ -142,19 +188,13 @@ export default function SourcesPanel({
         <label htmlFor="assistant-course-filter" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--dashboard-text-secondary)]">
           Corso
         </label>
-        <select
+        <AssistantSelect
           id="assistant-course-filter"
           value={course}
-          onChange={(event) => onCourseChange(event.target.value)}
-          className="h-9 w-full rounded-md border border-[var(--dashboard-border)] bg-white px-2 text-sm text-[var(--dashboard-text)] outline-none focus:border-[var(--dashboard-accent)]"
-        >
-          <option value="">Tutti i corsi</option>
-          {courses.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+          onChange={onCourseChange}
+          options={courses.map((name) => ({ value: name, label: name }))}
+          allLabel="Tutti i corsi"
+        />
         <p className="mt-1.5 text-xs text-[var(--dashboard-text-muted)]">
           Le domande cercano solo nel corso scelto; con &quot;Tutti i corsi&quot; cercano ovunque.
         </p>
@@ -206,6 +246,21 @@ export default function SourcesPanel({
               event.target.value = ''
             }}
           />
+        </label>
+
+        <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-[var(--dashboard-text-secondary)]">
+          <input
+            type="checkbox"
+            checked={analyzeFigures}
+            onChange={(event) => onAnalyzeFiguresChange(event.target.checked)}
+            className="mt-0.5 accent-[var(--dashboard-accent)]"
+          />
+          <span>
+            Analizza anche grafici, schemi e immagini delle slide
+            <span className="block text-[var(--dashboard-text-muted)]">
+              Usa la vision di OpenAI (pochi centesimi a documento): tieni aperta la pagina finché finisce.
+            </span>
+          </span>
         </label>
 
         {uploads.length > 0 && (
@@ -268,6 +323,12 @@ export default function SourcesPanel({
                         {doc.status === 'error' && doc.error_msg && (
                           <p className="mt-0.5 text-xs text-red-600">{doc.error_msg}</p>
                         )}
+                        <FigureStatus
+                          doc={doc}
+                          progress={visualProgress[doc.id]}
+                          error={visualErrors[doc.id]}
+                          onAnalyze={() => onAnalyzeVisuals(doc)}
+                        />
                       </div>
                       <StatusIcon status={doc.status} title={doc.error_msg} />
                       <button

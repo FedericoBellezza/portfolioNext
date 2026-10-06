@@ -3,15 +3,28 @@ import JSZip from "jszip";
 import mammoth from "mammoth";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { MAX_OCR_PAGES, getExtension } from "./constants";
+import {
+  MAX_FIGURE_BYTES,
+  MAX_FIGURE_REUSE,
+  MAX_OCR_PAGES,
+  MAX_VISUAL_ITEMS,
+  MIN_FIGURE_BYTES,
+  VISUAL_MAX_WORDS,
+  getExtension,
+} from "./constants";
+import { describeChartXml, describeConnectors, describeDiagramDataXml } from "./pptxFigures";
+import { VISION_MODEL } from "./vision";
+import { parseRelationships, resolveZipPath, textFromDrawingXml } from "./xml";
 
-// Ogni estrattore restituisce { kind, pageCount, units }:
+// Ogni estrattore restituisce { kind, pageCount, units, visualPlan? }:
 //  - kind: "paged" (PDF, slide), "text" (Word, Markdown, testo), "timed" (sottotitoli)
 //  - units: [{ text, page?, ts?, heading? }] nell'ordine del documento
+//  - visualPlan: figure da far descrivere a un modello vision in un secondo momento
+//    ({ v: 1, kind: "pdf", items: [{ page }] } oppure { v: 1, kind: "pptx", items: [{ slide, media }] })
 
 const MIN_PAGE_CHARS = 30;
 const SUBTITLE_WINDOW_SECONDS = 75;
-const VISION_MODEL = "gpt-4o-mini";
+const FIGURE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"];
 
 export class ExtractionError extends Error {}
 
@@ -54,17 +67,6 @@ function normalizeText(text) {
     .trim();
 }
 
-function decodeXmlEntities(text) {
-  return text
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&");
-}
-
 // ---------------------------------------------------------------------------
 // PDF
 // ---------------------------------------------------------------------------
@@ -76,13 +78,36 @@ async function extractPdf(buffer) {
 
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   let result;
+  let embeddedImagePages = new Set();
   try {
     result = await parser.getText();
+
+    // Pagine con tanto testo ma con un'immagine incorporata (foto, grafico raster): candidate alle figure.
+    const longPages = result.pages
+      .filter((page) => countWords(page.text) >= VISUAL_MAX_WORDS)
+      .map((page) => page.num);
+    if (longPages.length) {
+      try {
+        const images = await parser.getImage({
+          partial: longPages,
+          imageThreshold: 120,
+          imageBuffer: false,
+          imageDataUrl: false,
+        });
+        embeddedImagePages = new Set(images.pages.filter((p) => p.images.length).map((p) => p.pageNumber));
+      } catch (error) {
+        console.warn("[assistant] rilevamento immagini PDF non riuscito:", error.message);
+      }
+    }
   } finally {
     await parser.destroy();
   }
 
-  const pages = result.pages.map((page) => ({ page: page.num, text: normalizeText(page.text) }));
+  const pages = result.pages.map((page) => ({
+    page: page.num,
+    text: normalizeText(page.text),
+    words: countWords(page.text),
+  }));
   const withText = pages.filter((page) => page.text.length >= MIN_PAGE_CHARS);
 
   // Se meno di un terzo delle pagine ha testo il PDF è (quasi) tutto scansionato.
@@ -95,7 +120,25 @@ async function extractPdf(buffer) {
     kind: "paged",
     pageCount: pages.length,
     units: withText.map((page) => ({ text: page.text, page: page.page })),
+    visualPlan: planPdfFigures(pages, embeddedImagePages),
   };
+}
+
+function countWords(text) {
+  return String(text ?? "").split(/\s+/).filter(Boolean).length;
+}
+
+// Pagine "da slide" (poche parole) e pagine con immagini incorporate: le prime con immagini, poi in ordine.
+function planPdfFigures(pages, embeddedImagePages) {
+  const candidates = pages.filter((page) => page.words < VISUAL_MAX_WORDS || embeddedImagePages.has(page.page));
+  candidates.sort(
+    (a, b) => Number(embeddedImagePages.has(b.page)) - Number(embeddedImagePages.has(a.page)) || a.page - b.page,
+  );
+  const items = candidates
+    .slice(0, MAX_VISUAL_ITEMS)
+    .map((page) => ({ page: page.page }))
+    .sort((a, b) => a.page - b.page);
+  return items.length ? { v: 1, kind: "pdf", items } : null;
 }
 
 async function ocrPdf(buffer, pageCount) {
@@ -144,33 +187,27 @@ async function ocrPdf(buffer, pageCount) {
 // PPTX: ogni slide è una "pagina", note del relatore comprese
 // ---------------------------------------------------------------------------
 
-function parseRelationships(xml) {
-  const rels = [];
-  for (const tag of xml.match(/<Relationship\b[^>]*>/g) ?? []) {
-    const id = /\bId="([^"]*)"/.exec(tag)?.[1];
-    const target = /\bTarget="([^"]*)"/.exec(tag)?.[1];
-    const type = /\bType="([^"]*)"/.exec(tag)?.[1] ?? "";
-    if (id && target) rels.push({ id, target, type });
-  }
-  return rels;
-}
+// Un'immagine incorporata è una "figura" da analizzare se non è un'icona (troppo piccola),
+// non è enorme e non è uno sfondo o un logo ripetuto su molte slide.
+async function planPptxFigures(zip, slideMedia) {
+  const usage = new Map();
+  for (const { media } of slideMedia) usage.set(media, (usage.get(media) ?? 0) + 1);
 
-function resolveZipPath(baseDir, target) {
-  if (target.startsWith("/")) return target.slice(1);
-  return path.posix.normalize(path.posix.join(baseDir, target));
-}
-
-function textFromDrawingXml(xml) {
-  const lines = [];
-  for (const paragraph of xml.split("</a:p>")) {
-    const runs = paragraph.match(/<a:t(?:\s[^>]*)?>([\s\S]*?)<\/a:t>/g) ?? [];
-    const line = runs
-      .map((run) => decodeXmlEntities(run.replace(/<[^>]+>/g, "")))
-      .join("")
-      .trim();
-    if (line) lines.push(line);
+  const sizes = new Map();
+  const items = [];
+  for (const { slide, media } of slideMedia) {
+    if (!FIGURE_EXTENSIONS.includes(getExtension(media))) continue;
+    if (usage.get(media) > MAX_FIGURE_REUSE) continue;
+    if (!sizes.has(media)) {
+      const file = zip.file(media);
+      sizes.set(media, file ? (await file.async("uint8array")).length : 0);
+    }
+    const size = sizes.get(media);
+    if (size < MIN_FIGURE_BYTES || size > MAX_FIGURE_BYTES) continue;
+    items.push({ slide, media });
+    if (items.length >= MAX_VISUAL_ITEMS) break;
   }
-  return lines.join("\n");
+  return items.length ? { v: 1, kind: "pptx", items } : null;
 }
 
 async function extractPptx(buffer) {
@@ -200,30 +237,50 @@ async function extractPptx(buffer) {
   if (!slidePaths.length) throw new ExtractionError("Nessuna slide trovata nel file PPTX");
 
   const units = [];
+  const slideMedia = [];
   for (let i = 0; i < slidePaths.length; i++) {
     const slidePath = slidePaths[i];
+    const slideDir = path.posix.dirname(slidePath);
     const slideXml = await readText(slidePath);
     if (!slideXml) continue;
 
     let notes = "";
-    const relsXml = await readText(
-      `${path.posix.dirname(slidePath)}/_rels/${path.posix.basename(slidePath)}.rels`,
-    );
-    if (relsXml) {
-      const notesRel = parseRelationships(relsXml).find((rel) => rel.type.endsWith("/notesSlide"));
-      if (notesRel) {
-        const notesXml = await readText(resolveZipPath(path.posix.dirname(slidePath), notesRel.target));
+    const figures = [];
+    const relsXml = await readText(`${slideDir}/_rels/${path.posix.basename(slidePath)}.rels`);
+    for (const rel of relsXml ? parseRelationships(relsXml) : []) {
+      const target = resolveZipPath(slideDir, rel.target);
+      if (rel.type.endsWith("/notesSlide")) {
+        const notesXml = await readText(target);
         if (notesXml) notes = textFromDrawingXml(notesXml);
+      } else if (rel.type.endsWith("/chart")) {
+        // Grafici nativi: i valori sono nel file, nessun bisogno di "guardarli".
+        const description = describeChartXml((await readText(target)) ?? "");
+        if (description) figures.push(description);
+      } else if (rel.type.endsWith("/diagramData")) {
+        const description = describeDiagramDataXml((await readText(target)) ?? "");
+        if (description) figures.push(description);
+      } else if (rel.type.endsWith("/image")) {
+        slideMedia.push({ slide: i + 1, media: target });
       }
     }
+    const connectors = describeConnectors(slideXml);
+    if (connectors) figures.push(connectors);
 
     const body = textFromDrawingXml(slideXml);
-    const text = normalizeText([body, notes && `Note del relatore: ${notes}`].filter(Boolean).join("\n"));
+    const text = normalizeText(
+      [body, figures.length && `Figure e diagrammi:\n${figures.join("\n")}`, notes && `Note del relatore: ${notes}`]
+        .filter(Boolean)
+        .join("\n"),
+    );
     if (text.length >= MIN_PAGE_CHARS) units.push({ text, page: i + 1 });
   }
 
-  if (!units.length) throw new ExtractionError("Le slide non contengono testo (solo immagini?)");
-  return { kind: "paged", pageCount: slidePaths.length, units };
+  // Le slide fatte solo di immagini non hanno testo: se ci sono figure da analizzare il file è comunque utile.
+  const visualPlan = await planPptxFigures(zip, slideMedia);
+  if (!units.length && !visualPlan) {
+    throw new ExtractionError("Le slide non contengono testo né immagini analizzabili");
+  }
+  return { kind: "paged", pageCount: slidePaths.length, units, visualPlan };
 }
 
 // ---------------------------------------------------------------------------

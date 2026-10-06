@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Bug, Check, Download, FileText, Loader2, RotateCcw, Send } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
 import { MAX_MESSAGE_CHARS, MODES } from '@/lib/assistant/constants'
+import AssistantSelect from './AssistantSelect'
 import Markdown from './Markdown'
+
+// Spazio lasciato sotto la chat quando è appiccicata (circa lo stesso che c'è sopra, sotto la nav).
+const STICKY_BOTTOM_GAP = 24
 
 const PLACEHOLDERS = {
   ask: 'Chiedi qualcosa sui tuoi materiali…',
@@ -148,8 +152,44 @@ export default function ChatPanel({
   onReportBug,
   hasDocuments,
 }) {
+  const sectionRef = useRef(null)
   const bottomRef = useRef(null)
   const [reportState, setReportState] = useState('idle')
+
+  // Su desktop la chat resta appiccicata sotto la nav (sticky) e occupa il resto dello schermo.
+  // All'inizio sopra c'è l'intestazione, quindi l'altezza segue lo scroll: parte dalla posizione
+  // naturale della griglia e, una volta agganciata, parte dal top dello sticky. Si scrive sullo
+  // style senza passare dallo stato per non ri-renderizzare tutti i messaggi a ogni frame.
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    const grid = section?.parentElement
+    if (!grid) return
+    const desktop = window.matchMedia('(min-width: 1024px)')
+    let frame = 0
+
+    function update() {
+      frame = 0
+      if (!desktop.matches) {
+        section.style.height = ''
+        return
+      }
+      const stickyTop = Number.parseFloat(getComputedStyle(section).top) || 0
+      const top = Math.max(grid.getBoundingClientRect().top, stickyTop)
+      section.style.height = `${window.innerHeight - top - STICKY_BOTTOM_GAP}px`
+    }
+    function schedule() {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+
+    update()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -177,7 +217,10 @@ export default function ChatPanel({
   }
 
   return (
-    <section className="order-1 flex min-h-[32rem] flex-col rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-bg)] lg:order-2 lg:h-[calc(100dvh-14rem)]">
+    <section
+      ref={sectionRef}
+      className="order-1 flex min-h-[32rem] flex-col rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-bg)] lg:sticky lg:top-22 lg:order-2 lg:self-start"
+    >
       <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] p-3">
         {MODES.map((item) => (
           <button
@@ -219,19 +262,15 @@ export default function ChatPanel({
 
       {showDocumentOptions && (
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-3 py-2">
-          <select
+          <AssistantSelect
             value={documentId}
-            onChange={(event) => onDocumentChange(event.target.value)}
+            onChange={onDocumentChange}
+            options={readyDocuments.map((doc) => ({ value: doc.id, label: doc.name }))}
+            allLabel={mode === 'ask' ? 'Tutti i documenti' : 'Cerca nei materiali'}
             aria-label="Documento"
-            className={`${FIELD} max-w-[16rem]`}
-          >
-            <option value="">{mode === 'ask' ? 'Tutti i documenti' : 'Cerca nei materiali'}</option>
-            {readyDocuments.map((doc) => (
-              <option key={doc.id} value={doc.id}>
-                {doc.name}
-              </option>
-            ))}
-          </select>
+            size="sm"
+            className="w-auto min-w-40 max-w-64 px-2 text-xs"
+          />
           {documentId && mode !== 'ask' && (
             <>
               <input

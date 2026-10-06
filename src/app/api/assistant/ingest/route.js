@@ -51,7 +51,8 @@ export async function POST(request) {
     const buffer = Buffer.from(await blob.arrayBuffer());
     const extracted = await extractDocument({ buffer, fileName: name });
     const chunks = buildChunks(extracted.units, extracted.kind);
-    if (!chunks.length) throw new ExtractionError("Nessun testo estratto dal file");
+    // Slide fatte solo di immagini: niente testo, ma le figure si possono ancora analizzare.
+    if (!chunks.length && !extracted.visualPlan) throw new ExtractionError("Nessun testo estratto dal file");
 
     const embeddings = await embedTexts(chunks.map((chunk) => embeddingInput(chunk, { course, name })));
 
@@ -76,7 +77,20 @@ export async function POST(request) {
       .update({ status: "ready", page_count: extracted.pageCount, file_size: blob.size })
       .eq("id", documentId);
 
-    return Response.json({ ok: true, documentId, chunks: rows.length });
+    // Piano di analisi delle figure, in un aggiornamento a parte: se la migrazione 0002 non è
+    // stata applicata (colonne mancanti) il documento resta comunque pronto e usabile.
+    let visualItems = 0;
+    const plan = extracted.visualPlan;
+    if (plan?.items?.length) {
+      const { error } = await supabase
+        .from("assistant_documents")
+        .update({ visual_plan: plan, visual_total: plan.items.length, visual_done: 0, visual_status: "pending" })
+        .eq("id", documentId);
+      if (error) console.warn("[assistant] figure non pianificate (migrazione 0002 applicata?):", error.message);
+      else visualItems = plan.items.length;
+    }
+
+    return Response.json({ ok: true, documentId, chunks: rows.length, visualItems });
   } catch (error) {
     // Documento già registrato: lo si lascia visibile con lo stato "error" e il motivo.
     if (supabase && documentId) {

@@ -78,12 +78,19 @@ async function attachDocuments(supabase, rows) {
     .filter((row) => byId.has(row.document_id))
     .map((row) => {
       const doc = byId.get(row.document_id);
-      const place = locationLabel({
-        pageStart: row.page_start,
-        pageEnd: row.page_end,
-        tsStart: row.ts_start,
-        fileType: doc.file_type,
-      });
+      // I passaggi "Figura N" sono descrizioni automatiche di grafici e schemi: si segnalano come tali.
+      const isFigure = String(row.heading ?? "").startsWith("Figura");
+      const place = [
+        locationLabel({
+          pageStart: row.page_start,
+          pageEnd: row.page_end,
+          tsStart: row.ts_start,
+          fileType: doc.file_type,
+        }),
+        isFigure ? "figura" : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
       return {
         chunkId: row.id,
         documentId: doc.id,
@@ -151,6 +158,8 @@ export async function loadDocumentPassages({ supabase, documentId, pageFrom, pag
     .from("assistant_chunks")
     .select("id, document_id, content, page_start, page_end, ts_start, heading, chunk_index")
     .eq("document_id", documentId)
+    // Le figure vengono salvate dopo il testo: si ordina per pagina così ognuna finisce accanto alla sua slide.
+    .order("page_start", { ascending: true, nullsFirst: false })
     .order("chunk_index", { ascending: true })
     .limit(600);
   if (pageFrom != null) query = query.gte("page_end", pageFrom);

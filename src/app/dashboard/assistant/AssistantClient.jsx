@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -22,6 +22,12 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   const [documents, setDocuments] = useState(initialDocuments)
   const [course, setCourse] = useState('')
   const [uploads, setUploads] = useState([])
+
+  // Analisi delle figure (grafici, schemi, immagini delle slide): costa qualche centesimo a documento.
+  const [analyzeFigures, setAnalyzeFigures] = useState(true)
+  const [visualProgress, setVisualProgress] = useState({})
+  const [visualErrors, setVisualErrors] = useState({})
+  const visualRunning = useRef(new Set())
 
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -104,10 +110,73 @@ export default function AssistantClient({ initialDocuments, dbError }) {
         })
         const data = await response.json().catch(() => null)
         if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
-        patchUpload(id, { status: 'done', message: `Pronto · ${data.chunks} passaggi indicizzati` })
+
+        const ready = `Pronto · ${data.chunks} passaggi indicizzati`
+        if (data.visualItems > 0 && analyzeFigures) {
+          // Il testo è già utilizzabile: le figure si analizzano a lotti finché la pagina resta aperta.
+          patchUpload(id, { message: `${ready}. Analisi figure…` })
+          const outcome = await runVisuals({ id: data.documentId, visual_done: 0, visual_total: data.visualItems }, id)
+          patchUpload(
+            id,
+            outcome.ok
+              ? { status: 'done', message: `${ready} · ${outcome.added} figure descritte` }
+              : { status: 'error', message: `${ready}. Figure non analizzate: ${outcome.error}` },
+          )
+        } else {
+          patchUpload(id, {
+            status: 'done',
+            message: data.visualItems > 0 ? `${ready} · figure da analizzare` : ready,
+          })
+        }
       } catch (error) {
         patchUpload(id, { status: 'error', message: error.message })
       }
+      await refreshDocuments()
+    }
+  }
+
+  // Ogni richiesta analizza un lotto di pagine; si ripete fino a fine documento o al primo errore.
+  // Se si interrompe, il server ricorda a che punto era e "Riprendi" continua da lì.
+  async function runVisuals(doc, uploadId) {
+    if (visualRunning.current.has(doc.id)) return { ok: true, added: 0 }
+    visualRunning.current.add(doc.id)
+    setVisualErrors((current) => ({ ...current, [doc.id]: null }))
+    setVisualProgress((current) => ({
+      ...current,
+      [doc.id]: { done: doc.visual_done ?? 0, total: doc.visual_total ?? 0 },
+    }))
+
+    let added = 0
+    let lastDone = doc.visual_done ?? 0
+    try {
+      for (;;) {
+        const response = await fetch('/api/assistant/visuals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documentId: doc.id }),
+        })
+        const data = await response.json().catch(() => null)
+        if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
+
+        added += data.added
+        setVisualProgress((current) => ({ ...current, [doc.id]: { done: data.done, total: data.total } }))
+        if (uploadId) patchUpload(uploadId, { message: `Analisi figure ${data.done}/${data.total}…` })
+        if (data.status === 'done') return { ok: true, added }
+
+        // Nessun avanzamento: meglio fermarsi che ripetere la stessa richiesta all'infinito.
+        if (data.done <= lastDone) throw new Error('Analisi bloccata: nessun avanzamento')
+        lastDone = data.done
+      }
+    } catch (error) {
+      setVisualErrors((current) => ({ ...current, [doc.id]: error.message }))
+      return { ok: false, added, error: error.message }
+    } finally {
+      visualRunning.current.delete(doc.id)
+      setVisualProgress((current) => {
+        const next = { ...current }
+        delete next[doc.id]
+        return next
+      })
       await refreshDocuments()
     }
   }
@@ -231,6 +300,11 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           uploads={uploads}
           onUpload={uploadFiles}
           onDelete={deleteDocument}
+          analyzeFigures={analyzeFigures}
+          onAnalyzeFiguresChange={setAnalyzeFigures}
+          visualProgress={visualProgress}
+          visualErrors={visualErrors}
+          onAnalyzeVisuals={(doc) => runVisuals(doc)}
           disabled={Boolean(dbError)}
         />
         <ChatPanel

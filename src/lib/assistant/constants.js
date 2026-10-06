@@ -50,6 +50,22 @@ export const MAX_MESSAGE_CHARS = 4000;
 export const DOCUMENT_COLUMNS =
   "id, course, name, file_path, file_type, file_size, page_count, status, error_msg, created_at";
 
+// Colonne aggiunte dalla migrazione 0002 (analisi delle figure).
+export const DOCUMENT_VISUAL_COLUMNS = "visual_status, visual_total, visual_done, visual_error";
+
+// Analisi delle figure: un modello vision descrive grafici e schemi che il testo estratto non contiene.
+// Le pagine con meno parole di così sono "da slide" e potrebbero contenere una figura.
+export const VISUAL_MAX_WORDS = 150;
+// Tetto per documento: oltre, si analizzano prima le pagine con immagini incorporate.
+export const MAX_VISUAL_ITEMS = 150;
+// Elementi analizzati per richiesta (resta sotto il limite di 60 secondi della route).
+export const VISUAL_BATCH_SIZE = 8;
+// Le immagini incorporate nei PPTX più piccole sono icone e decorazioni, le più grandi pesano troppo.
+export const MIN_FIGURE_BYTES = 10 * 1024;
+export const MAX_FIGURE_BYTES = 8 * 1024 * 1024;
+// Un'immagine usata in così tante slide è un logo o uno sfondo, non una figura.
+export const MAX_FIGURE_REUSE = 2;
+
 export function getExtension(fileName) {
   const match = /\.([A-Za-z0-9]+)$/.exec(String(fileName ?? ""));
   return match ? match[1].toLowerCase() : "";
