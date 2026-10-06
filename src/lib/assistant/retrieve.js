@@ -63,6 +63,27 @@ export function locationLabel({ pageStart, pageEnd, tsStart, fileType }) {
   return "";
 }
 
+const MAX_SECTION_LABEL = 60;
+
+/**
+ * Dove si trova un passaggio nel suo file, in forma breve. Pagina, slide o minuto quando ci sono;
+ * per i file senza pagine (Markdown, Word) il titolo della sezione, altrimenti i passaggi di uno
+ * stesso file apparirebbero tutti identici. I passaggi "Figura N" sono descrizioni automatiche di
+ * grafici e schemi: si segnalano come tali.
+ */
+export function placeLabel({ pageStart, pageEnd, tsStart, fileType, heading }) {
+  const location = locationLabel({ pageStart, pageEnd, tsStart, fileType });
+  const isFigure = String(heading ?? "").startsWith("Figura");
+  const title = String(heading ?? "").trim();
+  const section =
+    !location && title && !isFigure
+      ? title.length > MAX_SECTION_LABEL
+        ? `${title.slice(0, MAX_SECTION_LABEL - 1).trimEnd()}…`
+        : title
+      : "";
+  return [location || section, isFigure ? "figura" : ""].filter(Boolean).join(" · ");
+}
+
 async function attachDocuments(supabase, rows) {
   const ids = [...new Set(rows.map((row) => row.document_id))];
   if (!ids.length) return [];
@@ -78,19 +99,13 @@ async function attachDocuments(supabase, rows) {
     .filter((row) => byId.has(row.document_id))
     .map((row) => {
       const doc = byId.get(row.document_id);
-      // I passaggi "Figura N" sono descrizioni automatiche di grafici e schemi: si segnalano come tali.
-      const isFigure = String(row.heading ?? "").startsWith("Figura");
-      const place = [
-        locationLabel({
-          pageStart: row.page_start,
-          pageEnd: row.page_end,
-          tsStart: row.ts_start,
-          fileType: doc.file_type,
-        }),
-        isFigure ? "figura" : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      const place = placeLabel({
+        pageStart: row.page_start,
+        pageEnd: row.page_end,
+        tsStart: row.ts_start,
+        fileType: doc.file_type,
+        heading: row.heading,
+      });
       return {
         chunkId: row.id,
         documentId: doc.id,
