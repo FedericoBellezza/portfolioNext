@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { AlertCircle, CheckCircle2, FileText, Loader2, Trash2, Upload } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { AlertCircle, CheckCircle2, ChevronDown, FileText, Loader2, Trash2, Upload } from 'lucide-react'
 import { ACCEPTED_EXTENSIONS, FILE_TYPE_LABELS, formatBytes } from '@/lib/assistant/constants'
 
 const ACCEPT = ACCEPTED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
@@ -10,6 +10,104 @@ function StatusIcon({ status, title }) {
   if (status === 'ready') return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" aria-label="Pronto" />
   if (status === 'error') return <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-label={title ?? 'Errore'} />
   return <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--dashboard-text-muted)]" aria-label="In elaborazione" />
+}
+
+function CourseCombobox({ id, value, onChange, courses, placeholder }) {
+  const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(-1)
+
+  const query = value.trim().toLowerCase()
+  const matches = query ? courses.filter((name) => name.toLowerCase().includes(query)) : courses
+  const isNew = Boolean(query) && !courses.some((name) => name.toLowerCase() === query)
+  const showList = open && (matches.length > 0 || isNew)
+  const listId = `${id}-list`
+  const optionId = (index) => `${id}-option-${index}`
+
+  useEffect(() => {
+    if (active >= 0) document.getElementById(optionId(active))?.scrollIntoView({ block: 'nearest' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
+
+  function select(name) {
+    onChange(name)
+    setOpen(false)
+    setActive(-1)
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setOpen(true)
+      setActive((i) => (matches.length ? (i + 1) % matches.length : -1))
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setOpen(true)
+      setActive((i) => (matches.length ? (i <= 0 ? matches.length - 1 : i - 1) : -1))
+    } else if (event.key === 'Enter' && showList && active >= 0) {
+      event.preventDefault()
+      select(matches[active])
+    } else if (event.key === 'Escape') {
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div className="relative mb-3">
+      <input
+        id={id}
+        role="combobox"
+        aria-expanded={showList}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
+        autoComplete="off"
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value)
+          setOpen(true)
+          setActive(-1)
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        maxLength={100}
+        className="h-9 w-full rounded-md border border-[var(--dashboard-border)] bg-white pl-3 pr-8 text-sm outline-none focus:border-[var(--dashboard-accent)]"
+      />
+      <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-[var(--dashboard-text-muted)]" />
+
+      {showList && (
+        // onMouseDown evita che l'input perda il focus (e chiuda la lista) prima del click
+        <ul
+          id={listId}
+          role="listbox"
+          onMouseDown={(event) => event.preventDefault()}
+          className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-[var(--dashboard-border)] bg-white py-1 text-sm shadow-md"
+        >
+          {matches.map((name, index) => (
+            <li
+              key={name}
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === active}
+              onClick={() => select(name)}
+              onMouseEnter={() => setActive(index)}
+              className={`cursor-pointer truncate px-3 py-1.5 text-[var(--dashboard-text)] ${
+                index === active ? 'bg-[var(--dashboard-bg-secondary)]' : ''
+              }`}
+            >
+              {name}
+            </li>
+          ))}
+          {isNew && (
+            <li role="presentation" className="truncate px-3 py-1.5 text-xs text-[var(--dashboard-text-muted)]">
+              Nuovo corso: &quot;{value.trim()}&quot;
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 export default function SourcesPanel({
@@ -65,19 +163,13 @@ export default function SourcesPanel({
       <section className="rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] p-4">
         <h2 className="mb-3 font-serif text-lg font-semibold">Carica materiali</h2>
 
-        <input
-          list="assistant-courses"
+        <CourseCombobox
+          id="assistant-upload-course"
           value={uploadCourse}
-          onChange={(event) => setUploadCourse(event.target.value)}
+          onChange={setUploadCourse}
+          courses={courses}
           placeholder={course ? `Corso (default: ${course})` : 'Corso (es. Economia aziendale)'}
-          maxLength={100}
-          className="mb-3 h-9 w-full rounded-md border border-[var(--dashboard-border)] bg-white px-3 text-sm outline-none focus:border-[var(--dashboard-accent)]"
         />
-        <datalist id="assistant-courses">
-          {courses.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
 
         <label
           onDragOver={(event) => {
