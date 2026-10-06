@@ -227,13 +227,13 @@ export default function SourcesPanel({
 }) {
   const [uploadCourse, setUploadCourse] = useState('')
   const [dragging, setDragging] = useState(false)
-  // Si tengono i gruppi chiusi (non aperti): un corso appena caricato è subito visibile.
-  const [closedCourses, setClosedCourses] = useState(() => new Set())
+  // I gruppi partono chiusi: si tengono quelli aperti dall'utente.
+  const [openCourses, setOpenCourses] = useState(() => new Set())
   // Elemento in attesa di conferma di eliminazione: 'doc:<id>' o 'course:<nome>'.
   const [confirming, setConfirming] = useState(null)
 
   function toggleCourse(name) {
-    setClosedCourses((current) => {
+    setOpenCourses((current) => {
       const next = new Set(current)
       if (!next.delete(name)) next.add(name)
       return next
@@ -391,7 +391,7 @@ export default function SourcesPanel({
           ) : (
             <div className="max-h-[24rem] space-y-1 overflow-y-auto pr-1">
               {Object.entries(grouped).map(([courseName, docs], index) => {
-                const isOpen = !closedCourses.has(courseName)
+                const isOpen = openCourses.has(courseName)
                 const courseDeleting = deletingCourses.has(courseName)
                 const courseConfirming = confirming === `course:${courseName}`
                 const listId = `assistant-course-docs-${index}`
