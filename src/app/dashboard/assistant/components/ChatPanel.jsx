@@ -15,7 +15,9 @@ import {
   Layers,
   ListChecks,
   Loader2,
+  Maximize2,
   MessageSquareText,
+  Minimize2,
   Paperclip,
   RotateCcw,
   Sparkles,
@@ -288,6 +290,8 @@ export default function ChatPanel({
   attachments,
   onAttach,
   onRemoveAttachment,
+  expanded,
+  onToggleExpand,
 }) {
   const sectionRef = useRef(null)
   const scrollerRef = useRef(null)
@@ -332,7 +336,8 @@ export default function ChatPanel({
       window.removeEventListener('scroll', schedule)
       window.removeEventListener('resize', schedule)
     }
-  }, [])
+    // Espandendo cambia la posizione della griglia: l'altezza va ricalcolata.
+  }, [expanded])
 
   // Si scorre solo la lista dei messaggi, non la pagina intera.
   useEffect(() => {
@@ -453,6 +458,14 @@ export default function ChatPanel({
               <span className="hidden xl:inline">Nuova chat</span>
             </ActionButton>
           )}
+          <ActionButton
+            onClick={onToggleExpand}
+            label={expanded ? 'Mostra il pannello dei materiali' : 'Espandi la chat a tutta pagina'}
+            className="max-lg:hidden"
+          >
+            {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            <span className="hidden xl:inline">{expanded ? 'Riduci' : 'Espandi'}</span>
+          </ActionButton>
         </div>
       </div>
 
@@ -516,8 +529,9 @@ export default function ChatPanel({
         role="log"
         aria-live="polite"
         aria-label="Conversazione"
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-5"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5"
       >
+        <div className="mx-auto w-full max-w-4xl space-y-5">
         {messages.length === 0 && !loading && (
           <div className={`mx-auto flex max-w-lg flex-col items-center pt-6 text-center sm:pt-10 ${ENTER}`}>
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--dashboard-accent)]/10 text-[var(--dashboard-accent)]">
@@ -564,6 +578,7 @@ export default function ChatPanel({
         ))}
 
         {loading && <TypingIndicator />}
+        </div>
       </div>
 
       <form
@@ -583,7 +598,7 @@ export default function ChatPanel({
         className="relative border-t border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] p-3"
       >
         <div
-          className={`rounded-2xl border bg-white transition-all focus-within:border-[var(--dashboard-accent)] focus-within:ring-2 focus-within:ring-[var(--dashboard-accent)]/20 ${
+          className={`mx-auto max-w-4xl rounded-2xl border bg-white transition-all focus-within:border-[var(--dashboard-accent)] focus-within:ring-2 focus-within:ring-[var(--dashboard-accent)]/20 ${
             dragging ? 'border-[var(--dashboard-accent)] ring-2 ring-[var(--dashboard-accent)]/20' : 'border-[var(--dashboard-border)]'
           }`}
         >

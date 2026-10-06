@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -53,6 +53,22 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     () => documents.filter((doc) => doc.status === 'ready' && (!course || doc.course === course)),
     [documents, course],
   )
+
+  // Chat a tutta pagina: nasconde intestazione e pannello dei materiali. Si ricorda tra le visite.
+  const [expanded, setExpanded] = useState(false)
+  useEffect(() => {
+    try {
+      setExpanded(localStorage.getItem('assistant-expanded') === '1')
+    } catch {}
+  }, [])
+  function toggleExpanded() {
+    setExpanded((current) => {
+      try {
+        localStorage.setItem('assistant-expanded', current ? '0' : '1')
+      } catch {}
+      return !current
+    })
+  }
 
   const readyCount = documents.filter((doc) => doc.status === 'ready').length
   const processingCount = documents.filter((doc) => doc.status !== 'ready' && doc.status !== 'error').length
@@ -380,17 +396,17 @@ export default function AssistantClient({ initialDocuments, dbError }) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+      <header className={`flex flex-wrap items-end justify-between gap-x-8 gap-y-2 ${expanded ? 'lg:hidden' : ''}`}>
         <div className="max-w-2xl">
-          <h1 className="text-balance font-serif text-3xl font-semibold tracking-tight text-[var(--dashboard-text)] sm:text-4xl">
+          <h1 className="text-balance font-serif text-2xl font-semibold tracking-tight text-[var(--dashboard-text)] sm:text-3xl">
             Assistente di studio
           </h1>
-          <p className="mt-1.5 text-pretty leading-relaxed text-[var(--dashboard-text-secondary)]">
-            Interroga slide, trascrizioni e riassunti dei tuoi corsi. Risposte basate solo sui tuoi materiali, con le fonti.
+          <p className="mt-1 text-pretty text-sm leading-relaxed text-[var(--dashboard-text-secondary)]">
+            Interroga slide, trascrizioni e riassunti dei tuoi corsi, con le fonti.
           </p>
         </div>
         {documents.length > 0 && (
-          <p className="text-sm tabular-nums text-[var(--dashboard-text-muted)]">
+          <p className="pb-0.5 text-sm tabular-nums text-[var(--dashboard-text-muted)]">
             <span className="font-medium text-[var(--dashboard-text-secondary)]">{readyCount}</span>{' '}
             {readyCount === 1 ? 'documento pronto' : 'documenti pronti'} in{' '}
             <span className="font-medium text-[var(--dashboard-text-secondary)]">{courses.length}</span>{' '}
@@ -413,7 +429,12 @@ export default function AssistantClient({ initialDocuments, dbError }) {
         </div>
       )}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[23rem_minmax(0,1fr)]">
+      <div
+        className={`grid items-start gap-6 ${
+          expanded ? 'lg:grid-cols-1' : 'lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[23rem_minmax(0,1fr)]'
+        }`}
+      >
+        <div className={expanded ? 'contents lg:hidden' : 'contents'}>
         <SourcesPanel
           documents={documents}
           courses={courses}
@@ -432,7 +453,10 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           onAnalyzeVisuals={(doc) => runVisuals(doc)}
           disabled={Boolean(dbError)}
         />
+        </div>
         <ChatPanel
+          expanded={expanded}
+          onToggleExpand={toggleExpanded}
           messages={messages}
           loading={loading}
           input={input}
