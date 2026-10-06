@@ -77,16 +77,22 @@ export async function POST(request) {
       });
     }
 
-    const documents = mode === "plan" || mode === "summary" ? await listCourseDocuments({ supabase, course }) : [];
+    // L'elenco dei materiali è sempre completo (tutti i corsi) anche se la ricerca è filtrata:
+    // senza, il modello scambia i pochi estratti recuperati per l'intero archivio.
+    const documents = await listCourseDocuments({ supabase });
+    const scope = {
+      course: course || null,
+      documentName: documentId ? documents.find((doc) => doc.id === documentId)?.name : null,
+    };
 
     // Se con storia e elenco materiali si supera il tetto si tolgono i passaggi meno rilevanti.
     let passages = found.passages;
     let truncated = found.truncated;
-    let built = buildPrompts({ mode, message, history, passages, documents, count, truncated });
+    let built = buildPrompts({ mode, message, history, passages, documents, scope, count, truncated });
     while (built.system.length + built.prompt.length > TOTAL_CHAR_BUDGET && passages.length > 1) {
       passages = passages.slice(0, -1);
       truncated = true;
-      built = buildPrompts({ mode, message, history, passages, documents, count, truncated });
+      built = buildPrompts({ mode, message, history, passages, documents, scope, count, truncated });
     }
 
     const result = await generate({ system: built.system, prompt: built.prompt, signal: request.signal });
