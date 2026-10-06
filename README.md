@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+Private study assistant (RAG chat at `/dashboard/assistant`): see [docs/assistente-studio.md](docs/assistente-studio.md).
+
 ## Getting Started
 
 First, run the development server:

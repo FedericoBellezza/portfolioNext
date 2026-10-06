@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/app/components/ui/button'
-import { LogOut, Home, LayoutDashboard, Settings } from 'lucide-react'
+import { LogOut, Home, LayoutDashboard, Settings, GraduationCap } from 'lucide-react'
 
 export default function DashboardNav({ user }) {
   const router = useRouter()
@@ -27,6 +27,10 @@ export default function DashboardNav({ user }) {
           <Link href="/dashboard/manage" className="text-[var(--dashboard-text-secondary)] hover:text-[var(--dashboard-accent)] transition-colors flex items-center gap-1 uppercase text-sm tracking-wide">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">Gestione</span>
+          </Link>
+          <Link href="/dashboard/assistant" className="text-[var(--dashboard-text-secondary)] hover:text-[var(--dashboard-accent)] transition-colors flex items-center gap-1 uppercase text-sm tracking-wide">
+            <GraduationCap className="h-4 w-4" />
+            <span className="hidden sm:inline">Assistente</span>
           </Link>
         </div>
 
