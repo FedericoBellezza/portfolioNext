@@ -34,6 +34,7 @@ import {
 import { copyToClipboard } from '@/lib/assistant/bugReport'
 import AssistantSelect from './AssistantSelect'
 import Markdown from './Markdown'
+import { citedNumbers, stripCitations, stripCitationsInFences } from '../citations'
 
 // Spazio lasciato sotto la chat quando è appiccicata (circa lo stesso che c'è sopra, sotto la nav).
 const STICKY_BOTTOM_GAP = 24
@@ -76,7 +77,7 @@ function extractFlashcards(content) {
   if (!block) return null
   const rows = block[1]
     .split('\n')
-    .map((line) => line.trim())
+    .map((line) => stripCitations(line).trim())
     .filter((line) => line.includes('\t'))
   return rows.length ? rows : null
 }
@@ -93,7 +94,7 @@ function downloadFlashcards(rows, course) {
 
 function citedSources(message) {
   if (!message.sources?.length) return []
-  const cited = new Set([...message.content.matchAll(/\[F(\d+)\]/g)].map((match) => Number(match[1])))
+  const cited = citedNumbers(message.content)
   return message.sources.filter((source) => cited.has(source.n))
 }
 
@@ -193,7 +194,7 @@ function Message({ message, course, onOpenSource }) {
               if (source) onOpenSource(source)
             }}
           >
-            {message.content}
+            {message.mode === 'flashcards' ? stripCitationsInFences(message.content) : message.content}
           </Markdown>
           {message.truncated && (
             <p className="mt-2 text-xs text-[var(--dashboard-text-muted)]">

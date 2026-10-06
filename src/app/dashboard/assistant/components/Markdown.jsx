@@ -2,11 +2,9 @@
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { linkCitations } from '../citations'
 
 // I riferimenti [F1] diventano pulsanti: cliccandoli si apre la fonte.
-function linkCitations(text) {
-  return text.replace(/\[F(\d+)\]/g, '[F$1](#fonte-$1)')
-}
 
 export default function Markdown({ children, onSourceClick }) {
   return (

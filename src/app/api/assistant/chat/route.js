@@ -1,11 +1,17 @@
 import { z } from "zod";
 import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/auth";
 import { loadAttachments } from "@/lib/assistant/attachments";
-import { isCatalogQuestion } from "@/lib/assistant/catalog";
+import { findNamedDocuments, isCatalogQuestion } from "@/lib/assistant/catalog";
 import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
-import { listCourseDocuments, loadDocumentPassages, searchPassages } from "@/lib/assistant/retrieve";
+import {
+  listCourseDocuments,
+  loadDocumentPassages,
+  loadNamedPassages,
+  mergePassages,
+  searchPassages,
+} from "@/lib/assistant/retrieve";
 
 // Se il tuo piano Vercel lo permette puoi alzarlo (e ASSISTANT_TIMEOUT_MS di conseguenza):
 // quiz e riassunti lunghi possono richiedere più di un minuto.
@@ -74,6 +80,10 @@ export async function POST(request) {
     // piccolo e la risposta arriva ben prima del timeout.
     const catalog = mode === "ask" && !documentId && !attachments.length && isCatalogQuestion(message);
 
+    // L'elenco dei materiali è sempre completo (tutti i corsi) anche se la ricerca è filtrata:
+    // senza, il modello scambia i pochi estratti recuperati per l'intero archivio.
+    const documents = await listCourseDocuments({ supabase });
+
     let found;
     if (catalog) {
       found = { passages: [], truncated: false };
@@ -86,19 +96,29 @@ export async function POST(request) {
         charBudget: contextChars,
       });
     } else {
-      found = await searchPassages({
-        supabase,
-        query: mode === "plan" ? `${message} ${course ?? ""}`.trim() : retrievalQuery(message, history),
-        course,
-        documentId,
-        limit: settings.limit,
-        charBudget: contextChars,
-      });
+      const query = mode === "plan" ? `${message} ${course ?? ""}`.trim() : retrievalQuery(message, history);
+      // "La lezione 6" non è una frase che la ricerca per significato associ al file "6 lesson.txt":
+      // i documenti nominati per numero si leggono comunque, e la ricerca riempie lo spazio che resta.
+      const named = documentId
+        ? []
+        : findNamedDocuments(message, documents.filter((doc) => !course || doc.course === course));
+      const [searched, namedFound] = await Promise.all([
+        searchPassages({ supabase, query, course, documentId, limit: settings.limit, charBudget: contextChars }),
+        named.length
+          ? loadNamedPassages({ supabase, documents: named, query, charBudget: contextChars })
+          : Promise.resolve(null),
+      ]);
+      if (namedFound) {
+        const merged = mergePassages([namedFound.passages, searched.passages], {
+          limit: settings.limit + namedFound.passages.length,
+          charBudget: contextChars,
+        });
+        found = { passages: merged.passages, truncated: merged.truncated || namedFound.truncated };
+      } else {
+        found = searched;
+      }
     }
 
-    // L'elenco dei materiali è sempre completo (tutti i corsi) anche se la ricerca è filtrata:
-    // senza, il modello scambia i pochi estratti recuperati per l'intero archivio.
-    const documents = await listCourseDocuments({ supabase });
     const scope = {
       course: course || null,
       documentName: documentId ? documents.find((doc) => doc.id === documentId)?.name : null,

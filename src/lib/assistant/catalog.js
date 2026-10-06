@@ -16,6 +16,31 @@ export function isCatalogQuestion(message) {
   return (DUPLICATE_WORDS.test(text) && DOC_NOUN_RE.test(text)) || LISTING.test(text);
 }
 
+const LESSON_REF = /\b(?:lezione|lesson|lez)\.?\s*(?:n\.?\s*|numero\s*)?(\d{1,2})\b/gi;
+const LAB_REF = /\b(?:live\s*labs?|laboratorio|lab)\.?\s*(?:n\.?\s*|numero\s*)?(\d{1,2})\b/gi;
+
+/**
+ * Documenti che l'utente nomina per numero ("la lezione 6", "live lab 3"): la ricerca per significato
+ * non sa che "lezione 6" è il file "6 lesson.txt", quindi li si individua dal nome.
+ */
+export function findNamedDocuments(message, documents, max = 3) {
+  const found = [];
+  const add = (doc) => {
+    if (!found.some((item) => item.id === doc.id)) found.push(doc);
+  };
+  for (const match of String(message ?? "").matchAll(LESSON_REF)) {
+    const n = Number(match[1]);
+    const byName = new RegExp(`(?:^|[^\\d])${n}[ _]lesson|lesson[ _]${n}(?!\\d)`, "i");
+    documents.filter((doc) => byName.test(doc.name)).forEach(add);
+  }
+  for (const match of String(message ?? "").matchAll(LAB_REF)) {
+    const n = Number(match[1]);
+    const byName = new RegExp(`live labs? ${n}(?!\\d)`, "i");
+    documents.filter((doc) => byName.test(doc.name)).forEach(add);
+  }
+  return found.slice(0, max);
+}
+
 function normalizeName(name) {
   return name
     .toLowerCase()

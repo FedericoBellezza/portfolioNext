@@ -123,13 +123,19 @@ async function attachDocuments(supabase, rows) {
 }
 
 // Applica il tetto di caratteri e numera le fonti: F1, F2, ...
-function takeWithinBudget(passages, { limit, charBudget }) {
+// "truncated" vuol dire che il tetto di caratteri ha escluso del testo; nella ricerca il limite sul numero
+// di passaggi è invece voluto, e non va presentato all'utente come una perdita.
+function takeWithinBudget(passages, { limit, charBudget, limitTruncates = false }) {
   const taken = [];
   let used = 0;
   let truncated = false;
   for (const passage of passages) {
-    if (taken.length >= limit || used + passage.content.length > charBudget) {
+    if (used + passage.content.length > charBudget) {
       truncated = true;
+      break;
+    }
+    if (taken.length >= limit) {
+      truncated = limitTruncates;
       break;
     }
     used += passage.content.length;
@@ -184,7 +190,34 @@ export async function loadDocumentPassages({ supabase, documentId, pageFrom, pag
   if (error) throw new Error(`Lettura chunk: ${error.message}`);
 
   const passages = await attachDocuments(supabase, data ?? []);
-  return takeWithinBudget(passages, { limit: 200, charBudget });
+  return takeWithinBudget(passages, { limit: 200, charBudget, limitTruncates: true });
+}
+
+/**
+ * Documenti citati per nome dall'utente ("lezione 6"): se stanno nel budget si leggono per intero,
+ * altrimenti se ne cercano i passaggi più pertinenti.
+ */
+export async function loadNamedPassages({ supabase, documents, query, charBudget }) {
+  const share = Math.floor(charBudget / documents.length);
+  const results = await Promise.all(
+    documents.map(async (doc) => {
+      const whole = await loadDocumentPassages({ supabase, documentId: doc.id, charBudget: share });
+      if (!whole.truncated) return whole;
+      const best = await searchPassages({ supabase, query, documentId: doc.id, limit: 8, charBudget: share });
+      return { passages: best.passages, truncated: true };
+    }),
+  );
+  return {
+    passages: results.flatMap((result) => result.passages),
+    truncated: results.some((result) => result.truncated),
+  };
+}
+
+// Unisce più elenchi di passaggi senza doppioni, rinumerando le fonti F1, F2, ...
+export function mergePassages(lists, { limit, charBudget }) {
+  const seen = new Set();
+  const merged = lists.flat().filter((passage) => !seen.has(passage.chunkId) && seen.add(passage.chunkId));
+  return takeWithinBudget(merged, { limit, charBudget });
 }
 
 export function formatContext(passages) {
