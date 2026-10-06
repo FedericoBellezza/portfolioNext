@@ -5,6 +5,9 @@ import { AlertTriangle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import {
   ASSISTANT_BUCKET,
+  ATTACHMENT_FOLDER,
+  MAX_ATTACHMENTS,
+  MAX_ATTACHMENT_BYTES,
   MAX_FILE_BYTES,
   isAcceptedFile,
   sanitizeFileName,
@@ -41,6 +44,9 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   const [pageFrom, setPageFrom] = useState('')
   const [pageTo, setPageTo] = useState('')
   const [count, setCount] = useState('')
+
+  // Allegati del prossimo messaggio: { id, name, size, status: 'uploading' | 'ready' | 'error', path?, message? }
+  const [attachments, setAttachments] = useState([])
 
   const courses = useMemo(() => [...new Set(documents.map((doc) => doc.course))].sort(), [documents])
   const readyDocuments = useMemo(
@@ -233,6 +239,51 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     }
   }
 
+  function patchAttachment(id, patch) {
+    setAttachments((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+  }
+
+  // I file vanno subito su Storage in una cartella temporanea: la route di chat li legge e li cancella.
+  async function attachFiles(files) {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return
+
+    let slots = MAX_ATTACHMENTS - attachments.filter((item) => item.status !== 'error').length
+    for (const file of files) {
+      const id = crypto.randomUUID()
+      const entry = { id, name: file.name, size: file.size, status: 'uploading' }
+
+      const problem = !isAcceptedFile(file.name)
+        ? 'Tipo di file non supportato'
+        : file.size > MAX_ATTACHMENT_BYTES
+          ? 'File troppo grande (massimo 10 MB)'
+          : slots <= 0
+            ? `Massimo ${MAX_ATTACHMENTS} allegati`
+            : null
+      if (problem) {
+        setAttachments((current) => [...current, { ...entry, status: 'error', message: problem }])
+        continue
+      }
+
+      slots -= 1
+      setAttachments((current) => [...current, entry])
+      const path = `${user.id}/${ATTACHMENT_FOLDER}/${id}/${sanitizeFileName(file.name)}`
+      const { error } = await supabase.storage
+        .from(ASSISTANT_BUCKET)
+        .upload(path, file, { contentType: file.type || 'application/octet-stream' })
+      patchAttachment(id, error ? { status: 'error', message: `Upload fallito: ${error.message}` } : { status: 'ready', path })
+    }
+  }
+
+  function removeAttachment(id) {
+    const item = attachments.find((entry) => entry.id === id)
+    setAttachments((current) => current.filter((entry) => entry.id !== id))
+    if (item?.path) createClient().storage.from(ASSISTANT_BUCKET).remove([item.path])
+  }
+
   async function openSource(source) {
     const supabase = createClient()
     const { data, error } = await supabase.storage.from(ASSISTANT_BUCKET).createSignedUrl(source.filePath, 600)
@@ -259,16 +310,32 @@ export default function AssistantClient({ initialDocuments, dbError }) {
 
   async function send() {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || loading || attachments.some((item) => item.status === 'uploading')) return
 
-    // Il server accetta al massimo 8000 caratteri per messaggio di storia.
+    // Gli allegati con errore non partono: restano solo quelli caricati.
+    const sent = attachments.filter((item) => item.status === 'ready')
+
+    // Il server accetta al massimo 8000 caratteri per messaggio di storia. Degli allegati dei turni
+    // precedenti resta solo il nome: il testo è stato letto una volta e non viene rimandato.
     const history = messages
       .filter((message) => !message.error)
       .slice(-10)
-      .map((message) => ({ role: message.role, content: message.content.slice(0, 8000) }))
+      .map((message) => {
+        const files = message.attachments?.length ? `[Allegati: ${message.attachments.map((a) => a.name).join(', ')}]\n` : ''
+        return { role: message.role, content: `${files}${message.content}`.slice(0, 8000) }
+      })
 
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: 'user', content: text }])
+    setMessages((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+        attachments: sent.map((item) => ({ name: item.name })),
+      },
+    ])
     setInput('')
+    setAttachments([])
     setLoading(true)
 
     try {
@@ -284,6 +351,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           pageTo: toInt(pageTo),
           count: toInt(count),
           history,
+          attachments: sent.map((item) => ({ path: item.path, name: item.name })),
         }),
       })
       const data = await response.json().catch(() => null)
@@ -376,6 +444,9 @@ export default function AssistantClient({ initialDocuments, dbError }) {
           onCountChange={setCount}
           onOpenSource={openSource}
           onReportBug={copyBugReport}
+          attachments={attachments}
+          onAttach={attachFiles}
+          onRemoveAttachment={removeAttachment}
           hasDocuments={readyDocuments.length > 0}
         />
       </div>

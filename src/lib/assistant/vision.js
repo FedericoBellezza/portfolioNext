@@ -45,7 +45,41 @@ export function cleanDescription(text) {
   return kept.length >= 25 ? kept : null;
 }
 
+// Primo passaggio: a risoluzione "low" l'immagine costa 85 token invece di ~14.000, e basta per
+// capire se c'è una figura. Solo le pagine con figura passano alla descrizione in "high".
+const SCREENING_PROMPT = `Questa è una slide o una pagina di un testo universitario. Contiene un grafico, uno schema, un diagramma, una tabella, una formula o un'illustrazione che il solo testo non trasmetterebbe? Rispondi esattamente SI oppure NO (nel dubbio, SI).`;
+
+async function hasFigure(image) {
+  try {
+    const { text } = await generateText({
+      model: openai(VISION_MODEL),
+      temperature: 0,
+      maxOutputTokens: 5,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: SCREENING_PROMPT },
+            {
+              type: "image",
+              image: image.data,
+              mediaType: image.mediaType,
+              providerOptions: { openai: { imageDetail: "low" } },
+            },
+          ],
+        },
+      ],
+    });
+    return !/^\s*NO\b/i.test(text);
+  } catch {
+    // Se il filtro fallisce non si perde la figura: si passa alla descrizione completa.
+    return true;
+  }
+}
+
 async function describeOne(image) {
+  if (!(await hasFigure(image))) return null;
+
   const { text } = await generateText({
     model: openai(VISION_MODEL),
     temperature: 0,

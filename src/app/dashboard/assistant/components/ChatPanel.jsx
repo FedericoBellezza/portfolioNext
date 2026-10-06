@@ -1,9 +1,15 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Bug, Check, Download, FileText, Loader2, RotateCcw, Send } from 'lucide-react'
+import { Bug, Check, Download, FileText, Loader2, Paperclip, RotateCcw, Send, X } from 'lucide-react'
 import { Button } from '@/app/components/ui/button'
-import { MAX_MESSAGE_CHARS, MODES } from '@/lib/assistant/constants'
+import {
+  ACCEPTED_EXTENSIONS,
+  MAX_ATTACHMENTS,
+  MAX_MESSAGE_CHARS,
+  MODES,
+  formatBytes,
+} from '@/lib/assistant/constants'
 import AssistantSelect from './AssistantSelect'
 import Markdown from './Markdown'
 
@@ -56,6 +62,19 @@ function Message({ message, course, onOpenSource }) {
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-[var(--dashboard-accent)] px-4 py-2.5 text-sm text-white">
+          {message.attachments?.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {message.attachments.map((file, index) => (
+                <span
+                  key={index}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs"
+                >
+                  <Paperclip className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{file.name}</span>
+                </span>
+              ))}
+            </div>
+          )}
           {message.content}
         </div>
       </div>
@@ -151,10 +170,18 @@ export default function ChatPanel({
   onOpenSource,
   onReportBug,
   hasDocuments,
+  attachments,
+  onAttach,
+  onRemoveAttachment,
 }) {
   const sectionRef = useRef(null)
   const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
   const [reportState, setReportState] = useState('idle')
+  const [dragging, setDragging] = useState(false)
+
+  const uploading = attachments.some((item) => item.status === 'uploading')
+  const canAttach = attachments.filter((item) => item.status !== 'error').length < MAX_ATTACHMENTS
 
   // Su desktop la chat resta appiccicata sotto la nav (sticky) e occupa il resto dello schermo.
   // All'inizio sopra c'è l'intestazione, quindi l'altezza segue lo scroll: parte dalla posizione
@@ -208,6 +235,27 @@ export default function ChatPanel({
   const currentMode = MODES.find((item) => item.id === mode) ?? MODES[0]
   const showCount = mode === 'quiz' || mode === 'flashcards'
   const showDocumentOptions = readyDocuments.length > 0 || showCount
+
+  function handleFilePick(event) {
+    const files = [...event.target.files]
+    event.target.value = ''
+    if (files.length) onAttach(files)
+  }
+
+  function handleDrop(event) {
+    event.preventDefault()
+    setDragging(false)
+    const files = [...event.dataTransfer.files]
+    if (files.length) onAttach(files)
+  }
+
+  // Incollando uno screenshot (o un file copiato) si allega senza passare dal selettore.
+  function handlePaste(event) {
+    const files = [...event.clipboardData.files]
+    if (!files.length) return
+    event.preventDefault()
+    onAttach(files)
+  }
 
   function handleKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -354,26 +402,98 @@ export default function ChatPanel({
           event.preventDefault()
           onSend()
         }}
-        className="flex items-end gap-2 border-t border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] p-3"
+        onDragOver={(event) => {
+          if (!event.dataTransfer.types.includes('Files')) return
+          event.preventDefault()
+          setDragging(true)
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false)
+        }}
+        onDrop={handleDrop}
+        className={`border-t bg-[var(--dashboard-card-bg)] p-3 transition-colors ${
+          dragging
+            ? 'border-[var(--dashboard-accent)] bg-[var(--dashboard-bg-secondary)]'
+            : 'border-[var(--dashboard-card-border)]'
+        }`}
       >
-        <textarea
-          value={input}
-          onChange={(event) => onInputChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={2}
-          maxLength={MAX_MESSAGE_CHARS}
-          placeholder={PLACEHOLDERS[mode]}
-          aria-label="Messaggio"
-          className="min-h-[3rem] flex-1 resize-none rounded-lg border border-[var(--dashboard-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--dashboard-accent)]"
-        />
-        <Button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="h-10 bg-[var(--dashboard-accent)] text-white hover:bg-[var(--dashboard-accent-hover)]"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          <span className="hidden sm:inline">Invia</span>
-        </Button>
+        {attachments.length > 0 && (
+          <ul className="mb-2 flex flex-wrap gap-1.5">
+            {attachments.map((item) => (
+              <li
+                key={item.id}
+                title={item.message}
+                className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${
+                  item.status === 'error'
+                    ? 'border-red-200 bg-red-50 text-red-700'
+                    : 'border-[var(--dashboard-border)] bg-[var(--dashboard-bg-secondary)] text-[var(--dashboard-text-secondary)]'
+                }`}
+              >
+                {item.status === 'uploading' ? (
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                ) : (
+                  <FileText className="h-3 w-3 shrink-0" />
+                )}
+                <span className="truncate">{item.name}</span>
+                <span className="shrink-0 opacity-70">
+                  {item.status === 'error' ? item.message : formatBytes(item.size)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onRemoveAttachment(item.id)}
+                  aria-label={`Rimuovi ${item.name}`}
+                  className="shrink-0 rounded-full p-0.5 hover:bg-black/10"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="flex items-end gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
+            onChange={handleFilePick}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!canAttach}
+            title={
+              canAttach
+                ? 'Allega file solo a questo messaggio (PDF, Word, slide, testo, immagini)'
+                : `Massimo ${MAX_ATTACHMENTS} allegati`
+            }
+            aria-label="Allega file"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--dashboard-border)] bg-white text-[var(--dashboard-text-secondary)] transition-colors hover:border-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Paperclip className="h-4 w-4" />
+          </button>
+          <textarea
+            value={input}
+            onChange={(event) => onInputChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            rows={2}
+            maxLength={MAX_MESSAGE_CHARS}
+            placeholder={PLACEHOLDERS[mode]}
+            aria-label="Messaggio"
+            className="min-h-[3rem] flex-1 resize-none rounded-lg border border-[var(--dashboard-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--dashboard-accent)]"
+          />
+          <Button
+            type="submit"
+            disabled={loading || uploading || !input.trim()}
+            className="h-10 bg-[var(--dashboard-accent)] text-white hover:bg-[var(--dashboard-accent-hover)]"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <span className="hidden sm:inline">Invia</span>
+          </Button>
+        </div>
       </form>
     </section>
   )

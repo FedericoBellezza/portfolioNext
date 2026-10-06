@@ -46,7 +46,10 @@ function formatSource(source) {
 }
 
 function formatMessage(message) {
-  if (message.role === "user") return `### Utente\n${message.content}`;
+  if (message.role === "user") {
+    const files = message.attachments?.length ? `\nAllegati: ${message.attachments.map((a) => a.name).join(", ")}` : "";
+    return `### Utente\n${message.content}${files}`;
+  }
 
   const label = message.error ? "Assistente [ERRORE]" : `Assistente (${modeLabel(message.mode)})`;
   const parts = [`### ${label}`, message.content];

@@ -47,6 +47,14 @@ export const MODES = [
 
 export const MAX_MESSAGE_CHARS = 4000;
 
+// Allegati di un singolo messaggio: file temporanei, letti una volta sola e poi cancellati.
+// Il testo estratto finisce nel prompt, quindi pesa sul tetto di caratteri della richiesta.
+export const MAX_ATTACHMENTS = 4;
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+export const ATTACHMENT_FOLDER = "tmp";
+export const MAX_ATTACHMENT_CHARS = 14000;
+export const MAX_ATTACHMENTS_TOTAL_CHARS = 30000;
+
 export const DOCUMENT_COLUMNS =
   "id, course, name, file_path, file_type, file_size, page_count, status, error_msg, created_at";
 

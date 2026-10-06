@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/auth";
-import { MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
+import { loadAttachments } from "@/lib/assistant/attachments";
+import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
 import { listCourseDocuments, loadDocumentPassages, searchPassages } from "@/lib/assistant/retrieve";
@@ -11,6 +12,8 @@ export const maxDuration = 60;
 
 // Il workflow n8n rifiuta system + prompt oltre 85000 caratteri.
 const TOTAL_CHAR_BUDGET = 80000;
+// Anche con allegati molto lunghi ai materiali resta almeno questo spazio.
+const MIN_CONTEXT_CHARS = 16000;
 
 const MODE_SETTINGS = {
   ask: { limit: 8, contextChars: 40000 },
@@ -32,6 +35,10 @@ const BodySchema = z.object({
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
     .max(30)
     .default([]),
+  attachments: z
+    .array(z.object({ path: z.string().min(1).max(300), name: z.string().trim().min(1).max(200) }))
+    .max(MAX_ATTACHMENTS)
+    .default([]),
 });
 
 // Una domanda di approfondimento ("e quello di prima?") da sola recupera poco:
@@ -44,7 +51,7 @@ function retrievalQuery(message, history) {
 
 export async function POST(request) {
   try {
-    const { supabase } = await requireOwner();
+    const { supabase, user } = await requireOwner();
 
     const parsed = BodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
@@ -55,6 +62,11 @@ export async function POST(request) {
     const settings = MODE_SETTINGS[mode];
     const count = Math.min(parsed.data.count ?? DEFAULT_COUNTS[mode] ?? 0, MAX_COUNTS[mode] ?? 20);
 
+    // Il testo degli allegati sta nello stesso tetto della richiesta: i passaggi dei materiali cedono spazio.
+    const attachments = await loadAttachments({ supabase, userId: user.id, attachments: parsed.data.attachments });
+    const attachmentChars = attachments.reduce((sum, item) => sum + item.text.length, 0);
+    const contextChars = Math.max(MIN_CONTEXT_CHARS, settings.contextChars - attachmentChars);
+
     // Riassunti, quiz e flashcard su un documento scelto leggono il documento in ordine;
     // negli altri casi si cercano i passaggi più pertinenti alla richiesta.
     let found;
@@ -64,7 +76,7 @@ export async function POST(request) {
         documentId,
         pageFrom,
         pageTo,
-        charBudget: settings.contextChars,
+        charBudget: contextChars,
       });
     } else {
       found = await searchPassages({
@@ -73,7 +85,7 @@ export async function POST(request) {
         course,
         documentId,
         limit: settings.limit,
-        charBudget: settings.contextChars,
+        charBudget: contextChars,
       });
     }
 
@@ -88,11 +100,12 @@ export async function POST(request) {
     // Se con storia e elenco materiali si supera il tetto si tolgono i passaggi meno rilevanti.
     let passages = found.passages;
     let truncated = found.truncated;
-    let built = buildPrompts({ mode, message, history, passages, documents, scope, count, truncated });
+    const promptInput = { mode, message, history, documents, scope, count, attachments };
+    let built = buildPrompts({ ...promptInput, passages, truncated });
     while (built.system.length + built.prompt.length > TOTAL_CHAR_BUDGET && passages.length > 1) {
       passages = passages.slice(0, -1);
       truncated = true;
-      built = buildPrompts({ mode, message, history, passages, documents, scope, count, truncated });
+      built = buildPrompts({ ...promptInput, passages, truncated });
     }
 
     const result = await generate({ system: built.system, prompt: built.prompt, signal: request.signal });
@@ -100,6 +113,7 @@ export async function POST(request) {
     console.log("[assistant] chat", {
       mode,
       passages: passages.length,
+      attachments: attachments.length,
       model: result.model,
       durationMs: result.durationMs,
       costUsd: result.costUsd,

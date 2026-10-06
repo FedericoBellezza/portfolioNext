@@ -6,7 +6,8 @@ const BASE_RULES = `Sei l'assistente di studio personale di uno studente univers
 REGOLE
 - La sezione "Materiali disponibili" è l'elenco COMPLETO dei file caricati dall'utente, raggruppati per corso. La sezione "Materiali" contiene invece solo gli estratti più pertinenti alla richiesta: non sono tutto il materiale. Non dire mai che un corso o un documento non esiste, o che non lo vedi, solo perché non compare tra gli estratti: controlla l'elenco. Se l'elenco lo contiene ma gli estratti non trattano l'argomento, dillo e suggerisci di scegliere quel corso o documento nei filtri.
 - Se l'utente chiede quali documenti, corsi o file hai a disposizione, rispondi dall'elenco "Materiali disponibili" (corso, nome file, pagine), senza citare fonti [F#]. Se la conversazione precedente contraddice l'elenco, vale l'elenco.
-- Per contenuti, definizioni, formule e dati, basati SOLO sugli estratti nella sezione "Materiali". Non inventare dati, definizioni, formule o riferimenti.
+- Per contenuti, definizioni, formule e dati, basati SOLO sugli estratti nella sezione "Materiali" e sugli allegati nella sezione "Allegati dell'utente" (se presente). Non inventare dati, definizioni, formule o riferimenti.
+- Gli allegati sono file che l'utente ha aggiunto solo a questo messaggio: se la richiesta li riguarda ("questo documento", "l'immagine", "allegato"), rispondi da lì. Non hanno un numero [F#]: citali per nome file (ed eventuale pagina). Se un allegato è troncato, dillo.
 - Gli estratti con la dicitura "figura" nell'intestazione sono descrizioni automatiche di grafici, schemi e immagini delle slide: usali come le altre fonti, ma se riporti un valore letto da un grafico avvisa che viene da una descrizione automatica e può essere impreciso.
 - Cita le fonti con il loro numero tra parentesi quadre, per esempio [F1] oppure [F2][F3], subito dopo l'affermazione che sostengono.
 - Se i materiali non contengono la risposta, scrivi chiaramente: "Non lo trovo nei materiali caricati." Solo dopo, in un paragrafo separato che inizia con "Fuori dai materiali:", puoi aggiungere una breve spiegazione dalla tua conoscenza generale, dichiarando che non è verificata sui materiali.
@@ -72,10 +73,29 @@ function formatScope({ course, documentName }) {
   return "Gli estratti qui sotto sono cercati in tutti i corsi.";
 }
 
+function formatAttachments(attachments) {
+  return attachments
+    .map(
+      (item) =>
+        `### Allegato: ${item.name}${item.truncated ? " (troncato: solo la parte iniziale)" : ""}\n${item.text}`,
+    )
+    .join("\n\n");
+}
+
 /**
  * @returns {{ system: string, prompt: string }}
  */
-export function buildPrompts({ mode, message, history, passages, documents, scope, count, truncated }) {
+export function buildPrompts({
+  mode,
+  message,
+  history,
+  passages,
+  documents,
+  scope,
+  count,
+  truncated,
+  attachments = [],
+}) {
   const rules = (MODE_RULES[mode] ?? MODE_RULES.ask)({ count });
   const system = `${BASE_RULES}\n\n${rules}`;
 
@@ -105,6 +125,10 @@ export function buildPrompts({ mode, message, history, passages, documents, scop
 
   if (history.length) {
     sections.push(`## Conversazione precedente\n${formatHistory(history)}`);
+  }
+
+  if (attachments.length) {
+    sections.push(`## Allegati dell'utente\n${formatAttachments(attachments)}`);
   }
 
   sections.push(`## Richiesta dell'utente\n${message}`);
