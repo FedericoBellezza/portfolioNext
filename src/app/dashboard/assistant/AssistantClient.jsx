@@ -501,9 +501,9 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           <h1 className="text-balance font-serif text-2xl font-semibold tracking-tight text-[var(--dashboard-text)] sm:text-3xl">
             Assistente di studio
           </h1>
-          <p className="mt-1 text-pretty text-sm leading-relaxed text-[var(--dashboard-text-secondary)]">
+          {/* <p className="mt-1 text-pretty text-sm leading-relaxed text-[var(--dashboard-text-secondary)]">
             Interroga slide, trascrizioni e riassunti dei tuoi corsi, con le fonti.
-          </p>
+          </p> */}
         </div>
         {documents.length > 0 && (
           <p className="pb-0.5 text-sm tabular-nums text-[var(--dashboard-text-muted)]">
