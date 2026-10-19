@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { listDocuments } from '@/lib/assistant/documents'
+import { listDocuments, listFolders } from '@/lib/assistant/documents'
 import AssistantClient from './AssistantClient'
 
 export const metadata = {
@@ -11,6 +11,7 @@ export const metadata = {
 export default async function AssistantPage() {
   const supabase = await createClient()
   const { data, error } = await listDocuments(supabase)
+  const folders = await listFolders(supabase)
 
-  return <AssistantClient initialDocuments={data ?? []} dbError={error?.message ?? null} />
+  return <AssistantClient initialDocuments={data ?? []} initialFolders={folders.data} dbError={error?.message ?? null} />
 }

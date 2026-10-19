@@ -21,8 +21,10 @@ function toInt(value) {
   return Number.isFinite(n) && n > 0 ? n : null
 }
 
-export default function AssistantClient({ initialDocuments, dbError }) {
+export default function AssistantClient({ initialDocuments, initialFolders, dbError }) {
   const [documents, setDocuments] = useState(initialDocuments)
+  // Cartelle create dall'utente: [{ course, name }]. Un documento con `folder` ne indica l'appartenenza.
+  const [folders, setFolders] = useState(initialFolders)
   const [course, setCourse] = useState('')
   const [uploads, setUploads] = useState([])
 
@@ -74,7 +76,53 @@ export default function AssistantClient({ initialDocuments, dbError }) {
   async function refreshDocuments() {
     const response = await fetch('/api/assistant/documents', { cache: 'no-store' })
     const data = await response.json().catch(() => null)
-    if (response.ok && data?.ok) setDocuments(data.documents)
+    if (response.ok && data?.ok) {
+      setDocuments(data.documents)
+      setFolders(data.folders ?? [])
+    }
+  }
+
+  async function createFolder(courseName, name) {
+    try {
+      const response = await fetch('/api/assistant/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: courseName, name }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data?.ok) return { ok: false, error: data?.error ?? `Errore ${response.status}` }
+      await refreshDocuments()
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error.message }
+    }
+  }
+
+  // I documenti della cartella non si cancellano: tornano direttamente nel corso.
+  async function deleteFolder(courseName, name) {
+    const response = await fetch(
+      `/api/assistant/folders?course=${encodeURIComponent(courseName)}&name=${encodeURIComponent(name)}`,
+      { method: 'DELETE' },
+    )
+    if (response.ok) await refreshDocuments()
+  }
+
+  async function moveDocument(doc, folder) {
+    const response = await fetch('/api/assistant/documents', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: doc.id, folder }),
+    })
+    if (response.ok) await refreshDocuments()
+  }
+
+  // "Chiedi solo qui": limita le domande ai documenti pronti di una cartella.
+  function focusFolder(courseName, folderName) {
+    const ids = documents
+      .filter((doc) => doc.status === 'ready' && doc.course === courseName && doc.folder === folderName)
+      .map((doc) => doc.id)
+    setCourse(courseName)
+    changeDocuments(ids)
   }
 
   function changeCourse(next) {
@@ -92,7 +140,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
     setUploads((current) => current.map((upload) => (upload.id === id ? { ...upload, ...patch } : upload)))
   }
 
-  async function uploadFiles(files, targetCourse) {
+  async function uploadFiles(files, targetCourse, targetFolder) {
     const supabase = createClient()
     const {
       data: { user },
@@ -127,7 +175,7 @@ export default function AssistantClient({ initialDocuments, dbError }) {
         const response = await fetch('/api/assistant/ingest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path, name: file.name, course: targetCourse }),
+          body: JSON.stringify({ path, name: file.name, course: targetCourse, folder: targetFolder || null }),
         })
         const data = await response.json().catch(() => null)
         if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
@@ -425,9 +473,14 @@ export default function AssistantClient({ initialDocuments, dbError }) {
         <div className={expanded ? 'contents lg:hidden' : 'contents'}>
         <SourcesPanel
           documents={documents}
+          folders={folders}
           courses={courses}
           course={course}
           onCourseChange={changeCourse}
+          onCreateFolder={createFolder}
+          onDeleteFolder={deleteFolder}
+          onMoveDocument={moveDocument}
+          onFocusFolder={focusFolder}
           uploads={uploads}
           onUpload={uploadFiles}
           onDelete={deleteDocument}

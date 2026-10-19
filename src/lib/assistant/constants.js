@@ -61,6 +61,9 @@ export const DOCUMENT_COLUMNS =
 // Colonne aggiunte dalla migrazione 0002 (analisi delle figure).
 export const DOCUMENT_VISUAL_COLUMNS = "visual_status, visual_total, visual_done, visual_error";
 
+// Colonna aggiunta dalla migrazione 0005 (cartelle dentro i corsi).
+export const DOCUMENT_FOLDER_COLUMNS = "folder";
+
 // Analisi delle figure: un modello vision descrive grafici e schemi che il testo estratto non contiene.
 // Le pagine con meno parole di così sono "da slide" e potrebbero contenere una figura.
 export const VISUAL_MAX_WORDS = 150;

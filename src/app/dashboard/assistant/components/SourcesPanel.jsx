@@ -6,9 +6,13 @@ import {
   CheckCircle2,
   ChevronDown,
   FileText,
+  Folder,
+  FolderInput,
   FolderOpen,
+  FolderPlus,
   Loader2,
   Sparkles,
+  Target,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -108,7 +112,8 @@ function ConfirmDelete({ label, onConfirm, onCancel }) {
   )
 }
 
-function CourseCombobox({ id, value, onChange, courses, placeholder }) {
+// Campo con suggerimenti: serve sia per il corso sia per la cartella di destinazione.
+function CourseCombobox({ id, value, onChange, courses, placeholder, ariaLabel = 'Corso di destinazione', newLabel = 'Nuovo corso' }) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(-1)
 
@@ -168,7 +173,7 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         maxLength={100}
-        aria-label="Corso di destinazione"
+        aria-label={ariaLabel}
         className="h-9 w-full rounded-lg border border-[var(--dashboard-border)] bg-white pl-3 pr-8 text-sm outline-none transition-colors placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/25"
       />
       <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-[var(--dashboard-text-muted)]" />
@@ -198,7 +203,7 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
           ))}
           {isNew && (
             <li role="presentation" className="truncate px-2 py-1.5 text-xs text-[var(--dashboard-text-muted)]">
-              Nuovo corso: &quot;{value.trim()}&quot;
+              {newLabel}: &quot;{value.trim()}&quot;
             </li>
           )}
         </ul>
@@ -207,11 +212,161 @@ function CourseCombobox({ id, value, onChange, courses, placeholder }) {
   )
 }
 
+// Riga di un documento: stato, figure, spostamento in una cartella ed eliminazione.
+function DocumentRow({
+  doc,
+  folderNames,
+  deleting,
+  confirming,
+  onConfirm,
+  onCancel,
+  onAskDelete,
+  onMove,
+  progress,
+  error,
+  onAnalyze,
+}) {
+  return (
+    <li
+      aria-busy={deleting}
+      className={`group flex items-start gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--dashboard-bg)] ${
+        deleting ? 'opacity-60' : ''
+      }`}
+    >
+      <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
+          {doc.name}
+        </p>
+        <p className="text-xs tabular-nums text-[var(--dashboard-text-muted)]">
+          {[
+            FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type,
+            doc.page_count ? `${doc.page_count} pag.` : null,
+            formatBytes(doc.file_size),
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+        {doc.status === 'error' && doc.error_msg && <p className="mt-0.5 text-xs text-red-600">{doc.error_msg}</p>}
+        <FigureStatus doc={doc} progress={progress} error={error} onAnalyze={onAnalyze} />
+      </div>
+      {deleting ? (
+        <span role="status" aria-label={`Eliminazione di ${doc.name}…`} className="shrink-0 p-1">
+          <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+        </span>
+      ) : confirming ? (
+        <ConfirmDelete label={`Conferma eliminazione di ${doc.name}`} onConfirm={onConfirm} onCancel={onCancel} />
+      ) : (
+        <>
+          <StatusIcon status={doc.status} title={doc.error_msg} />
+          {folderNames.length > 0 && (
+            // Select nativa trasparente sopra l'icona: si apre il menu del sistema, accessibile da tastiera.
+            <span
+              className={`relative shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition focus-within:opacity-100 focus-within:ring-2 focus-within:ring-[var(--dashboard-accent)]/40 hover:text-[var(--dashboard-accent)] group-hover:opacity-100 max-lg:opacity-100`}
+            >
+              <FolderInput className="h-4 w-4" />
+              <select
+                value={doc.folder ?? ''}
+                onChange={(event) => onMove(event.target.value || null)}
+                aria-label={`Sposta ${doc.name} in una cartella`}
+                title="Sposta in una cartella"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              >
+                <option value="">Nessuna cartella</option>
+                {folderNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onAskDelete}
+            aria-label={`Elimina ${doc.name}`}
+            className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </>
+      )}
+    </li>
+  )
+}
+
+// Compare sotto l'intestazione di un corso per dare un nome alla nuova cartella.
+function NewFolderForm({ courseName, existing, onCreate, onClose }) {
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  async function submit(event) {
+    event.preventDefault()
+    const trimmed = name.trim()
+    if (!trimmed || busy) return
+    if (existing.some((item) => item.toLowerCase() === trimmed.toLowerCase())) {
+      setError('Esiste già una cartella con questo nome')
+      return
+    }
+    setBusy(true)
+    const result = await onCreate(courseName, trimmed)
+    setBusy(false)
+    if (result.ok) onClose()
+    else setError(result.error)
+  }
+
+  return (
+    <form onSubmit={submit} className="mb-2 ml-3 mt-1 border-l border-[var(--dashboard-card-border)] pl-2">
+      <div className="flex items-center gap-1.5">
+        <input
+          autoFocus
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value)
+            setError('')
+          }}
+          onKeyDown={(event) => event.key === 'Escape' && onClose()}
+          maxLength={100}
+          placeholder="Nome cartella (es. Modulo 1)"
+          aria-label={`Nome della nuova cartella in ${courseName}`}
+          aria-invalid={Boolean(error)}
+          className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--dashboard-border)] bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/25"
+        />
+        <button
+          type="submit"
+          disabled={!name.trim() || busy}
+          className={`h-8 shrink-0 cursor-pointer rounded-lg bg-[var(--dashboard-accent)] px-3 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Crea'}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className={`h-8 shrink-0 cursor-pointer rounded-lg px-2 text-xs font-medium text-[var(--dashboard-text-secondary)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] ${FOCUS_RING}`}
+        >
+          Annulla
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
+      )}
+    </form>
+  )
+}
+
 export default function SourcesPanel({
   documents,
+  folders,
   courses,
   course,
   onCourseChange,
+  onCreateFolder,
+  onDeleteFolder,
+  onMoveDocument,
+  onFocusFolder,
   uploads,
   onUpload,
   onDelete,
@@ -231,16 +386,29 @@ export default function SourcesPanel({
   const [openCourses, setOpenCourses] = useState(() => new Set())
   // Elemento in attesa di conferma di eliminazione: 'doc:<id>' o 'course:<nome>'.
   const [confirming, setConfirming] = useState(null)
+  // Cartella di destinazione dell'upload (facoltativa), cartelle aperte e corso in cui se ne sta creando una.
+  const [uploadFolder, setUploadFolder] = useState('')
+  const [openFolders, setOpenFolders] = useState(() => new Set())
+  const [creatingIn, setCreatingIn] = useState(null)
 
-  function toggleCourse(name) {
-    setOpenCourses((current) => {
+  function toggleIn(setter, key) {
+    setter((current) => {
       const next = new Set(current)
-      if (!next.delete(name)) next.add(name)
+      if (!next.delete(key)) next.add(key)
       return next
     })
   }
+  const toggleCourse = (name) => toggleIn(setOpenCourses, name)
+  const folderKey = (courseName, folderName) => `${courseName}\u0000${folderName}`
 
   const targetCourse = (uploadCourse || course).trim()
+  const targetFolders = folders.filter((folder) => folder.course === targetCourse).map((folder) => folder.name)
+
+  // Cambiando corso, la cartella scritta non vale più: finirebbe creata nel corso sbagliato.
+  useEffect(() => {
+    setUploadFolder('')
+  }, [targetCourse])
+
   const visible = course ? documents.filter((doc) => doc.course === course) : documents
   const grouped = visible.reduce((acc, doc) => {
     ;(acc[doc.course] ??= []).push(doc)
@@ -251,7 +419,7 @@ export default function SourcesPanel({
   function handleFiles(fileList) {
     const files = Array.from(fileList ?? [])
     if (!files.length || !targetCourse) return
-    onUpload(files, targetCourse)
+    onUpload(files, targetCourse, uploadFolder.trim())
   }
 
   function confirmDelete(action) {
@@ -288,6 +456,18 @@ export default function SourcesPanel({
             courses={courses}
             placeholder={course ? `Corso (default: ${course})` : 'Corso (es. Economia aziendale)'}
           />
+
+          {targetCourse && (
+            <CourseCombobox
+              id="assistant-upload-folder"
+              value={uploadFolder}
+              onChange={setUploadFolder}
+              courses={targetFolders}
+              placeholder="Cartella (facoltativa, es. Modulo 1)"
+              ariaLabel="Cartella di destinazione"
+              newLabel="Nuova cartella"
+            />
+          )}
 
           <label
             onDragOver={(event) => {
@@ -395,6 +575,33 @@ export default function SourcesPanel({
                 const courseDeleting = deletingCourses.has(courseName)
                 const courseConfirming = confirming === `course:${courseName}`
                 const listId = `assistant-course-docs-${index}`
+
+                // Cartelle del corso: quelle create più quelle citate dai documenti; "Modulo 2" prima di "Modulo 10".
+                const folderNames = [
+                  ...new Set([
+                    ...folders.filter((folder) => folder.course === courseName).map((folder) => folder.name),
+                    ...docs.map((doc) => doc.folder).filter(Boolean),
+                  ]),
+                ].sort((a, b) => a.localeCompare(b, 'it', { numeric: true }))
+                const looseDocs = docs.filter((doc) => !doc.folder)
+
+                const renderRow = (doc, names) => (
+                  <DocumentRow
+                    key={doc.id}
+                    doc={doc}
+                    folderNames={names}
+                    deleting={deletingDocs.has(doc.id)}
+                    confirming={confirming === `doc:${doc.id}`}
+                    onAskDelete={() => setConfirming(`doc:${doc.id}`)}
+                    onConfirm={() => confirmDelete(() => onDelete(doc))}
+                    onCancel={() => setConfirming(null)}
+                    onMove={(folder) => onMoveDocument(doc, folder)}
+                    progress={visualProgress[doc.id]}
+                    error={visualErrors[doc.id]}
+                    onAnalyze={() => onAnalyzeVisuals(doc)}
+                  />
+                )
+
                 return (
                   <div key={courseName}>
                     <div className="group flex items-center gap-1 rounded-lg hover:bg-[var(--dashboard-bg)]">
@@ -431,81 +638,124 @@ export default function SourcesPanel({
                           onCancel={() => setConfirming(null)}
                         />
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setConfirming(`course:${courseName}`)}
-                          aria-label={`Elimina il corso ${courseName} e tutti i suoi documenti`}
-                          className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenCourses((current) => new Set(current).add(courseName))
+                              setCreatingIn(courseName)
+                            }}
+                            aria-label={`Nuova cartella nel corso ${courseName}`}
+                            title="Nuova cartella"
+                            className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-[var(--dashboard-accent)] focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                          >
+                            <FolderPlus className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirming(`course:${courseName}`)}
+                            aria-label={`Elimina il corso ${courseName} e tutti i suoi documenti`}
+                            className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
                     </div>
 
+                    {creatingIn === courseName && (
+                      <NewFolderForm
+                        courseName={courseName}
+                        existing={folderNames}
+                        onCreate={async (name, folderName) => {
+                          const result = await onCreateFolder(name, folderName)
+                          if (result.ok) setOpenFolders((current) => new Set(current).add(folderKey(name, folderName)))
+                          return result
+                        }}
+                        onClose={() => setCreatingIn(null)}
+                      />
+                    )}
+
                     {isOpen && (
-                      <ul id={listId} className="mb-2 mt-1 space-y-0.5 border-l border-[var(--dashboard-card-border)] pl-2 ml-3">
-                        {docs.map((doc) => {
-                          const deleting = deletingDocs.has(doc.id)
-                          const docConfirming = confirming === `doc:${doc.id}`
+                      <div id={listId} className="mb-2 ml-3 mt-1 space-y-0.5 border-l border-[var(--dashboard-card-border)] pl-2">
+                        {folderNames.map((folderName) => {
+                          const key = folderKey(courseName, folderName)
+                          const folderOpen = openFolders.has(key)
+                          const folderDocs = docs.filter((doc) => doc.folder === folderName)
+                          const readyDocs = folderDocs.filter((doc) => doc.status === 'ready').length
+                          const folderConfirming = confirming === `folder:${key}`
+                          const folderListId = `${listId}-folder-${folderNames.indexOf(folderName)}`
                           return (
-                            <li
-                              key={doc.id}
-                              aria-busy={deleting}
-                              className={`group flex items-start gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[var(--dashboard-bg)] ${
-                                deleting ? 'opacity-60' : ''
-                              }`}
-                            >
-                              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
-                                  {doc.name}
-                                </p>
-                                <p className="text-xs tabular-nums text-[var(--dashboard-text-muted)]">
-                                  {[
-                                    FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type,
-                                    doc.page_count ? `${doc.page_count} pag.` : null,
-                                    formatBytes(doc.file_size),
-                                  ]
-                                    .filter(Boolean)
-                                    .join(' · ')}
-                                </p>
-                                {doc.status === 'error' && doc.error_msg && (
-                                  <p className="mt-0.5 text-xs text-red-600">{doc.error_msg}</p>
+                            <div key={folderName}>
+                              <div className="group flex items-center gap-1 rounded-lg hover:bg-[var(--dashboard-bg)]">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleIn(setOpenFolders, key)}
+                                  aria-expanded={folderOpen}
+                                  aria-controls={folderListId}
+                                  className={`flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-left ${FOCUS_RING}`}
+                                >
+                                  <ChevronDown
+                                    className={`h-3.5 w-3.5 shrink-0 text-[var(--dashboard-text-muted)] transition-transform duration-200 ${
+                                      folderOpen ? '' : '-rotate-90'
+                                    }`}
+                                  />
+                                  <Folder className="h-4 w-4 shrink-0 text-[var(--dashboard-accent)]" />
+                                  <span className="truncate text-sm font-medium text-[var(--dashboard-text)]" title={folderName}>
+                                    {folderName}
+                                  </span>
+                                  <span className="shrink-0 text-xs tabular-nums text-[var(--dashboard-text-muted)]">
+                                    {folderDocs.length}
+                                  </span>
+                                </button>
+                                {folderConfirming ? (
+                                  <ConfirmDelete
+                                    label={`Conferma eliminazione della cartella ${folderName}: i documenti restano nel corso`}
+                                    onConfirm={() => confirmDelete(() => onDeleteFolder(courseName, folderName))}
+                                    onCancel={() => setConfirming(null)}
+                                  />
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => onFocusFolder(courseName, folderName)}
+                                      disabled={readyDocs === 0}
+                                      aria-label={`Fai domande solo sulla cartella ${folderName}`}
+                                      title="Fai domande solo su questa cartella"
+                                      className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-[var(--dashboard-accent)] focus-visible:opacity-100 group-hover:opacity-100 disabled:pointer-events-none disabled:opacity-0 max-lg:opacity-100 max-lg:disabled:opacity-40 ${FOCUS_RING}`}
+                                    >
+                                      <Target className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirming(`folder:${key}`)}
+                                      aria-label={`Elimina la cartella ${folderName} (i documenti restano nel corso)`}
+                                      title="Elimina la cartella: i documenti restano nel corso"
+                                      className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </>
                                 )}
-                                <FigureStatus
-                                  doc={doc}
-                                  progress={visualProgress[doc.id]}
-                                  error={visualErrors[doc.id]}
-                                  onAnalyze={() => onAnalyzeVisuals(doc)}
-                                />
                               </div>
-                              {deleting ? (
-                                <span role="status" aria-label={`Eliminazione di ${doc.name}…`} className="shrink-0 p-1">
-                                  <Loader2 className="h-4 w-4 animate-spin text-red-600" />
-                                </span>
-                              ) : docConfirming ? (
-                                <ConfirmDelete
-                                  label={`Conferma eliminazione di ${doc.name}`}
-                                  onConfirm={() => confirmDelete(() => onDelete(doc))}
-                                  onCancel={() => setConfirming(null)}
-                                />
-                              ) : (
-                                <>
-                                  <StatusIcon status={doc.status} title={doc.error_msg} />
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirming(`doc:${doc.id}`)}
-                                    aria-label={`Elimina ${doc.name}`}
-                                    className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-red-600 focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                </>
+                              {folderOpen && (
+                                <ul id={folderListId} className="mb-1 ml-3 mt-0.5 space-y-0.5 border-l border-[var(--dashboard-card-border)] pl-2">
+                                  {folderDocs.length === 0 ? (
+                                    <li className="px-1.5 py-1 text-xs text-[var(--dashboard-text-muted)]">
+                                      Cartella vuota: carica qui un file o spostaci un documento.
+                                    </li>
+                                  ) : (
+                                    folderDocs.map((doc) => renderRow(doc, folderNames))
+                                  )}
+                                </ul>
                               )}
-                            </li>
+                            </div>
                           )
                         })}
-                      </ul>
+                        {looseDocs.length > 0 && (
+                          <ul className="space-y-0.5">{looseDocs.map((doc) => renderRow(doc, folderNames))}</ul>
+                        )}
+                      </div>
                     )}
                   </div>
                 )

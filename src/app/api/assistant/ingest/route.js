@@ -15,6 +15,7 @@ const BodySchema = z.object({
   path: z.string().min(1).max(300),
   name: z.string().trim().min(1).max(200),
   course: z.string().trim().min(1).max(100),
+  folder: z.string().trim().min(1).max(100).nullish(),
 });
 
 export async function POST(request) {
@@ -27,7 +28,7 @@ export async function POST(request) {
 
     const parsed = BodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) throw new AssistantError("Richiesta non valida", 422);
-    const { path, name, course } = parsed.data;
+    const { path, name, course, folder } = parsed.data;
 
     // Il file deve stare nella cartella dell'utente: altrimenti la policy di Storage lo negherebbe,
     // ma meglio rifiutare subito e con un messaggio chiaro.
@@ -36,9 +37,24 @@ export async function POST(request) {
     }
     if (!isAcceptedFile(name)) throw new AssistantError("Tipo di file non supportato", 415);
 
+    // Cartella creata al volo se non esiste ancora (serve la migrazione 0005; senza, l'upload fallisce con un errore chiaro).
+    if (folder) {
+      const { error: folderError } = await supabase
+        .from("assistant_folders")
+        .upsert({ course, name: folder }, { onConflict: "user_id,course,name", ignoreDuplicates: true });
+      if (folderError) throw new AssistantError(`Cartelle non disponibili: applica la migrazione 0005 (${folderError.message})`, 500);
+    }
+
     const { data: document, error: insertError } = await supabase
       .from("assistant_documents")
-      .insert({ course, name, file_path: path, file_type: getExtension(name), status: "processing" })
+      .insert({
+        course,
+        name,
+        file_path: path,
+        file_type: getExtension(name),
+        status: "processing",
+        ...(folder ? { folder } : {}),
+      })
       .select("id")
       .single();
     if (insertError) throw new AssistantError(`Registrazione documento: ${insertError.message}`, 500);

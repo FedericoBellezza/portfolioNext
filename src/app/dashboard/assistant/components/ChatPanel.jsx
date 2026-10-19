@@ -479,7 +479,7 @@ export default function ChatPanel({
           <AssistantMultiSelect
             value={documentIds}
             onChange={onDocumentsChange}
-            options={readyDocuments.map((doc) => ({ value: doc.id, label: doc.name }))}
+            options={readyDocuments.map((doc) => ({ value: doc.id, label: doc.folder ? `${doc.folder} / ${doc.name}` : doc.name }))}
             allLabel={mode === 'ask' ? 'Tutti i documenti' : 'Cerca nei materiali'}
             aria-label="Documenti"
             className="w-auto min-w-40 max-w-64"
