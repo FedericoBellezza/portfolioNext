@@ -28,6 +28,48 @@ export async function POST(request) {
   }
 }
 
+/** Rinomina una cartella: cambia il nome e lo aggiorna su tutti i documenti che la contengono. */
+export async function PATCH(request) {
+  try {
+    const { supabase } = await requireOwner();
+
+    const parsed = z
+      .object({ course: CourseSchema, name: NameSchema, newName: NameSchema })
+      .safeParse(await request.json().catch(() => null));
+    if (!parsed.success) throw new AssistantError(parsed.error.issues[0]?.message ?? "Richiesta non valida", 422);
+    const { course, name, newName } = parsed.data;
+    if (newName === name) return Response.json({ ok: true });
+
+    const { data: clash, error: clashError } = await supabase
+      .from("assistant_folders")
+      .select("id")
+      .eq("course", course)
+      .eq("name", newName)
+      .maybeSingle();
+    if (clashError) throw new AssistantError(`${MIGRATION_HINT} (${clashError.message})`, 500);
+    if (clash) throw new AssistantError("Esiste già una cartella con questo nome", 409);
+
+    // Prima la cartella (il vincolo di unicità protegge da doppioni), poi i documenti.
+    const { error: renameError } = await supabase
+      .from("assistant_folders")
+      .update({ name: newName })
+      .eq("course", course)
+      .eq("name", name);
+    if (renameError) throw new AssistantError(`Rinomina cartella: ${renameError.message}`, 500);
+
+    const { error: docsError } = await supabase
+      .from("assistant_documents")
+      .update({ folder: newName })
+      .eq("course", course)
+      .eq("folder", name);
+    if (docsError) throw new AssistantError(`Aggiornamento documenti: ${docsError.message}`, 500);
+
+    return Response.json({ ok: true });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
 /**
  * Elimina una cartella (?course=&name=). I documenti non si cancellano: tornano direttamente nel corso.
  */

@@ -244,6 +244,28 @@ export function formatContext(passages) {
     .join("\n\n");
 }
 
+/**
+ * Documenti pronti compresi in una selezione di corsi e cartelle ({ course, name }).
+ * Un documento conta se il suo corso è scelto o se sta in una cartella scelta.
+ */
+export async function resolveScopeDocumentIds({ supabase, courses = [], folders = [] }) {
+  if (!courses.length && !folders.length) return [];
+
+  // La colonna `folder` esiste solo con la migrazione 0005: la si legge se servono le cartelle.
+  const { data, error } = await supabase
+    .from("assistant_documents")
+    .select(folders.length ? "id, course, folder" : "id, course")
+    .eq("status", "ready")
+    .limit(500);
+  if (error) throw new Error(`Lettura documenti: ${error.message}`);
+
+  const chosenCourses = new Set(courses);
+  const chosenFolders = new Set(folders.map((folder) => `${folder.course}\u0000${folder.name}`));
+  return (data ?? [])
+    .filter((doc) => chosenCourses.has(doc.course) || chosenFolders.has(`${doc.course}\u0000${doc.folder}`))
+    .map((doc) => doc.id);
+}
+
 // Elenco dei materiali di un corso: utile al piano di ripasso e ai riassunti generali.
 export async function listCourseDocuments({ supabase, course }) {
   let query = supabase

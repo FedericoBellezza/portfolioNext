@@ -16,6 +16,8 @@ import { buildBugReport, copyToClipboard } from '@/lib/assistant/bugReport'
 import ChatPanel from './components/ChatPanel'
 import SourcesPanel from './components/SourcesPanel'
 
+const EMPTY_SCOPE = { courses: [], folders: [], documentIds: [] }
+
 function toInt(value) {
   const n = Number.parseInt(value, 10)
   return Number.isFinite(n) && n > 0 ? n : null
@@ -42,17 +44,38 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState('ask')
-  const [documentIds, setDocumentIds] = useState([])
+  // Contesto della chat: corsi, cartelle e documenti, anche mescolati. Tutto vuoto = tutti i materiali.
+  const [scope, setScope] = useState(EMPTY_SCOPE)
   const [count, setCount] = useState('')
 
   // Allegati del prossimo messaggio: { id, name, size, status: 'uploading' | 'ready' | 'error', path?, message? }
   const [attachments, setAttachments] = useState([])
 
   const courses = useMemo(() => [...new Set(documents.map((doc) => doc.course))].sort(), [documents])
-  const readyDocuments = useMemo(
-    () => documents.filter((doc) => doc.status === 'ready' && (!course || doc.course === course)),
-    [documents, course],
-  )
+  const readyDocuments = useMemo(() => documents.filter((doc) => doc.status === 'ready'), [documents])
+
+  // Corsi, cartelle e documenti spariti (eliminati, spostati, ancora in elaborazione) escono dal contesto.
+  useEffect(() => {
+    setScope((current) => {
+      const ids = new Set(readyDocuments.map((doc) => doc.id))
+      const courseNames = new Set(readyDocuments.map((doc) => doc.course))
+      const folderKeys = new Set(readyDocuments.filter((doc) => doc.folder).map((doc) => JSON.stringify([doc.course, doc.folder])))
+      const next = {
+        courses: current.courses.filter((name) => courseNames.has(name)),
+        folders: current.folders.filter((folder) => folderKeys.has(JSON.stringify([folder.course, folder.name]))),
+        documentIds: current.documentIds.filter((id) => ids.has(id)),
+      }
+      const same =
+        next.courses.length === current.courses.length &&
+        next.folders.length === current.folders.length &&
+        next.documentIds.length === current.documentIds.length
+      return same ? current : next
+    })
+  }, [readyDocuments])
+
+  // Nome per il file delle flashcard: il corso, se il contesto è uno solo.
+  const scopeName =
+    scope.courses.length === 1 && !scope.folders.length && !scope.documentIds.length ? scope.courses[0] : ''
 
   // Chat a tutta pagina: nasconde intestazione e pannello dei materiali. Si ricorda tra le visite.
   const [expanded, setExpanded] = useState(false)
@@ -107,33 +130,56 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     if (response.ok) await refreshDocuments()
   }
 
-  async function moveDocument(doc, folder) {
-    const response = await fetch('/api/assistant/documents', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: doc.id, folder }),
-    })
-    if (response.ok) await refreshDocuments()
+  async function renameFolder(courseName, name, newName) {
+    try {
+      const response = await fetch('/api/assistant/folders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: courseName, name, newName }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data?.ok) return { ok: false, error: data?.error ?? `Errore ${response.status}` }
+      // La cartella rinominata resta nel contesto con il nuovo nome.
+      setScope((current) => ({
+        ...current,
+        folders: current.folders.map((folder) =>
+          folder.course === courseName && folder.name === name ? { ...folder, name: newName } : folder,
+        ),
+      }))
+      await refreshDocuments()
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error.message }
+    }
   }
 
-  // "Chiedi solo qui": limita le domande ai documenti pronti di una cartella.
+  // Sposta uno o più documenti (dello stesso corso) in una cartella; folder null = fuori da ogni cartella.
+  async function moveDocuments(docs, folder) {
+    try {
+      const response = await fetch('/api/assistant/documents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: docs.map((doc) => doc.id), folder }),
+      })
+      const data = await response.json().catch(() => null)
+      if (!response.ok || !data?.ok) return { ok: false, error: data?.error ?? `Errore ${response.status}` }
+      await refreshDocuments()
+      return { ok: true }
+    } catch (error) {
+      return { ok: false, error: error.message }
+    }
+  }
+
+  // "Chiedi solo qui": il contesto della chat diventa questa cartella.
   function focusFolder(courseName, folderName) {
-    const ids = documents
-      .filter((doc) => doc.status === 'ready' && doc.course === courseName && doc.folder === folderName)
-      .map((doc) => doc.id)
     setCourse(courseName)
-    changeDocuments(ids)
+    setScope({ courses: [], folders: [{ course: courseName, name: folderName }], documentIds: [] })
   }
 
+  // Il filtro del pannello imposta anche il contesto: un corso, oppure tutti i materiali.
   function changeCourse(next) {
     setCourse(next)
-    // I documenti di un altro corso non sono più selezionabili.
-    const kept = documentIds.filter((id) => documents.some((doc) => doc.id === id && (!next || doc.course === next)))
-    if (kept.length !== documentIds.length) changeDocuments(kept)
-  }
-
-  function changeDocuments(next) {
-    setDocumentIds(next)
+    setScope(next ? { courses: [next], folders: [], documentIds: [] } : EMPTY_SCOPE)
   }
 
   function patchUpload(id, patch) {
@@ -267,7 +313,6 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     try {
       const response = await fetch(`/api/assistant/documents?id=${doc.id}`, { method: 'DELETE' })
       if (response.ok) {
-        if (documentIds.includes(doc.id)) changeDocuments(documentIds.filter((id) => id !== doc.id))
         await refreshDocuments()
       }
     } finally {
@@ -286,7 +331,6 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
       })
       if (response.ok) {
         if (course === courseName) changeCourse('')
-        if (documentIds.some((id) => ids.includes(id))) changeDocuments(documentIds.filter((id) => !ids.includes(id)))
         await refreshDocuments()
       }
     } finally {
@@ -354,8 +398,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
       documents,
       filters: {
         mode,
-        course,
-        documentNames: documentIds.map((id) => documents.find((doc) => doc.id === id)?.name).filter(Boolean),
+        course: [...scope.courses, ...scope.folders.map((folder) => `${folder.course} / ${folder.name}`)].join(', '),
+        documentNames: scope.documentIds.map((id) => documents.find((doc) => doc.id === id)?.name).filter(Boolean),
         count,
       },
     })
@@ -399,8 +443,9 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
         body: JSON.stringify({
           message: text,
           mode,
-          course: course || null,
-          documentIds,
+          courses: scope.courses,
+          folders: scope.folders,
+          documentIds: scope.documentIds,
           count: toInt(count),
           history,
           attachments: sent.map((item) => ({ path: item.path, name: item.name })),
@@ -479,7 +524,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           onCourseChange={changeCourse}
           onCreateFolder={createFolder}
           onDeleteFolder={deleteFolder}
-          onMoveDocument={moveDocument}
+          onRenameFolder={renameFolder}
+          onMoveDocuments={moveDocuments}
           onFocusFolder={focusFolder}
           uploads={uploads}
           onUpload={uploadFiles}
@@ -506,10 +552,10 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           onReset={() => setMessages([])}
           mode={mode}
           onModeChange={setMode}
-          course={course}
+          course={scopeName}
           readyDocuments={readyDocuments}
-          documentIds={documentIds}
-          onDocumentsChange={changeDocuments}
+          scope={scope}
+          onScopeChange={setScope}
           count={count}
           onCountChange={setCount}
           onOpenSource={openSource}

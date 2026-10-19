@@ -32,7 +32,7 @@ import {
   formatBytes,
 } from '@/lib/assistant/constants'
 import { copyToClipboard } from '@/lib/assistant/bugReport'
-import AssistantMultiSelect from './AssistantMultiSelect'
+import ContextSelect from './ContextSelect'
 import Markdown from './Markdown'
 import { citedNumbers, stripCitations, stripCitationsInFences } from '../citations'
 
@@ -278,8 +278,8 @@ export default function ChatPanel({
   onModeChange,
   course,
   readyDocuments,
-  documentIds,
-  onDocumentsChange,
+  scope,
+  onScopeChange,
   count,
   onCountChange,
   onOpenSource,
@@ -469,20 +469,13 @@ export default function ChatPanel({
 
       {showDocumentOptions && (
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-3 py-2">
-          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--dashboard-text-muted)]">
-            <FolderOpen className="h-3.5 w-3.5" />
-            <span className="max-w-40 truncate font-medium text-[var(--dashboard-text-secondary)]" title={course || undefined}>
-              {course || 'Tutti i corsi'}
-            </span>
-            <span aria-hidden>/</span>
-          </span>
-          <AssistantMultiSelect
-            value={documentIds}
-            onChange={onDocumentsChange}
-            options={readyDocuments.map((doc) => ({ value: doc.id, label: doc.folder ? `${doc.folder} / ${doc.name}` : doc.name }))}
-            allLabel={mode === 'ask' ? 'Tutti i documenti' : 'Cerca nei materiali'}
-            aria-label="Documenti"
-            className="w-auto min-w-40 max-w-64"
+          <ContextSelect
+            documents={readyDocuments}
+            scope={scope}
+            onChange={onScopeChange}
+            allLabel={mode === 'ask' ? 'Tutti i materiali' : 'Cerca nei materiali'}
+            aria-label="Contesto: corsi, cartelle e documenti"
+            className="w-auto min-w-44 max-w-72"
           />
           {showCount && (
             <input

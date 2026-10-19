@@ -10,6 +10,7 @@ import {
   loadDocumentsPassages,
   loadNamedPassages,
   mergePassages,
+  resolveScopeDocumentIds,
   searchPassages,
 } from "@/lib/assistant/retrieve";
 
@@ -33,7 +34,12 @@ const MODE_SETTINGS = {
 const BodySchema = z.object({
   message: z.string().trim().min(1).max(MAX_MESSAGE_CHARS),
   mode: z.enum(["ask", "summary", "quiz", "flashcards", "plan"]).default("ask"),
-  course: z.string().trim().max(100).nullish(),
+  // Contesto della domanda: corsi, cartelle e documenti, anche mescolati. Tutto vuoto = tutti i materiali.
+  courses: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
+  folders: z
+    .array(z.object({ course: z.string().trim().min(1).max(100), name: z.string().trim().min(1).max(100) }))
+    .max(60)
+    .default([]),
   documentIds: z.array(z.string().uuid()).max(50).default([]),
   count: z.number().int().min(1).max(20).nullish(),
   history: z
@@ -63,7 +69,7 @@ export async function POST(request) {
       const issue = parsed.error.issues[0];
       throw new AssistantError(`Richiesta non valida: ${issue?.path.join(".") || "body"} ${issue?.message ?? ""}`, 422);
     }
-    const { message, mode, course, documentIds, history } = parsed.data;
+    const { message, mode, courses, folders, documentIds, history } = parsed.data;
     const settings = MODE_SETTINGS[mode];
     const count = Math.min(parsed.data.count ?? DEFAULT_COUNTS[mode] ?? 0, MAX_COUNTS[mode] ?? 20);
 
@@ -72,7 +78,17 @@ export async function POST(request) {
     const attachmentChars = attachments.reduce((sum, item) => sum + item.text.length, 0);
     const contextChars = Math.max(MIN_CONTEXT_CHARS, settings.contextChars - attachmentChars);
 
-    // Riassunti, quiz e flashcard su un documento scelto leggono il documento in ordine;
+    // Corsi e cartelle diventano l'elenco dei loro documenti pronti; i documenti scelti si aggiungono.
+    // Una cartella vuota (o ancora in elaborazione) non è un contesto: meglio dirlo che cercare ovunque.
+    const scoped = courses.length > 0 || folders.length > 0;
+    const scopedIds = await resolveScopeDocumentIds({ supabase, courses, folders });
+    if (scoped && !scopedIds.length && !documentIds.length) {
+      throw new AssistantError("I corsi o le cartelle scelti non hanno documenti pronti", 422);
+    }
+    const searchIds = [...new Set([...scopedIds, ...documentIds])];
+    const searchSet = new Set(searchIds);
+
+    // Riassunti, quiz e flashcard su documenti scelti (senza corsi o cartelle) li leggono in ordine;
     // negli altri casi si cercano i passaggi più pertinenti alla richiesta.
     // Le domande sull'archivio ("ho documenti duplicati?") non servono estratti: senza ricerca il prompt resta
     // piccolo e la risposta arriva ben prima del timeout.
@@ -85,21 +101,21 @@ export async function POST(request) {
     let found;
     if (catalog) {
       found = { passages: [], truncated: false };
-    } else if (documentIds.length && mode !== "ask") {
+    } else if (documentIds.length && !scoped && mode !== "ask") {
       found = await loadDocumentsPassages({
         supabase,
         documentIds,
         charBudget: contextChars,
       });
     } else {
-      const query = mode === "plan" ? `${message} ${course ?? ""}`.trim() : retrievalQuery(message, history);
+      const query = mode === "plan" ? `${message} ${courses.join(" ")}`.trim() : retrievalQuery(message, history);
       // "La lezione 6" non è una frase che la ricerca per significato associ al file "6 lesson.txt":
       // i documenti nominati per numero si leggono comunque, e la ricerca riempie lo spazio che resta.
       const named = documentIds.length
         ? []
-        : findNamedDocuments(message, documents.filter((doc) => !course || doc.course === course));
+        : findNamedDocuments(message, documents.filter((doc) => !searchIds.length || searchSet.has(doc.id)));
       const [searched, namedFound] = await Promise.all([
-        searchPassages({ supabase, query, course, documentIds, limit: settings.limit, charBudget: contextChars }),
+        searchPassages({ supabase, query, documentIds: searchIds, limit: settings.limit, charBudget: contextChars }),
         named.length
           ? loadNamedPassages({ supabase, documents: named, query, charBudget: contextChars })
           : Promise.resolve(null),
@@ -116,7 +132,8 @@ export async function POST(request) {
     }
 
     const scope = {
-      course: course || null,
+      courses,
+      folders,
       documentNames: documents.filter((doc) => documentIds.includes(doc.id)).map((doc) => doc.name),
     };
 

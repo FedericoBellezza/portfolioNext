@@ -77,13 +77,26 @@ function formatDocumentList(documents) {
 }
 
 // Dice al modello dove ha cercato gli estratti, così non scambia un filtro per l'intero archivio.
-function formatScope({ course, documentNames = [] }) {
-  if (documentNames.length === 1) return `Gli estratti qui sotto provengono solo dal documento "${documentNames[0]}".`;
-  if (documentNames.length > 1) {
-    return `Gli estratti qui sotto provengono solo da questi documenti: ${documentNames.map((name) => `"${name}"`).join(", ")}.`;
+// Corsi, cartelle e documenti scelti dall'utente come testo ("il corso X; la cartella Y del corso X"), o null se non c'è filtro.
+function describeScope({ courses = [], folders = [], documentNames = [] }) {
+  const quote = (name) => `"${name}"`;
+  const parts = [];
+  if (courses.length) parts.push(`${courses.length === 1 ? "il corso" : "i corsi"} ${courses.map(quote).join(", ")}`);
+  if (folders.length) {
+    const list = folders.map((folder) => `${quote(folder.name)} (corso ${quote(folder.course)})`).join(", ");
+    parts.push(`${folders.length === 1 ? "la cartella" : "le cartelle"} ${list}`);
   }
-  if (course) return `Gli estratti qui sotto provengono solo dal corso "${course}".`;
-  return "Gli estratti qui sotto sono cercati in tutti i corsi.";
+  if (documentNames.length) {
+    parts.push(`${documentNames.length === 1 ? "il documento" : "i documenti"} ${documentNames.map(quote).join(", ")}`);
+  }
+  return parts.length ? parts.join("; ") : null;
+}
+
+function formatScope(scope) {
+  const description = describeScope(scope);
+  return description
+    ? `Gli estratti qui sotto provengono solo da: ${description}.`
+    : "Gli estratti qui sotto sono cercati in tutti i corsi.";
 }
 
 function formatAttachments(attachments) {
@@ -132,7 +145,8 @@ export function buildPrompts({
 
   if (catalog) {
     sections.push(`## Controllo duplicati\n${formatDuplicateCandidates(documents ?? [])}`);
-    if (scope?.course) sections.push(`Il filtro attivo è il corso "${scope.course}": rispondi su quel corso.`);
+    const description = scope && describeScope(scope);
+    if (description) sections.push(`Il filtro attivo è: ${description}. Rispondi solo su questi materiali.`);
   } else {
     sections.push(
       `## Materiali\n${formatScope(scope ?? {})}\n\n${passages.length ? formatContext(passages) : "(nessun estratto pertinente trovato)"}`,

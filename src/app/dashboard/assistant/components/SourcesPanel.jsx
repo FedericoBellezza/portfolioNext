@@ -7,10 +7,11 @@ import {
   ChevronDown,
   FileText,
   Folder,
-  FolderInput,
   FolderOpen,
   FolderPlus,
+  ListChecks,
   Loader2,
+  Pencil,
   Sparkles,
   Target,
   Trash2,
@@ -18,11 +19,15 @@ import {
 } from 'lucide-react'
 import { ACCEPTED_EXTENSIONS, FILE_TYPE_LABELS, formatBytes } from '@/lib/assistant/constants'
 import AssistantSelect from './AssistantSelect'
+import SelectCheck from './SelectCheck'
 
 const ACCEPT = ACCEPTED_EXTENSIONS.map((ext) => `.${ext}`).join(',')
 
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/40'
+
+// Valore della select di spostamento per "nessuna cartella" (Radix non ammette stringhe vuote).
+const ROOT_FOLDER = '__root__'
 
 const SECTION_TITLE = 'font-serif text-lg font-semibold tracking-tight text-[var(--dashboard-text)]'
 
@@ -212,16 +217,18 @@ function CourseCombobox({ id, value, onChange, courses, placeholder, ariaLabel =
   )
 }
 
-// Riga di un documento: stato, figure, spostamento in una cartella ed eliminazione.
+// Riga di un documento: selezione, stato, figure ed eliminazione.
 function DocumentRow({
   doc,
-  folderNames,
+  selectMode,
+  selected,
+  selectDisabled,
+  onToggleSelect,
   deleting,
   confirming,
   onConfirm,
   onCancel,
   onAskDelete,
-  onMove,
   progress,
   error,
   onAnalyze,
@@ -233,7 +240,18 @@ function DocumentRow({
         deleting ? 'opacity-60' : ''
       }`}
     >
-      <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
+      {selectMode ? (
+        <span className="mt-0.5 flex shrink-0">
+          <SelectCheck
+            state={selected ? 'all' : 'none'}
+            onToggle={onToggleSelect}
+            disabled={selectDisabled || deleting}
+            label={`Seleziona ${doc.name}`}
+          />
+        </span>
+      ) : (
+        <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
+      )}
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
           {doc.name}
@@ -259,28 +277,6 @@ function DocumentRow({
       ) : (
         <>
           <StatusIcon status={doc.status} title={doc.error_msg} />
-          {folderNames.length > 0 && (
-            // Select nativa trasparente sopra l'icona: si apre il menu del sistema, accessibile da tastiera.
-            <span
-              className={`relative shrink-0 rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition focus-within:opacity-100 focus-within:ring-2 focus-within:ring-[var(--dashboard-accent)]/40 hover:text-[var(--dashboard-accent)] group-hover:opacity-100 max-lg:opacity-100`}
-            >
-              <FolderInput className="h-4 w-4" />
-              <select
-                value={doc.folder ?? ''}
-                onChange={(event) => onMove(event.target.value || null)}
-                aria-label={`Sposta ${doc.name} in una cartella`}
-                title="Sposta in una cartella"
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              >
-                <option value="">Nessuna cartella</option>
-                {folderNames.map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </span>
-          )}
           <button
             type="button"
             onClick={onAskDelete}
@@ -295,9 +291,9 @@ function DocumentRow({
   )
 }
 
-// Compare sotto l'intestazione di un corso per dare un nome alla nuova cartella.
-function NewFolderForm({ courseName, existing, onCreate, onClose }) {
-  const [name, setName] = useState('')
+// Campo per dare un nome a una cartella: nuova (sotto il corso) o da rinominare (al posto della riga).
+function FolderNameForm({ initial = '', submitLabel = 'Crea', ariaLabel, existing, onSubmit, onClose, className }) {
+  const [name, setName] = useState(initial)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -305,19 +301,20 @@ function NewFolderForm({ courseName, existing, onCreate, onClose }) {
     event.preventDefault()
     const trimmed = name.trim()
     if (!trimmed || busy) return
-    if (existing.some((item) => item.toLowerCase() === trimmed.toLowerCase())) {
+    if (trimmed === initial) return onClose()
+    if (existing.some((item) => item !== initial && item.toLowerCase() === trimmed.toLowerCase())) {
       setError('Esiste già una cartella con questo nome')
       return
     }
     setBusy(true)
-    const result = await onCreate(courseName, trimmed)
+    const result = await onSubmit(trimmed)
     setBusy(false)
     if (result.ok) onClose()
     else setError(result.error)
   }
 
   return (
-    <form onSubmit={submit} className="mb-2 ml-3 mt-1 border-l border-[var(--dashboard-card-border)] pl-2">
+    <form onSubmit={submit} className={className}>
       <div className="flex items-center gap-1.5">
         <input
           autoFocus
@@ -329,7 +326,7 @@ function NewFolderForm({ courseName, existing, onCreate, onClose }) {
           onKeyDown={(event) => event.key === 'Escape' && onClose()}
           maxLength={100}
           placeholder="Nome cartella (es. Modulo 1)"
-          aria-label={`Nome della nuova cartella in ${courseName}`}
+          aria-label={ariaLabel}
           aria-invalid={Boolean(error)}
           className="h-8 min-w-0 flex-1 rounded-lg border border-[var(--dashboard-border)] bg-white px-2.5 text-sm outline-none transition-colors placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/25"
         />
@@ -338,7 +335,7 @@ function NewFolderForm({ courseName, existing, onCreate, onClose }) {
           disabled={!name.trim() || busy}
           className={`h-8 shrink-0 cursor-pointer rounded-lg bg-[var(--dashboard-accent)] px-3 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS_RING}`}
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Crea'}
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : submitLabel}
         </button>
         <button
           type="button"
@@ -365,7 +362,8 @@ export default function SourcesPanel({
   onCourseChange,
   onCreateFolder,
   onDeleteFolder,
-  onMoveDocument,
+  onRenameFolder,
+  onMoveDocuments,
   onFocusFolder,
   uploads,
   onUpload,
@@ -390,6 +388,13 @@ export default function SourcesPanel({
   const [uploadFolder, setUploadFolder] = useState('')
   const [openFolders, setOpenFolders] = useState(() => new Set())
   const [creatingIn, setCreatingIn] = useState(null)
+  // Cartella in rinomina: stessa chiave di openFolders.
+  const [renaming, setRenaming] = useState(null)
+  // Selezione multipla per spostare più documenti insieme (tutti dello stesso corso).
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [moveError, setMoveError] = useState('')
+  const [moving, setMoving] = useState(false)
 
   function toggleIn(setter, key) {
     setter((current) => {
@@ -427,6 +432,69 @@ export default function SourcesPanel({
     action()
   }
 
+  // Cartelle di un corso: quelle create più quelle citate dai documenti; "Modulo 2" prima di "Modulo 10".
+  function folderNamesFor(courseName) {
+    return [
+      ...new Set([
+        ...folders.filter((folder) => folder.course === courseName).map((folder) => folder.name),
+        ...documents.filter((doc) => doc.course === courseName && doc.folder).map((doc) => doc.folder),
+      ]),
+    ].sort((a, b) => a.localeCompare(b, 'it', { numeric: true }))
+  }
+
+  // Selezione: si possono scegliere solo documenti dello stesso corso (le cartelle sono per corso).
+  const selectedDocs = documents.filter((doc) => selectedIds.has(doc.id))
+  const selectedCourse = selectedDocs[0]?.course ?? null
+  const moveOptions = selectedCourse
+    ? [
+        { value: ROOT_FOLDER, label: 'Fuori dalle cartelle' },
+        ...folderNamesFor(selectedCourse).map((name) => ({ value: name, label: name })),
+      ]
+    : []
+
+  const isSelectable = (doc) => !selectedCourse || doc.course === selectedCourse
+  const groupState = (docs) => {
+    const count = docs.filter((doc) => selectedIds.has(doc.id)).length
+    return count === 0 ? 'none' : count === docs.length ? 'all' : 'some'
+  }
+
+  function toggleSelectMode() {
+    setSelectMode((current) => !current)
+    setSelectedIds(new Set())
+    setMoveError('')
+  }
+
+  // Aggiunge o toglie un gruppo di documenti: se sono già tutti selezionati li deseleziona.
+  function toggleSelected(docs) {
+    const eligible = docs.filter(isSelectable)
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      const allSelected = eligible.every((doc) => current.has(doc.id))
+      for (const doc of eligible) {
+        if (allSelected) next.delete(doc.id)
+        else next.add(doc.id)
+      }
+      return next
+    })
+    setMoveError('')
+  }
+
+  async function moveSelected(target) {
+    const folder = target === ROOT_FOLDER ? null : target
+    setMoving(true)
+    setMoveError('')
+    const result = await onMoveDocuments(selectedDocs, folder)
+    setMoving(false)
+    if (!result.ok) {
+      setMoveError(result.error)
+      return
+    }
+    // Si mostra il risultato: corso e cartella di destinazione si aprono.
+    setOpenCourses((current) => new Set(current).add(selectedCourse))
+    if (folder) setOpenFolders((current) => new Set(current).add(folderKey(selectedCourse, folder)))
+    setSelectedIds(new Set())
+  }
+
   return (
     <aside id="assistant-sources" aria-label="Materiali di studio" className="order-2 scroll-mt-24 lg:order-1">
       <div className="divide-y divide-[var(--dashboard-card-border)] rounded-2xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] shadow-[0_1px_2px_rgba(120,80,60,0.05)]">
@@ -442,7 +510,7 @@ export default function SourcesPanel({
             allLabel="Tutti i corsi"
           />
           <p className="mt-1.5 text-pretty text-xs leading-relaxed text-[var(--dashboard-text-muted)]">
-            Le domande cercano solo nel corso scelto; con &quot;Tutti i corsi&quot; cercano ovunque.
+            Filtra l&apos;elenco e imposta il contesto della chat; per più corsi o cartelle usa il selettore sopra la chat.
           </p>
         </section>
 
@@ -553,10 +621,52 @@ export default function SourcesPanel({
         </section>
 
         <section className="p-4">
-          <h2 className={`mb-3 flex items-baseline gap-2 ${SECTION_TITLE}`}>
-            Documenti
-            <span className="text-sm font-normal tabular-nums text-[var(--dashboard-text-muted)]">{visible.length}</span>
-          </h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className={`flex items-baseline gap-2 ${SECTION_TITLE}`}>
+              Documenti
+              <span className="text-sm font-normal tabular-nums text-[var(--dashboard-text-muted)]">{visible.length}</span>
+            </h2>
+            {visible.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleSelectMode}
+                aria-pressed={selectMode}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${FOCUS_RING} ${
+                  selectMode
+                    ? 'bg-[var(--dashboard-accent)] text-white hover:opacity-90'
+                    : 'text-[var(--dashboard-text-secondary)] hover:bg-[var(--dashboard-bg-secondary)]'
+                }`}
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                {selectMode ? 'Fine' : 'Seleziona'}
+              </button>
+            )}
+          </div>
+
+          {selectMode && visible.length > 0 && (
+            <div className="mb-3 space-y-2 rounded-xl bg-[var(--dashboard-bg)] p-2.5">
+              <p aria-live="polite" className="text-xs text-[var(--dashboard-text-secondary)]">
+                {selectedDocs.length === 0
+                  ? 'Spunta i documenti (o un’intera cartella) da spostare.'
+                  : `${selectedDocs.length} ${selectedDocs.length === 1 ? 'selezionato' : 'selezionati'} in ${selectedCourse}`}
+              </p>
+              {selectedDocs.length > 0 && (
+                <AssistantSelect
+                  value=""
+                  onChange={moveSelected}
+                  options={moveOptions}
+                  placeholder={moving ? 'Spostamento…' : 'Sposta in…'}
+                  disabled={moving}
+                  aria-label="Sposta i documenti selezionati"
+                />
+              )}
+              {moveError && (
+                <p role="alert" className="text-xs text-red-600">
+                  {moveError}
+                </p>
+              )}
+            </div>
+          )}
 
           {visible.length === 0 ? (
             <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-[var(--dashboard-border)] px-4 py-6 text-center">
@@ -576,26 +686,22 @@ export default function SourcesPanel({
                 const courseConfirming = confirming === `course:${courseName}`
                 const listId = `assistant-course-docs-${index}`
 
-                // Cartelle del corso: quelle create più quelle citate dai documenti; "Modulo 2" prima di "Modulo 10".
-                const folderNames = [
-                  ...new Set([
-                    ...folders.filter((folder) => folder.course === courseName).map((folder) => folder.name),
-                    ...docs.map((doc) => doc.folder).filter(Boolean),
-                  ]),
-                ].sort((a, b) => a.localeCompare(b, 'it', { numeric: true }))
+                const folderNames = folderNamesFor(courseName)
                 const looseDocs = docs.filter((doc) => !doc.folder)
 
-                const renderRow = (doc, names) => (
+                const renderRow = (doc) => (
                   <DocumentRow
                     key={doc.id}
                     doc={doc}
-                    folderNames={names}
+                    selectMode={selectMode}
+                    selected={selectedIds.has(doc.id)}
+                    selectDisabled={!isSelectable(doc)}
+                    onToggleSelect={() => toggleSelected([doc])}
                     deleting={deletingDocs.has(doc.id)}
                     confirming={confirming === `doc:${doc.id}`}
                     onAskDelete={() => setConfirming(`doc:${doc.id}`)}
                     onConfirm={() => confirmDelete(() => onDelete(doc))}
                     onCancel={() => setConfirming(null)}
-                    onMove={(folder) => onMoveDocument(doc, folder)}
                     progress={visualProgress[doc.id]}
                     error={visualErrors[doc.id]}
                     onAnalyze={() => onAnalyzeVisuals(doc)}
@@ -605,6 +711,16 @@ export default function SourcesPanel({
                 return (
                   <div key={courseName}>
                     <div className="group flex items-center gap-1 rounded-lg hover:bg-[var(--dashboard-bg)]">
+                      {selectMode && (
+                        <span className="flex shrink-0 pl-1.5">
+                          <SelectCheck
+                            state={groupState(docs)}
+                            onToggle={() => toggleSelected(docs)}
+                            disabled={!isSelectable(docs[0])}
+                            label={`Seleziona tutti i documenti del corso ${courseName}`}
+                          />
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => toggleCourse(courseName)}
@@ -664,12 +780,13 @@ export default function SourcesPanel({
                     </div>
 
                     {creatingIn === courseName && (
-                      <NewFolderForm
-                        courseName={courseName}
+                      <FolderNameForm
+                        className="mb-2 ml-3 mt-1 border-l border-[var(--dashboard-card-border)] pl-2"
+                        ariaLabel={`Nome della nuova cartella in ${courseName}`}
                         existing={folderNames}
-                        onCreate={async (name, folderName) => {
-                          const result = await onCreateFolder(name, folderName)
-                          if (result.ok) setOpenFolders((current) => new Set(current).add(folderKey(name, folderName)))
+                        onSubmit={async (folderName) => {
+                          const result = await onCreateFolder(courseName, folderName)
+                          if (result.ok) setOpenFolders((current) => new Set(current).add(folderKey(courseName, folderName)))
                           return result
                         }}
                         onClose={() => setCreatingIn(null)}
@@ -685,9 +802,39 @@ export default function SourcesPanel({
                           const readyDocs = folderDocs.filter((doc) => doc.status === 'ready').length
                           const folderConfirming = confirming === `folder:${key}`
                           const folderListId = `${listId}-folder-${folderNames.indexOf(folderName)}`
+                          if (renaming === key) {
+                            return (
+                              <FolderNameForm
+                                key={folderName}
+                                className="py-1"
+                                initial={folderName}
+                                submitLabel="Salva"
+                                ariaLabel={`Nuovo nome della cartella ${folderName}`}
+                                existing={folderNames}
+                                onSubmit={async (newName) => {
+                                  const result = await onRenameFolder(courseName, folderName, newName)
+                                  if (result.ok && folderOpen) {
+                                    setOpenFolders((current) => new Set(current).add(folderKey(courseName, newName)))
+                                  }
+                                  return result
+                                }}
+                                onClose={() => setRenaming(null)}
+                              />
+                            )
+                          }
                           return (
                             <div key={folderName}>
                               <div className="group flex items-center gap-1 rounded-lg hover:bg-[var(--dashboard-bg)]">
+                                {selectMode && (
+                                  <span className="flex shrink-0 pl-1.5">
+                                    <SelectCheck
+                                      state={folderDocs.length ? groupState(folderDocs) : 'none'}
+                                      onToggle={() => toggleSelected(folderDocs)}
+                                      disabled={folderDocs.length === 0 || !isSelectable(folderDocs[0])}
+                                      label={`Seleziona tutti i documenti della cartella ${folderName}`}
+                                    />
+                                  </span>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => toggleIn(setOpenFolders, key)}
@@ -728,6 +875,15 @@ export default function SourcesPanel({
                                     </button>
                                     <button
                                       type="button"
+                                      onClick={() => setRenaming(key)}
+                                      aria-label={`Rinomina la cartella ${folderName}`}
+                                      title="Rinomina la cartella"
+                                      className={`shrink-0 cursor-pointer rounded p-1 text-[var(--dashboard-text-muted)] opacity-0 transition hover:text-[var(--dashboard-accent)] focus-visible:opacity-100 group-hover:opacity-100 max-lg:opacity-100 ${FOCUS_RING}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      type="button"
                                       onClick={() => setConfirming(`folder:${key}`)}
                                       aria-label={`Elimina la cartella ${folderName} (i documenti restano nel corso)`}
                                       title="Elimina la cartella: i documenti restano nel corso"
@@ -745,7 +901,7 @@ export default function SourcesPanel({
                                       Cartella vuota: carica qui un file o spostaci un documento.
                                     </li>
                                   ) : (
-                                    folderDocs.map((doc) => renderRow(doc, folderNames))
+                                    folderDocs.map(renderRow)
                                   )}
                                 </ul>
                               )}
@@ -753,7 +909,7 @@ export default function SourcesPanel({
                           )
                         })}
                         {looseDocs.length > 0 && (
-                          <ul className="space-y-0.5">{looseDocs.map((doc) => renderRow(doc, folderNames))}</ul>
+                          <ul className="space-y-0.5">{looseDocs.map(renderRow)}</ul>
                         )}
                       </div>
                     )}

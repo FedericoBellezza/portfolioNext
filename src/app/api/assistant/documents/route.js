@@ -15,40 +15,54 @@ export async function GET() {
   }
 }
 
-/** Sposta un documento in una cartella del suo corso (folder: nome) o fuori da ogni cartella (folder: null). */
+/**
+ * Sposta uno o più documenti in una cartella (folder: nome) o fuori da ogni cartella (folder: null).
+ * I documenti devono essere tutti dello stesso corso, che è anche il corso della cartella.
+ */
 export async function PATCH(request) {
   try {
     const { supabase } = await requireOwner();
 
     const parsed = z
-      .object({ id: z.string().uuid(), folder: z.string().trim().min(1).max(100).nullable() })
+      .object({
+        ids: z.array(z.string().uuid()).min(1).max(200),
+        folder: z.string().trim().min(1).max(100).nullable(),
+      })
       .safeParse(await request.json().catch(() => null));
     if (!parsed.success) throw new AssistantError("Richiesta non valida", 422);
-    const { id, folder } = parsed.data;
+    const { ids, folder } = parsed.data;
 
-    const { data: document, error: readError } = await supabase
+    const { data: documents, error: readError } = await supabase
       .from("assistant_documents")
-      .select("course")
-      .eq("id", id)
-      .maybeSingle();
-    if (readError) throw new AssistantError(`Lettura documento: ${readError.message}`, 500);
-    if (!document) throw new AssistantError("Documento non trovato", 404);
+      .select("id, course")
+      .in("id", ids);
+    if (readError) throw new AssistantError(`Lettura documenti: ${readError.message}`, 500);
+    if (!documents?.length) throw new AssistantError("Documenti non trovati", 404);
+
+    const courses = new Set(documents.map((document) => document.course));
+    if (courses.size > 1) throw new AssistantError("I documenti devono appartenere allo stesso corso", 422);
 
     if (folder) {
       const { data: existing, error: folderError } = await supabase
         .from("assistant_folders")
         .select("id")
-        .eq("course", document.course)
+        .eq("course", documents[0].course)
         .eq("name", folder)
         .maybeSingle();
       if (folderError) throw new AssistantError(`Lettura cartelle: ${folderError.message}`, 500);
       if (!existing) throw new AssistantError("Cartella non trovata in questo corso", 404);
     }
 
-    const { error } = await supabase.from("assistant_documents").update({ folder }).eq("id", id);
-    if (error) throw new AssistantError(`Spostamento documento: ${error.message}`, 500);
+    const { error } = await supabase
+      .from("assistant_documents")
+      .update({ folder })
+      .in(
+        "id",
+        documents.map((document) => document.id),
+      );
+    if (error) throw new AssistantError(`Spostamento documenti: ${error.message}`, 500);
 
-    return Response.json({ ok: true });
+    return Response.json({ ok: true, moved: documents.length });
   } catch (error) {
     return errorResponse(error);
   }
