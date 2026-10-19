@@ -9,9 +9,12 @@ import {
   MAX_ATTACHMENTS,
   MAX_ATTACHMENT_BYTES,
   MAX_FILE_BYTES,
+  QUIZ_BATCH_SIZE,
+  QUIZ_MAX_QUESTIONS,
   isAcceptedFile,
   sanitizeFileName,
 } from '@/lib/assistant/constants'
+import { quizToText } from '@/lib/assistant/quiz'
 import { buildBugReport, copyToClipboard } from '@/lib/assistant/bugReport'
 import ChatPanel from './components/ChatPanel'
 import SourcesPanel from './components/SourcesPanel'
@@ -21,6 +24,23 @@ const EMPTY_SCOPE = { courses: [], folders: [], documentIds: [] }
 function toInt(value) {
   const n = Number.parseInt(value, 10)
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+// 30 domande → blocchi da 8, 8, 7, 7: della stessa taglia, per non finire con un blocco da una domanda sola.
+function splitQuizBatches(total) {
+  const parts = Math.ceil(total / QUIZ_BATCH_SIZE)
+  const base = Math.floor(total / parts)
+  const extra = total % parts
+  return Array.from({ length: parts }, (_, index) => base + (index < extra ? 1 : 0))
+}
+
+// Ogni blocco numera le sue domande da q1 e le sue fonti da F1: si rendono uniche e la fonte si porta con la domanda.
+function prepareQuizQuestions(data, batchIndex) {
+  return data.quiz.questions.map((question) => ({
+    ...question,
+    id: `b${batchIndex}-${question.id}`,
+    sourceInfo: data.sources.find((source) => source.n === question.source) ?? null,
+  }))
 }
 
 export default function AssistantClient({ initialDocuments, initialFolders, dbError }) {
@@ -39,6 +59,9 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
   const [visualProgress, setVisualProgress] = useState({})
   const [visualErrors, setVisualErrors] = useState({})
   const visualRunning = useRef(new Set())
+  // Quiz lunghi in generazione a blocchi: messageId -> stato del lavoro. `epoch` annulla quelli di una chat azzerata.
+  const quizJobs = useRef(new Map())
+  const quizEpoch = useRef(0)
 
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -412,9 +435,69 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
   function finishQuiz(messageId, summary) {
     setMessages((current) =>
       current.map((message) =>
-        message.id === messageId ? { ...message, content: `${summary}\n\n${message.quizText}` } : message,
+        message.id === messageId ? { ...message, content: `${summary}\n\n${quizToText(message.quiz.questions)}` } : message,
       ),
     )
+  }
+
+  function updateQuiz(messageId, patch) {
+    setMessages((current) =>
+      current.map((message) =>
+        message.id === messageId && message.quiz ? { ...message, quiz: { ...message.quiz, ...patch } } : message,
+      ),
+    )
+  }
+
+  async function requestChat(body) {
+    const response = await fetch('/api/assistant/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await response.json().catch(() => null)
+    if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
+    return data
+  }
+
+  // Un quiz lungo si genera a blocchi: il primo arriva con la risposta di `send`, gli altri qui, uno alla volta,
+  // mentre l'utente risponde. Un errore ferma la sequenza e si riprende da dove era con `retryQuiz`.
+  async function runQuizJob(messageId) {
+    const job = quizJobs.current.get(messageId)
+    if (!job || job.running) return
+    const epoch = quizEpoch.current
+    job.running = true
+    updateQuiz(messageId, { pending: true, error: null })
+
+    try {
+      while (job.next < job.batches.length) {
+        const data = await requestChat({
+          ...job.base,
+          count: job.batches[job.next],
+          quizPart: { index: job.next, total: job.batches.length },
+          // Le domande già fatte, perché i blocchi non si ripetano.
+          exclude: job.questions.map((item) => item.question.slice(0, 120)).slice(-60),
+        })
+        if (quizEpoch.current !== epoch) return
+        job.questions = [...job.questions, ...prepareQuizQuestions(data, job.next)]
+        job.next += 1
+        updateQuiz(messageId, { questions: job.questions, pending: job.next < job.batches.length })
+      }
+    } catch (error) {
+      if (quizEpoch.current === epoch) updateQuiz(messageId, { pending: false, error: error.message })
+    } finally {
+      job.running = false
+    }
+  }
+
+  function retryQuiz(messageId) {
+    runQuizJob(messageId)
+  }
+
+  // "Nuova chat" ferma anche i quiz ancora in generazione.
+  function resetChat() {
+    quizEpoch.current += 1
+    quizJobs.current.clear()
+    setMessages([])
   }
 
   // `request` serve alle richieste che partono da un pulsante (es. "Spiegami gli errori"):
@@ -454,36 +537,53 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     setLoading(true)
 
     try {
-      const response = await fetch('/api/assistant/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          mode: sendMode,
-          courses: scope.courses,
-          folders: scope.folders,
-          documentIds: scope.documentIds,
-          count: toInt(count),
-          history,
-          attachments: sent.map((item) => ({ path: item.path, name: item.name })),
-        }),
-      })
-      const data = await response.json().catch(() => null)
-      if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
+      const base = {
+        message: text,
+        mode: sendMode,
+        courses: scope.courses,
+        folders: scope.folders,
+        documentIds: scope.documentIds,
+        history,
+      }
+      const attachmentsPayload = sent.map((item) => ({ path: item.path, name: item.name }))
 
+      // Per un quiz `count` è il totale: sopra la dimensione di un blocco si divide in più richieste.
+      // Gli allegati si leggono una sola volta, quindi con un allegato il quiz resta in un solo blocco.
+      const wanted = toInt(count) ?? QUIZ_BATCH_SIZE
+      const total = sendMode === 'quiz' ? Math.min(wanted, sent.length ? QUIZ_BATCH_SIZE : QUIZ_MAX_QUESTIONS) : null
+      const batches = sendMode === 'quiz' ? splitQuizBatches(total) : []
+
+      const data = await requestChat(
+        sendMode === 'quiz'
+          ? {
+              ...base,
+              count: batches[0],
+              attachments: attachmentsPayload,
+              ...(batches.length > 1 ? { quizPart: { index: 0, total: batches.length } } : {}),
+            }
+          : { ...base, count: toInt(count), attachments: attachmentsPayload },
+      )
+
+      const messageId = crypto.randomUUID()
+      const questions = data.quiz ? prepareQuizQuestions(data, 0) : null
       setMessages((current) => [
         ...current,
         {
-          id: crypto.randomUUID(),
+          id: messageId,
           role: 'assistant',
           content: data.text,
           // Un quiz si compila nell'interfaccia: `content` resta la sua versione testuale per cronologia e copia.
-          ...(data.quiz ? { quiz: data.quiz, quizText: data.text } : {}),
+          ...(questions ? { quiz: { questions, expected: total, pending: batches.length > 1, error: null } } : {}),
           sources: data.sources,
           truncated: data.truncated,
           mode: sendMode,
         },
       ])
+
+      if (questions && batches.length > 1) {
+        quizJobs.current.set(messageId, { base, batches, next: 1, questions, running: false })
+        runQuizJob(messageId)
+      }
     } catch (error) {
       setMessages((current) => [
         ...current,
@@ -571,7 +671,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           onSend={() => send()}
           onAsk={(text) => send({ text, mode: 'ask' })}
           onQuizFinish={finishQuiz}
-          onReset={() => setMessages([])}
+          onQuizRetry={retryQuiz}
+          onReset={resetChat}
           mode={mode}
           onModeChange={setMode}
           readyDocuments={readyDocuments}

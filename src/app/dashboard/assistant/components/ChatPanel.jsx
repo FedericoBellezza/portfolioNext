@@ -26,6 +26,8 @@ import {
   MAX_ATTACHMENTS,
   MAX_MESSAGE_CHARS,
   MODES,
+  QUIZ_BATCH_SIZE,
+  QUIZ_MAX_QUESTIONS,
   formatBytes,
 } from '@/lib/assistant/constants'
 import { copyToClipboard } from '@/lib/assistant/bugReport'
@@ -60,7 +62,12 @@ const SUGGESTIONS = {
     'Confronta come i miei corsi trattano…',
   ],
   summary: ['Riassumi il capitolo su…', 'Fammi uno schema delle definizioni chiave', 'Riassumi l\'ultima lezione in 10 punti'],
-  quiz: ['Un quiz di 5 domande sugli argomenti principali', 'Domande a risposta aperta su…', 'Metti alla prova le mie conoscenze su…'],
+  quiz: [
+    'Simula l\'esame di questo corso',
+    'Esercizi di codice su…',
+    'Domande a risposta aperta su…',
+    'Metti alla prova le mie conoscenze su…',
+  ],
 }
 
 function citedSources(message) {
@@ -95,7 +102,7 @@ function AssistantAvatar() {
   )
 }
 
-function Message({ message, onOpenSource, onQuizFinish, onAsk, busy }) {
+function Message({ message, onOpenSource, onQuizFinish, onQuizRetry, onAsk, busy }) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -155,11 +162,11 @@ function Message({ message, onOpenSource, onQuizFinish, onAsk, busy }) {
         <div className="min-w-0 max-w-[min(100%,46rem)] flex-1">
           <QuizPlayer
             quiz={message.quiz}
-            sources={message.sources}
             busy={busy}
             onOpenSource={onOpenSource}
             onFinish={(summary) => onQuizFinish?.(message.id, summary)}
             onAsk={onAsk}
+            onRetryLoad={() => onQuizRetry?.(message.id)}
           />
         </div>
       </div>
@@ -262,6 +269,7 @@ export default function ChatPanel({
   onCountChange,
   onOpenSource,
   onQuizFinish,
+  onQuizRetry,
   onAsk,
   onReportBug,
   hasDocuments,
@@ -462,11 +470,12 @@ export default function ChatPanel({
             <input
               type="number"
               min={1}
-              max={10}
+              max={QUIZ_MAX_QUESTIONS}
               value={count}
               onChange={(event) => onCountChange(event.target.value)}
               placeholder="n. domande"
-              aria-label="Quantità"
+              aria-label={`Numero di domande (massimo ${QUIZ_MAX_QUESTIONS})`}
+              title={`Fino a ${QUIZ_MAX_QUESTIONS} domande: oltre ${QUIZ_BATCH_SIZE} il quiz si genera a blocchi mentre rispondi`}
               className={`${FIELD} w-24`}
             />
           )}
@@ -528,6 +537,7 @@ export default function ChatPanel({
             message={message}
             onOpenSource={onOpenSource}
             onQuizFinish={onQuizFinish}
+            onQuizRetry={onQuizRetry}
             onAsk={onAsk}
             busy={loading}
           />

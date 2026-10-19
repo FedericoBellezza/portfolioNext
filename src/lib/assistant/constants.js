@@ -45,6 +45,13 @@ export const MODES = [
 
 export const MAX_MESSAGE_CHARS = 4000;
 
+// Un quiz lungo (simulazione d'esame) si genera a blocchi: una singola generazione sta sotto il minuto
+// solo per poche domande. Il primo blocco appare subito, gli altri arrivano mentre si risponde.
+export const QUIZ_BATCH_SIZE = 8;
+export const QUIZ_MAX_QUESTIONS = 40;
+// Risposte aperte e codice si correggono a gruppi per lo stesso motivo.
+export const QUIZ_GRADE_BATCH_SIZE = 6;
+
 // Allegati di un singolo messaggio: file temporanei, letti una volta sola e poi cancellati.
 // Il testo estratto finisce nel prompt, quindi pesa sul tetto di caratteri della richiesta.
 export const MAX_ATTACHMENTS = 4;

@@ -10,9 +10,12 @@ const BodySchema = z.object({
   items: z
     .array(
       z.object({
-        question: z.string().trim().min(1).max(1200),
-        reference: z.string().trim().min(1).max(1500),
-        answer: z.string().trim().min(1).max(3000),
+        // La consegna di un esercizio di codice include lo snippet: lascia più spazio.
+        question: z.string().trim().min(1).max(4000),
+        reference: z.string().trim().min(1).max(3000),
+        answer: z.string().trim().min(1).max(6000),
+        kind: z.enum(["open", "code"]).default("open"),
+        language: z.string().trim().max(30).optional(),
       }),
     )
     .min(1)

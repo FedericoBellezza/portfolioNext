@@ -41,6 +41,12 @@ const BodySchema = z.object({
     .default([]),
   documentIds: z.array(z.string().uuid()).max(50).default([]),
   count: z.number().int().min(1).max(20).nullish(),
+  // Quiz lungo generato a blocchi: quale blocco è questo e quali domande sono già state fatte negli altri.
+  quizPart: z
+    .object({ index: z.number().int().min(0).max(19), total: z.number().int().min(1).max(20) })
+    .refine((part) => part.index < part.total)
+    .nullish(),
+  exclude: z.array(z.string().trim().min(1).max(200)).max(60).default([]),
   history: z
     .array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().max(8000) }))
     .max(30)
@@ -68,7 +74,8 @@ export async function POST(request) {
       const issue = parsed.error.issues[0];
       throw new AssistantError(`Richiesta non valida: ${issue?.path.join(".") || "body"} ${issue?.message ?? ""}`, 422);
     }
-    const { message, mode, courses, folders, documentIds, history } = parsed.data;
+    const { message, mode, courses, folders, documentIds, history, exclude } = parsed.data;
+    const quizPart = mode === "quiz" ? (parsed.data.quizPart ?? null) : null;
     const settings = MODE_SETTINGS[mode];
     const count = Math.min(parsed.data.count ?? DEFAULT_COUNTS[mode] ?? 0, MAX_COUNTS[mode] ?? 20);
 
@@ -105,6 +112,7 @@ export async function POST(request) {
         supabase,
         documentIds,
         charBudget: contextChars,
+        part: quizPart,
       });
     } else {
       const query = retrievalQuery(message, history);
@@ -114,7 +122,14 @@ export async function POST(request) {
         ? []
         : findNamedDocuments(message, documents.filter((doc) => !searchIds.length || searchSet.has(doc.id)));
       const [searched, namedFound] = await Promise.all([
-        searchPassages({ supabase, query, documentIds: searchIds, limit: settings.limit, charBudget: contextChars }),
+        searchPassages({
+          supabase,
+          query,
+          documentIds: searchIds,
+          limit: settings.limit,
+          charBudget: contextChars,
+          part: quizPart,
+        }),
         named.length
           ? loadNamedPassages({ supabase, documents: named, query, charBudget: contextChars })
           : Promise.resolve(null),
@@ -139,7 +154,7 @@ export async function POST(request) {
     // Se con storia e elenco materiali si supera il tetto si tolgono i passaggi meno rilevanti.
     let passages = found.passages;
     let truncated = found.truncated;
-    const promptInput = { mode, message, history, documents, scope, count, attachments, catalog };
+    const promptInput = { mode, message, history, documents, scope, count, attachments, catalog, quizPart, exclude };
     let built = buildPrompts({ ...promptInput, passages, truncated });
     while (built.system.length + built.prompt.length > TOTAL_CHAR_BUDGET && passages.length > 1) {
       passages = passages.slice(0, -1);

@@ -15,12 +15,16 @@ import {
   RotateCcw,
   X,
 } from 'lucide-react'
+import { QUIZ_GRADE_BATCH_SIZE } from '@/lib/assistant/constants'
 import {
   buildExplainRequest,
   buildSummary,
   computeScore,
   correctAnswerText,
+  gradeRequestItem,
   givenAnswerText,
+  isAnswered,
+  isWritten,
   reviewItems,
 } from '../quizScoring'
 
@@ -29,8 +33,15 @@ const FOCUS_RING =
 
 const LETTERS = 'ABCDEF'
 const OPEN_ANSWER_MAX = 3000
+const CODE_ANSWER_MAX = 6000
+const INDENT = '  '
 
-const TYPE_LABELS = { choice: 'Scelta multipla', truefalse: 'Vero o falso', open: 'Risposta aperta' }
+const TYPE_LABELS = {
+  choice: 'Scelta multipla',
+  truefalse: 'Vero o falso',
+  open: 'Risposta aperta',
+  code: 'Esercizio di codice',
+}
 
 const STATUS = {
   correct: { label: 'Corretta', icon: Check, badge: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-500' },
@@ -45,14 +56,54 @@ const BUTTON =
 const PRIMARY = `${BUTTON} bg-[var(--dashboard-accent)] text-white hover:bg-[var(--dashboard-accent-hover)] ${FOCUS_RING}`
 const SECONDARY = `${BUTTON} border border-[var(--dashboard-border)] bg-white text-[var(--dashboard-text-secondary)] hover:border-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent)] ${FOCUS_RING}`
 
+const CODE_BOX =
+  'overflow-x-auto rounded-lg bg-[var(--dashboard-bg-secondary)] p-3 font-mono text-[13px] leading-relaxed text-[var(--dashboard-text)]'
+
 function verdictFor(percent) {
   if (percent >= 80) return 'Ottimo lavoro'
   if (percent >= 60) return 'Buon livello, rivedi gli errori'
   return 'Da ripassare'
 }
 
-export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSource, onFinish, onAsk }) {
-  const [questions, setQuestions] = useState(quiz.questions)
+function Snippet({ code, language }) {
+  return (
+    <div className="mt-3">
+      {language && (
+        <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[var(--dashboard-text-muted)]">
+          {language}
+        </p>
+      )}
+      <pre className={CODE_BOX}>
+        <code>{code}</code>
+      </pre>
+    </div>
+  )
+}
+
+function AnswerBlock({ label, text, code = false, tone = 'text-[var(--dashboard-text-muted)]' }) {
+  return (
+    <div>
+      <p className={`text-xs font-medium uppercase tracking-wide ${tone}`}>{label}</p>
+      {!text ? (
+        <p className="mt-0.5 italic text-[var(--dashboard-text-muted)]">Nessuna risposta</p>
+      ) : code ? (
+        <pre className={`mt-1 ${CODE_BOX}`}>
+          <code>{text}</code>
+        </pre>
+      ) : (
+        <p className="mt-0.5 whitespace-pre-wrap break-words leading-relaxed">{text}</p>
+      )}
+    </div>
+  )
+}
+
+/**
+ * quiz: { questions, expected, pending, error }. Un quiz lungo arriva a blocchi: finché `pending` è vero
+ * `questions` continua a crescere fino a `expected`.
+ */
+export default function QuizPlayer({ quiz, busy = false, onOpenSource, onFinish, onAsk, onRetryLoad }) {
+  // Un nuovo giro ("Rifai gli errori") lavora su un sottoinsieme; null = tutte le domande del quiz.
+  const [subset, setSubset] = useState(null)
   const [phase, setPhase] = useState('play') // play | grading | results
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -61,12 +112,14 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
   const [filter, setFilter] = useState('all')
   const cardRef = useRef(null)
 
-  const question = questions[index]
+  const questions = subset ?? quiz.questions
+  const loadingMore = !subset && quiz.pending
+  const loadError = !subset && !quiz.pending ? quiz.error : null
+  const total = loadingMore ? Math.max(quiz.expected, questions.length) : questions.length
+
+  const question = questions[Math.min(index, questions.length - 1)]
   const answer = answers[question.id]
-  const answered = questions.filter((item) => {
-    const given = answers[item.id]
-    return item.type === 'open' ? Boolean(given?.text?.trim()) : given?.choice != null
-  }).length
+  const answered = questions.filter((item) => isAnswered(item, answers[item.id])).length
 
   const items = useMemo(() => reviewItems(questions, answers, grades), [questions, answers, grades])
   const score = useMemo(() => computeScore(questions, answers, grades), [questions, answers, grades])
@@ -90,49 +143,61 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
     setAnswers((current) => ({ ...current, [question.id]: { text } }))
   }
 
-  // Le risposte aperte non ancora valutate (e non vuote) si mandano al correttore in un'unica richiesta.
-  async function gradeOpenAnswers() {
-    const pending = questions.filter((item) => item.type === 'open' && answers[item.id]?.text?.trim() && !grades[item.id])
-    if (!pending.length) return grades
+  // Nel campo di codice Tab inserisce un rientro; Maiusc+Tab ed Esc lasciano uscire dal campo (tastiera e screen reader).
+  function handleCodeKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.currentTarget.blur()
+      return
+    }
+    if (event.key !== 'Tab' || event.shiftKey) return
+    event.preventDefault()
+    const area = event.currentTarget
+    const { selectionStart, selectionEnd, value } = area
+    setText(`${value.slice(0, selectionStart)}${INDENT}${value.slice(selectionEnd)}`)
+    requestAnimationFrame(() => area.setSelectionRange(selectionStart + INDENT.length, selectionStart + INDENT.length))
+  }
 
-    const response = await fetch('/api/assistant/quiz/grade', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: pending.map((item) => ({
-          question: item.question,
-          reference: item.reference,
-          answer: answers[item.id].text.trim(),
-        })),
-      }),
-    })
-    const data = await response.json().catch(() => null)
-    if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
-
+  // Le risposte scritte non ancora valutate si mandano al correttore a gruppi: una sola richiesta per tutte
+  // non starebbe nel minuto di una singola generazione. Quel che è già stato valutato si tiene anche se un gruppo fallisce.
+  async function gradeWrittenAnswers() {
+    const pending = questions.filter((item) => isWritten(item) && answers[item.id]?.text?.trim() && !grades[item.id])
     const next = { ...grades }
-    pending.forEach((item, position) => {
-      if (data.grades[position]) next[item.id] = data.grades[position]
-    })
-    return next
+    let failure = null
+
+    for (let start = 0; start < pending.length; start += QUIZ_GRADE_BATCH_SIZE) {
+      const group = pending.slice(start, start + QUIZ_GRADE_BATCH_SIZE)
+      try {
+        const response = await fetch('/api/assistant/quiz/grade', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: group.map((item) => gradeRequestItem(item, answers[item.id])) }),
+        })
+        const data = await response.json().catch(() => null)
+        if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)
+        group.forEach((item, position) => {
+          if (data.grades[position]) next[item.id] = data.grades[position]
+        })
+      } catch (error) {
+        failure = error.message
+        break
+      }
+    }
+    return { grades: next, failure }
   }
 
   async function finish() {
     setGradeError(null)
     setPhase('grading')
-    let finalGrades = grades
-    try {
-      finalGrades = await gradeOpenAnswers()
-      setGrades(finalGrades)
-    } catch (error) {
-      setGradeError(error.message)
-    }
+    const result = await gradeWrittenAnswers()
+    setGrades(result.grades)
+    setGradeError(result.failure)
     setPhase('results')
-    const finalItems = reviewItems(questions, answers, finalGrades)
-    onFinish?.(buildSummary(finalItems, computeScore(questions, answers, finalGrades)))
+    const finalItems = reviewItems(questions, answers, result.grades)
+    onFinish?.(buildSummary(finalItems, computeScore(questions, answers, result.grades)))
   }
 
-  function startRound(subset) {
-    setQuestions(subset)
+  function startRound(list) {
+    setSubset(list)
     setAnswers({})
     setGrades({})
     setGradeError(null)
@@ -141,9 +206,8 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
     setPhase('play')
   }
 
-  const sourceFor = (item) => (item.source ? sources.find((source) => source.n === item.source) : null)
-
   if (phase === 'grading') {
+    const writtenCount = questions.filter((item) => isWritten(item) && answers[item.id]?.text?.trim()).length
     return (
       <div
         ref={cardRef}
@@ -151,7 +215,7 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
         className="flex items-center gap-3 rounded-2xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-4 py-6 text-sm text-[var(--dashboard-text-secondary)]"
       >
         <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--dashboard-accent)]" />
-        Sto correggendo le tue risposte aperte…
+        Sto correggendo {writtenCount === 1 ? 'la tua risposta scritta' : `le tue ${writtenCount} risposte scritte`}…
       </div>
     )
   }
@@ -211,7 +275,8 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
               className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
             >
               <span>
-                {score.counts.pending} {score.counts.pending === 1 ? 'risposta aperta non è stata valutata' : 'risposte aperte non sono state valutate'}{' '}
+                {score.counts.pending}{' '}
+                {score.counts.pending === 1 ? 'risposta scritta non è stata valutata' : 'risposte scritte non sono state valutate'}{' '}
                 e {score.counts.pending === 1 ? 'resta fuori' : 'restano fuori'} dal punteggio ({gradeError}).
               </span>
               <button type="button" onClick={finish} className={`${SECONDARY} px-2.5 py-1 text-xs`}>
@@ -228,11 +293,7 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
                 Rifai gli errori ({toReview.length})
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => startRound(quiz.questions)}
-              className={toReview.length > 0 ? SECONDARY : PRIMARY}
-            >
+            <button type="button" onClick={() => startRound(null)} className={toReview.length > 0 ? SECONDARY : PRIMARY}>
               <ListChecks className="h-4 w-4" />
               Rifai tutto il quiz
             </button>
@@ -283,8 +344,9 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
             const status = STATUS[item.status]
             const StatusIcon = status.icon
             const given = givenAnswerText(item.question, item.answer)
-            const source = sourceFor(item.question)
-            const isOpen = item.question.type === 'open'
+            const source = item.question.sourceInfo
+            const written = isWritten(item.question)
+            const isCode = item.question.type === 'code'
             return (
               <li
                 key={item.question.id}
@@ -299,27 +361,23 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
                     <span className="sr-only">{status.label}</span>
                   </span>
                   <div className="min-w-0 flex-1 space-y-2.5 text-sm text-[var(--dashboard-text)]">
-                    <p className="whitespace-pre-wrap break-words font-medium leading-relaxed">
-                      <span className="tabular-nums text-[var(--dashboard-text-muted)]">{item.number}.</span>{' '}
-                      {item.question.question}
-                    </p>
-
-                    <div className="space-y-1.5">
-                      <p className="whitespace-pre-wrap break-words leading-relaxed">
-                        <span className="text-xs font-medium uppercase tracking-wide text-[var(--dashboard-text-muted)]">
-                          La tua risposta
-                        </span>
-                        <br />
-                        {given || <span className="italic text-[var(--dashboard-text-muted)]">Nessuna risposta</span>}
+                    <div>
+                      <p className="whitespace-pre-wrap break-words font-medium leading-relaxed">
+                        <span className="tabular-nums text-[var(--dashboard-text-muted)]">{item.number}.</span>{' '}
+                        {item.question.question}
                       </p>
-                      {(item.status !== 'correct' || isOpen) && (
-                        <p className="whitespace-pre-wrap break-words leading-relaxed">
-                          <span className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-                            {isOpen ? 'Risposta di riferimento' : 'Risposta corretta'}
-                          </span>
-                          <br />
-                          {correctAnswerText(item.question)}
-                        </p>
+                      {item.question.snippet && <Snippet code={item.question.snippet} language={item.question.language} />}
+                    </div>
+
+                    <div className="space-y-2">
+                      <AnswerBlock label="La tua risposta" text={given} code={isCode} />
+                      {(item.status !== 'correct' || written) && (
+                        <AnswerBlock
+                          label={written ? 'Soluzione di riferimento' : 'Risposta corretta'}
+                          text={correctAnswerText(item.question)}
+                          code={isCode}
+                          tone="text-emerald-700"
+                        />
                       )}
                     </div>
 
@@ -341,7 +399,6 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
                         className={`inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border border-[var(--dashboard-border)] bg-white px-2 py-1 text-xs text-[var(--dashboard-text-secondary)] transition-colors hover:border-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent)] active:scale-[0.98] ${FOCUS_RING}`}
                       >
                         <FileText className="h-3 w-3 shrink-0" />
-                        <span className="font-semibold tabular-nums">F{source.n}</span>
                         <span className="truncate">
                           {[source.course, source.name, source.place].filter(Boolean).join(' · ')}
                         </span>
@@ -357,9 +414,9 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
     )
   }
 
-  const isLast = index === questions.length - 1
+  const isLastLoaded = index >= questions.length - 1
   const unanswered = questions.length - answered
-  const progress = ((index + 1) / questions.length) * 100
+  const progress = ((index + 1) / total) * 100
 
   return (
     <div
@@ -368,14 +425,14 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
     >
       <div className="flex items-center justify-between gap-3 text-xs text-[var(--dashboard-text-muted)]">
         <span className="font-medium tabular-nums">
-          Domanda {index + 1} di {questions.length}
+          Domanda {index + 1} di {total}
         </span>
         <span>{TYPE_LABELS[question.type]}</span>
       </div>
       <div
         role="progressbar"
         aria-valuemin={0}
-        aria-valuemax={questions.length}
+        aria-valuemax={total}
         aria-valuenow={index + 1}
         aria-label="Avanzamento del quiz"
         className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--dashboard-bg-secondary)]"
@@ -391,8 +448,30 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
         <p className="whitespace-pre-wrap break-words font-serif text-lg font-semibold leading-snug text-[var(--dashboard-text)]">
           {question.question}
         </p>
+        {question.snippet && <Snippet code={question.snippet} language={question.language} />}
 
-        {question.type === 'open' ? (
+        {question.type === 'code' ? (
+          <div className="mt-4">
+            <textarea
+              value={answer?.text ?? ''}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={handleCodeKeyDown}
+              rows={9}
+              maxLength={CODE_ANSWER_MAX}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoCorrect="off"
+              wrap="off"
+              placeholder={`Scrivi il codice${question.language ? ` (${question.language})` : ''}…`}
+              aria-label="Il tuo codice"
+              className="block w-full resize-y overflow-x-auto rounded-xl border border-[var(--dashboard-border)] bg-white px-3.5 py-3 font-mono text-[13px] leading-relaxed text-[var(--dashboard-text)] outline-none transition-colors placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/25"
+            />
+            <p className="mt-1 text-xs text-[var(--dashboard-text-muted)]">
+              Il codice non viene eseguito: lo corregge l&apos;assistente alla fine, confrontandolo con una soluzione
+              modello. Tab inserisce un rientro, Esc esce dal campo.
+            </p>
+          </div>
+        ) : question.type === 'open' ? (
           <div className="mt-4">
             <textarea
               value={answer?.text ?? ''}
@@ -404,7 +483,7 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
               className="block w-full resize-y rounded-xl border border-[var(--dashboard-border)] bg-white px-3.5 py-3 text-[15px] leading-relaxed text-[var(--dashboard-text)] outline-none transition-colors placeholder:text-[var(--dashboard-text-muted)] focus:border-[var(--dashboard-accent)] focus-visible:ring-2 focus-visible:ring-[var(--dashboard-accent)]/25"
             />
             <p className="mt-1 text-xs text-[var(--dashboard-text-muted)]">
-              Verrà corretta alla fine, insieme alle altre risposte aperte.
+              Verrà corretta alla fine, insieme alle altre risposte scritte.
             </p>
           </div>
         ) : (
@@ -442,6 +521,23 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
         )}
       </div>
 
+      {isLastLoaded && loadError && (
+        <div
+          role="alert"
+          className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        >
+          <span>
+            Non sono riuscito a generare le altre domande: il quiz si ferma a {questions.length} su {quiz.expected} ({loadError}).
+          </span>
+          {onRetryLoad && (
+            <button type="button" onClick={onRetryLoad} className={`${SECONDARY} px-2.5 py-1 text-xs`}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              Riprova
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
@@ -454,20 +550,25 @@ export default function QuizPlayer({ quiz, sources = [], busy = false, onOpenSou
         </button>
 
         <div className="flex items-center gap-2">
-          {isLast && unanswered > 0 && (
+          {isLastLoaded && !loadingMore && unanswered > 0 && (
             <span className="hidden text-xs text-[var(--dashboard-text-muted)] sm:inline">
               {unanswered} senza risposta
             </span>
           )}
-          {isLast ? (
+          {!isLastLoaded ? (
+            <button type="button" onClick={() => setIndex((current) => current + 1)} className={PRIMARY}>
+              {isAnswered(question, answer) ? 'Avanti' : 'Salta'}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          ) : loadingMore ? (
+            <button type="button" disabled className={PRIMARY}>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Genero altre domande…
+            </button>
+          ) : (
             <button type="button" onClick={finish} className={PRIMARY}>
               <Flag className="h-4 w-4" />
               Termina il quiz
-            </button>
-          ) : (
-            <button type="button" onClick={() => setIndex((current) => current + 1)} className={PRIMARY}>
-              {answer?.choice != null || answer?.text?.trim() ? 'Avanti' : 'Salta'}
-              <ArrowRight className="h-4 w-4" />
             </button>
           )}
         </div>

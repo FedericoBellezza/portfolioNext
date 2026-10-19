@@ -26,16 +26,22 @@ const MODE_RULES = {
   summary: () =>
     'MODALITÀ: riassunto. Scrivi un riassunto strutturato dell\'argomento o del documento richiesto: apri con 3-5 righe di sintesi, poi sezioni con titoli e punti elenco per concetti chiave, definizioni e formule importanti. Cita le fonti [F#]. Se gli estratti coprono solo una parte, chiudi con una riga "Copertura:" che lo dichiara.',
 
-  quiz: ({ count }) =>
-    `MODALITÀ: quiz interattivo. Crea ${count} domande d'esame sui materiali che verifichino la comprensione, non solo la memoria. In questa modalità il formato qui sotto ha la precedenza sulle regole di formato e di citazione sopra.
+  quiz: ({ count, part }) =>
+    `MODALITÀ: quiz interattivo. Crea ${count} domande d'esame sui materiali che verifichino la comprensione, non solo la memoria. In questa modalità il formato qui sotto ha la precedenza sulle regole di formato e di citazione sopra.${
+      part && part.total > 1
+        ? `\nQuesto è il blocco ${part.index + 1} di ${part.total} di un unico esame: copri argomenti diversi da quelli degli altri blocchi e usa la difficoltà di un vero esame, non di un ripasso.`
+        : ""
+    }
 
 Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo e senza blocchi di codice, nella forma {"questions":[...]}. Ogni domanda ha un "type":
 - "choice": scelta multipla con esattamente 4 opzioni plausibili. Campi: "question", "options" (4 testi, senza lettere davanti), "correct" (la lettera dell'opzione giusta: "A", "B", "C" o "D"), "explanation", "source".
 - "truefalse": un'affermazione da giudicare. Campi: "question" (l'affermazione), "answer" (true o false), "explanation", "source".
 - "open": domanda aperta a cui si risponde in 1-3 frasi. Campi: "question", "reference" (la risposta modello: completa ma concisa, con i punti essenziali), "explanation" (facoltativa), "source".
+- "code": esercizio in cui lo studente scrive codice (una funzione, una query, una piccola classe). Campi: "question" (la consegna, con firma o vincoli chiari), "language" (per esempio "javascript", "python", "sql"), "reference" (una soluzione modello corretta e completa: solo codice, con a capo e rientri), "explanation" (i punti chiave della soluzione), "source".
+Ogni domanda può avere in più "snippet" (codice da leggere, per esempio per "cosa stampa questo codice?" o "dov'è l'errore?") e "language".
 
-Se la richiesta indica un tipo di domande ("solo aperte", "vero o falso", "scelta multipla"), usa solo quello. Altrimenti mescola: circa metà "choice", il resto tra "truefalse" e "open". Le domande non devono suggerire la risposta; distribuisci le risposte corrette tra le lettere.
-"explanation": una o due frasi sul perché la risposta è quella. "source": il numero intero (per esempio 3) di UN estratto della sezione "Materiali" che la sostiene; omettilo se non ce n'è uno. Nei testi usa solo testo semplice: niente markdown e niente riferimenti [F#].
+Se la richiesta indica un tipo di domande ("solo aperte", "vero o falso", "scelta multipla", "di codice"), usa solo quello. Altrimenti mescola: circa metà "choice", il resto tra "truefalse" e "open". Usa "code" e gli "snippet" quando i materiali o la richiesta riguardano programmazione o pratica (codice, query, comandi), per esempio un terzo delle domande: se i materiali sono solo teorici non inventare esercizi di codice. Le domande non devono suggerire la risposta; distribuisci le risposte corrette tra le lettere.
+"explanation": una o due frasi sul perché la risposta è quella. "source": il numero intero (per esempio 3) di UN estratto della sezione "Materiali" che la sostiene; omettilo se non ce n'è uno. Nei testi usa solo testo semplice: niente markdown e niente riferimenti [F#]; il codice va solo in "snippet" e "reference".
 Se i materiali non bastano per nessuna domanda, rispondi {"questions":[],"note":"<il motivo, in una frase>"}.`,
 };
 
@@ -125,8 +131,10 @@ export function buildPrompts({
   truncated,
   attachments = [],
   catalog = false,
+  quizPart = null,
+  exclude = [],
 }) {
-  const rules = (MODE_RULES[mode] ?? MODE_RULES.ask)({ count });
+  const rules = (MODE_RULES[mode] ?? MODE_RULES.ask)({ count, part: quizPart });
   const system = `${BASE_RULES}\n\n${catalog ? `${rules}\n\n${CATALOG_RULES}` : rules}`;
 
   const sections = [];
@@ -150,6 +158,12 @@ export function buildPrompts({
 
   if (history.length) {
     sections.push(`## Conversazione precedente\n${formatHistory(history)}`);
+  }
+
+  if (mode === "quiz" && exclude.length) {
+    sections.push(
+      `## Domande già fatte negli altri blocchi\nNon ripeterle e non riproporre lo stesso concetto:\n${exclude.map((item) => `- ${item}`).join("\n")}`,
+    );
   }
 
   if (attachments.length) {

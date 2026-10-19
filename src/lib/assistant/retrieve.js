@@ -148,34 +148,48 @@ function takeWithinBudget(passages, { limit, charBudget, limitTruncates = false 
  * Ricerca ibrida (vettori + full-text italiano) con filtri opzionali su corso e documenti.
  * `documentIds` vuoto = tutti i documenti del corso.
  */
-export async function searchPassages({ supabase, query, course, documentIds = [], limit = 8, charBudget = 60000 }) {
+export async function searchPassages({
+  supabase,
+  query,
+  course,
+  documentIds = [],
+  limit = 8,
+  charBudget = 60000,
+  part = null,
+}) {
   const embedding = await embedQuery(query);
   const terms = extractTerms(query);
   const filters = { p_course: course || null, p_document_ids: documentIds.length ? documentIds : null };
+  // Un blocco di un quiz lungo ({ index, total }) prende la "pagina" successiva dei risultati,
+  // così i blocchi non ricevono tutti gli stessi passaggi.
+  const candidates = part ? Math.min(CANDIDATES * part.total, 100) : CANDIDATES;
 
   const [vector, fulltext] = await Promise.all([
     supabase.rpc("assistant_search", {
       query_embedding: toVectorLiteral(embedding),
-      match_count: CANDIDATES,
+      match_count: candidates,
       similarity_threshold: 0.2,
       ...filters,
     }),
     terms.length
-      ? supabase.rpc("assistant_search_fts", { p_terms: terms, match_count: CANDIDATES, ...filters })
+      ? supabase.rpc("assistant_search_fts", { p_terms: terms, match_count: candidates, ...filters })
       : Promise.resolve({ data: [], error: null }),
   ]);
   if (vector.error) throw new Error(`Ricerca vettoriale: ${vector.error.message}`);
   if (fulltext.error) throw new Error(`Ricerca full-text: ${fulltext.error.message}`);
 
   const fused = fuse([vector.data ?? [], fulltext.data ?? []]);
-  const passages = await attachDocuments(supabase, fused.slice(0, limit * 2));
+  const start = part ? part.index * limit : 0;
+  // Se i risultati sono meno della pagina richiesta si riparte dalla prima: meglio ripetere che restare senza materiale.
+  const window = fused.slice(start, start + limit * 2);
+  const passages = await attachDocuments(supabase, window.length ? window : fused.slice(0, limit * 2));
   return takeWithinBudget(passages, { limit, charBudget });
 }
 
 /**
  * Per riassunti e quiz su un documento scelto: i chunk in ordine, non i più simili.
  */
-export async function loadDocumentPassages({ supabase, documentId, charBudget = 60000 }) {
+export async function loadDocumentPassages({ supabase, documentId, charBudget = 60000, part = null }) {
   let query = supabase
     .from("assistant_chunks")
     .select("id, document_id, content, page_start, page_end, ts_start, heading, chunk_index")
@@ -188,7 +202,15 @@ export async function loadDocumentPassages({ supabase, documentId, charBudget = 
   const { data, error } = await query;
   if (error) throw new Error(`Lettura chunk: ${error.message}`);
 
-  const passages = await attachDocuments(supabase, data ?? []);
+  let rows = data ?? [];
+  // Un blocco di un quiz lungo ({ index, total }) legge solo la sua fetta del documento, in ordine.
+  // Un documento troppo corto per essere diviso si legge per intero in ogni blocco.
+  if (part && part.total > 1 && rows.length >= part.total) {
+    const size = Math.ceil(rows.length / part.total);
+    rows = rows.slice(part.index * size, (part.index + 1) * size);
+  }
+
+  const passages = await attachDocuments(supabase, rows);
   return takeWithinBudget(passages, { limit: 200, charBudget, limitTruncates: true });
 }
 
@@ -196,10 +218,10 @@ export async function loadDocumentPassages({ supabase, documentId, charBudget = 
  * Più documenti scelti per riassunti e quiz: ognuno si legge in ordine con la sua quota del budget,
  * così nessuno prende tutto lo spazio.
  */
-export async function loadDocumentsPassages({ supabase, documentIds, charBudget = 60000 }) {
+export async function loadDocumentsPassages({ supabase, documentIds, charBudget = 60000, part = null }) {
   const share = Math.floor(charBudget / documentIds.length);
   const results = await Promise.all(
-    documentIds.map((documentId) => loadDocumentPassages({ supabase, documentId, charBudget: share })),
+    documentIds.map((documentId) => loadDocumentPassages({ supabase, documentId, charBudget: share, part })),
   );
   const merged = mergePassages(
     results.map((result) => result.passages),

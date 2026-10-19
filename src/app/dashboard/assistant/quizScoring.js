@@ -1,8 +1,17 @@
 import { MAX_MESSAGE_CHARS } from '@/lib/assistant/constants'
 
-// Stato di una domanda: correct | partial | wrong | skipped | pending (risposta aperta non ancora valutata).
+// Le domande a cui si risponde scrivendo (testo o codice) si correggono a fine quiz con il modello.
+export function isWritten(question) {
+  return question.type === 'open' || question.type === 'code'
+}
+
+export function isAnswered(question, answer) {
+  return isWritten(question) ? Boolean(answer?.text?.trim()) : answer?.choice != null
+}
+
+// Stato di una domanda: correct | partial | wrong | skipped | pending (risposta scritta non ancora valutata).
 export function statusOf(question, answer, grade) {
-  if (question.type === 'open') {
+  if (isWritten(question)) {
     if (!answer?.text?.trim()) return 'skipped'
     return grade?.verdict ?? 'pending'
   }
@@ -11,12 +20,25 @@ export function statusOf(question, answer, grade) {
 }
 
 export function givenAnswerText(question, answer) {
-  if (question.type === 'open') return answer?.text?.trim() || ''
+  // Il codice conserva i rientri: niente trim() sulle righe, solo ai bordi.
+  if (isWritten(question)) return answer?.text?.trim() || ''
   return answer?.choice == null ? '' : question.options[answer.choice]
 }
 
 export function correctAnswerText(question) {
-  return question.type === 'open' ? question.reference : question.options[question.correct]
+  return isWritten(question) ? question.reference : question.options[question.correct]
+}
+
+// Cosa si manda al correttore per una domanda scritta: la consegna comprende l'eventuale codice da leggere.
+export function gradeRequestItem(question, answer) {
+  const statement = question.snippet ? `${question.question}\n\nCodice:\n${question.snippet}` : question.question
+  return {
+    question: statement,
+    reference: question.reference,
+    answer: answer.text.trim(),
+    kind: question.type === 'code' ? 'code' : 'open',
+    ...(question.language ? { language: question.language } : {}),
+  }
 }
 
 // Le risposte aperte non ancora valutate restano fuori dal punteggio: contarle sbagliate falserebbe la percentuale.
