@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -217,6 +217,69 @@ function CourseCombobox({ id, value, onChange, courses, placeholder, ariaLabel =
   )
 }
 
+// Attesa prima di mostrare il nome completo di un documento.
+const NAME_TOOLTIP_DELAY_MS = 500
+
+// Nome del documento: un click lo apre; se è troncato, dopo mezzo secondo di hover compare il nome completo.
+// Il tooltip è fixed perché l'elenco scorre in un contenitore con overflow che lo taglierebbe.
+function DocumentName({ doc, disabled, onOpen }) {
+  const [tip, setTip] = useState(null)
+  const timer = useRef(null)
+
+  function hide() {
+    clearTimeout(timer.current)
+    setTip(null)
+  }
+
+  function show(event) {
+    const element = event.currentTarget
+    if (element.scrollWidth <= element.clientWidth) return
+    const rect = element.getBoundingClientRect()
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => {
+      setTip({ left: rect.left, top: rect.bottom + 4, maxWidth: Math.min(384, window.innerWidth - rect.left - 12) })
+    }, NAME_TOOLTIP_DELAY_MS)
+  }
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  // Scorrendo l'elenco la riga si sposta ma il tooltip resterebbe fermo.
+  useEffect(() => {
+    if (!tip) return
+    window.addEventListener('scroll', hide, true)
+    return () => window.removeEventListener('scroll', hide, true)
+  }, [tip])
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          hide()
+          onOpen()
+        }}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onBlur={hide}
+        disabled={disabled}
+        aria-label={`Apri ${doc.name}`}
+        className={`block max-w-full cursor-pointer truncate rounded text-left text-sm text-[var(--dashboard-text)] transition-colors hover:text-[var(--dashboard-accent)] hover:underline disabled:cursor-default disabled:no-underline ${FOCUS_RING}`}
+      >
+        {doc.name}
+      </button>
+      {tip && (
+        <span
+          role="tooltip"
+          style={{ left: tip.left, top: tip.top, maxWidth: tip.maxWidth }}
+          className="pointer-events-none fixed z-50 break-words rounded-md border border-[var(--dashboard-border)] bg-[var(--dashboard-card-bg)] px-2.5 py-1.5 text-xs leading-snug text-[var(--dashboard-text)] shadow-[0_12px_24px_-12px_rgba(120,80,60,0.35)]"
+        >
+          {doc.name}
+        </span>
+      )}
+    </>
+  )
+}
+
 // Riga di un documento: selezione, stato, figure ed eliminazione.
 function DocumentRow({
   doc,
@@ -229,6 +292,7 @@ function DocumentRow({
   onConfirm,
   onCancel,
   onAskDelete,
+  onOpen,
   progress,
   error,
   onAnalyze,
@@ -253,9 +317,7 @@ function DocumentRow({
         <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)]" />
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm text-[var(--dashboard-text)]" title={doc.name}>
-          {doc.name}
-        </p>
+        <DocumentName doc={doc} disabled={deleting} onOpen={onOpen} />
         <p className="text-xs tabular-nums text-[var(--dashboard-text-muted)]">
           {[
             FILE_TYPE_LABELS[doc.file_type] ?? doc.file_type,
@@ -368,6 +430,7 @@ export default function SourcesPanel({
   uploads,
   onUpload,
   onDelete,
+  onOpenDocument,
   onDeleteCourse,
   deletingDocs,
   deletingCourses,
@@ -702,6 +765,7 @@ export default function SourcesPanel({
                     onAskDelete={() => setConfirming(`doc:${doc.id}`)}
                     onConfirm={() => confirmDelete(() => onDelete(doc))}
                     onCancel={() => setConfirming(null)}
+                    onOpen={() => onOpenDocument(doc)}
                     progress={visualProgress[doc.id]}
                     error={visualErrors[doc.id]}
                     onAnalyze={() => onAnalyzeVisuals(doc)}

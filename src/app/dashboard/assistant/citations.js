@@ -29,11 +29,3 @@ export function linkCitations(text) {
     .join('')
 }
 
-// Dentro i blocchi di codice (flashcard) i riferimenti sono solo rumore.
-export function stripCitationsInFences(text) {
-  return text.replace(FENCE, (block) => block.replace(/[ \t]*\[F\d+[^\]\[]*\]/g, ''))
-}
-
-export function stripCitations(text) {
-  return text.replace(/[ \t]*\[F\d+[^\]\[]*\]/g, '')
-}

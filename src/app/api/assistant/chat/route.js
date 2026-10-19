@@ -5,6 +5,7 @@ import { findNamedDocuments, isCatalogQuestion } from "@/lib/assistant/catalog";
 import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
+import { parseQuiz, quizToText } from "@/lib/assistant/quiz";
 import {
   listCourseDocuments,
   loadDocumentsPassages,
@@ -27,13 +28,11 @@ const MODE_SETTINGS = {
   ask: { limit: 8, contextChars: 40000 },
   summary: { limit: 14, contextChars: 52000 },
   quiz: { limit: 14, contextChars: 52000 },
-  flashcards: { limit: 14, contextChars: 52000 },
-  plan: { limit: 14, contextChars: 42000 },
 };
 
 const BodySchema = z.object({
   message: z.string().trim().min(1).max(MAX_MESSAGE_CHARS),
-  mode: z.enum(["ask", "summary", "quiz", "flashcards", "plan"]).default("ask"),
+  mode: z.enum(["ask", "summary", "quiz"]).default("ask"),
   // Contesto della domanda: corsi, cartelle e documenti, anche mescolati. Tutto vuoto = tutti i materiali.
   courses: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
   folders: z
@@ -88,7 +87,7 @@ export async function POST(request) {
     const searchIds = [...new Set([...scopedIds, ...documentIds])];
     const searchSet = new Set(searchIds);
 
-    // Riassunti, quiz e flashcard su documenti scelti (senza corsi o cartelle) li leggono in ordine;
+    // Riassunti e quiz su documenti scelti (senza corsi o cartelle) li leggono in ordine;
     // negli altri casi si cercano i passaggi più pertinenti alla richiesta.
     // Le domande sull'archivio ("ho documenti duplicati?") non servono estratti: senza ricerca il prompt resta
     // piccolo e la risposta arriva ben prima del timeout.
@@ -108,7 +107,7 @@ export async function POST(request) {
         charBudget: contextChars,
       });
     } else {
-      const query = mode === "plan" ? `${message} ${courses.join(" ")}`.trim() : retrievalQuery(message, history);
+      const query = retrievalQuery(message, history);
       // "La lezione 6" non è una frase che la ricerca per significato associ al file "6 lesson.txt":
       // i documenti nominati per numero si leggono comunque, e la ricerca riempie lo spazio che resta.
       const named = documentIds.length
@@ -159,20 +158,40 @@ export async function POST(request) {
       costUsd: result.costUsd,
     });
 
+    let text = result.text;
+    let quiz = null;
+    let quizSources = null;
+    if (mode === "quiz") {
+      const parsed = parseQuiz(text, { validSources: new Set(passages.map((p) => p.n)), max: count });
+      if (!parsed.questions.length) {
+        throw new AssistantError(
+          parsed.note || "Non sono riuscito a generare il quiz in un formato valido: riprova",
+          parsed.note ? 422 : 502,
+        );
+      }
+      quiz = { questions: parsed.questions };
+      text = quizToText(parsed.questions);
+      quizSources = new Set(parsed.questions.map((question) => question.source).filter(Boolean));
+    }
+
     return Response.json({
       ok: true,
-      text: result.text,
+      text,
+      quiz,
       truncated,
-      sources: passages.map((p) => ({
-        n: p.n,
-        documentId: p.documentId,
-        name: p.name,
-        course: p.course,
-        filePath: p.filePath,
-        fileType: p.fileType,
-        page: p.page,
-        place: p.place,
-      })),
+      // Un quiz mostra solo le fonti citate dalle sue domande.
+      sources: passages
+        .filter((p) => !quizSources || quizSources.has(p.n))
+        .map((p) => ({
+          n: p.n,
+          documentId: p.documentId,
+          name: p.name,
+          course: p.course,
+          filePath: p.filePath,
+          fileType: p.fileType,
+          page: p.page,
+          place: p.place,
+        })),
     });
   } catch (error) {
     return errorResponse(error);

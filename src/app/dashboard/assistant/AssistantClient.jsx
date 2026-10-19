@@ -73,10 +73,6 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     })
   }, [readyDocuments])
 
-  // Nome per il file delle flashcard: il corso, se il contesto è uno solo.
-  const scopeName =
-    scope.courses.length === 1 && !scope.folders.length && !scope.documentIds.length ? scope.courses[0] : ''
-
   // Chat a tutta pagina: nasconde intestazione e pannello dei materiali. Si ricorda tra le visite.
   const [expanded, setExpanded] = useState(false)
   useEffect(() => {
@@ -392,6 +388,11 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // Un documento dell'elenco si apre come una fonte citata, dalla prima pagina.
+  function openDocument(doc) {
+    return openSource({ filePath: doc.file_path, fileType: doc.file_type })
+  }
+
   function copyBugReport() {
     const report = buildBugReport({
       messages,
@@ -406,12 +407,26 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
     return copyToClipboard(report)
   }
 
-  async function send() {
-    const text = input.trim()
-    if (!text || loading || attachments.some((item) => item.status === 'uploading')) return
+  // Il risultato di un quiz entra nel testo del messaggio (in testa, il server legge solo l'inizio di ogni turno):
+  // così un "spiegami la 3" successivo sa com'è andato.
+  function finishQuiz(messageId, summary) {
+    setMessages((current) =>
+      current.map((message) =>
+        message.id === messageId ? { ...message, content: `${summary}\n\n${message.quizText}` } : message,
+      ),
+    )
+  }
+
+  // `request` serve alle richieste che partono da un pulsante (es. "Spiegami gli errori"):
+  // niente casella di testo né allegati, e sempre in modalità domanda anche se la scheda attiva è un'altra.
+  async function send(request) {
+    const fromButton = typeof request?.text === 'string'
+    const text = (fromButton ? request.text : input).trim()
+    const sendMode = fromButton ? request.mode ?? 'ask' : mode
+    if (!text || loading || (!fromButton && attachments.some((item) => item.status === 'uploading'))) return
 
     // Gli allegati con errore non partono: restano solo quelli caricati.
-    const sent = attachments.filter((item) => item.status === 'ready')
+    const sent = fromButton ? [] : attachments.filter((item) => item.status === 'ready')
 
     // Il server accetta al massimo 8000 caratteri per messaggio di storia. Degli allegati dei turni
     // precedenti resta solo il nome: il testo è stato letto una volta e non viene rimandato.
@@ -432,8 +447,10 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
         attachments: sent.map((item) => ({ name: item.name })),
       },
     ])
-    setInput('')
-    setAttachments([])
+    if (!fromButton) {
+      setInput('')
+      setAttachments([])
+    }
     setLoading(true)
 
     try {
@@ -442,7 +459,7 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text,
-          mode,
+          mode: sendMode,
           courses: scope.courses,
           folders: scope.folders,
           documentIds: scope.documentIds,
@@ -460,9 +477,11 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           id: crypto.randomUUID(),
           role: 'assistant',
           content: data.text,
+          // Un quiz si compila nell'interfaccia: `content` resta la sua versione testuale per cronologia e copia.
+          ...(data.quiz ? { quiz: data.quiz, quizText: data.text } : {}),
           sources: data.sources,
           truncated: data.truncated,
-          mode,
+          mode: sendMode,
         },
       ])
     } catch (error) {
@@ -530,6 +549,7 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           uploads={uploads}
           onUpload={uploadFiles}
           onDelete={deleteDocument}
+          onOpenDocument={openDocument}
           onDeleteCourse={deleteCourse}
           deletingDocs={deletingDocs}
           deletingCourses={deletingCourses}
@@ -548,11 +568,12 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           loading={loading}
           input={input}
           onInputChange={setInput}
-          onSend={send}
+          onSend={() => send()}
+          onAsk={(text) => send({ text, mode: 'ask' })}
+          onQuizFinish={finishQuiz}
           onReset={() => setMessages([])}
           mode={mode}
           onModeChange={setMode}
-          course={scopeName}
           readyDocuments={readyDocuments}
           scope={scope}
           onScopeChange={setScope}

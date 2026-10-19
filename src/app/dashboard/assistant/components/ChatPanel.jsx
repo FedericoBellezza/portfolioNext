@@ -6,13 +6,10 @@ import {
   ArrowRight,
   ArrowUp,
   Bug,
-  CalendarDays,
   Check,
   Copy,
-  Download,
   FileText,
   FolderOpen,
-  Layers,
   ListChecks,
   Loader2,
   Maximize2,
@@ -34,7 +31,8 @@ import {
 import { copyToClipboard } from '@/lib/assistant/bugReport'
 import ContextSelect from './ContextSelect'
 import Markdown from './Markdown'
-import { citedNumbers, stripCitations, stripCitationsInFences } from '../citations'
+import QuizPlayer from './QuizPlayer'
+import { citedNumbers } from '../citations'
 
 // Spazio lasciato sotto la chat quando è appiccicata (circa lo stesso che c'è sopra, sotto la nav).
 const STICKY_BOTTOM_GAP = 24
@@ -47,16 +45,12 @@ const MODE_ICONS = {
   ask: MessageSquareText,
   summary: AlignLeft,
   quiz: ListChecks,
-  flashcards: Layers,
-  plan: CalendarDays,
 }
 
 const PLACEHOLDERS = {
   ask: 'Chiedi qualcosa sui tuoi materiali…',
   summary: 'Di cosa vuoi il riassunto? (es. "il capitolo sugli ammortamenti")',
   quiz: 'Su quale argomento vuoi il quiz?',
-  flashcards: 'Su quale argomento vuoi le flashcard?',
-  plan: 'Quando hai l\'esame? (es. "esame il 20 gennaio, 3 ore al giorno")',
 }
 
 const SUGGESTIONS = {
@@ -67,29 +61,6 @@ const SUGGESTIONS = {
   ],
   summary: ['Riassumi il capitolo su…', 'Fammi uno schema delle definizioni chiave', 'Riassumi l\'ultima lezione in 10 punti'],
   quiz: ['Un quiz di 5 domande sugli argomenti principali', 'Domande a risposta aperta su…', 'Metti alla prova le mie conoscenze su…'],
-  flashcards: ['Flashcard sulle definizioni principali', 'Schede sulle formule e i loro usi', 'Flashcard sul capitolo…'],
-  plan: ['Esame tra due settimane, 2 ore al giorno', 'Piano di ripasso per il weekend', 'Esame il… e ho già studiato metà del programma'],
-}
-
-// Le flashcard arrivano come blocco ```tsv: si trasformano in un file importabile in Anki.
-function extractFlashcards(content) {
-  const block = /```(?:tsv)?\n([\s\S]*?)```/.exec(content)
-  if (!block) return null
-  const rows = block[1]
-    .split('\n')
-    .map((line) => stripCitations(line).trim())
-    .filter((line) => line.includes('\t'))
-  return rows.length ? rows : null
-}
-
-function downloadFlashcards(rows, course) {
-  const text = ['#separator:tab', '#html:false', ...rows].join('\n')
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `flashcard-${(course || 'tutti-i-corsi').replace(/\W+/g, '-').toLowerCase()}.txt`
-  link.click()
-  URL.revokeObjectURL(url)
 }
 
 function citedSources(message) {
@@ -124,7 +95,7 @@ function AssistantAvatar() {
   )
 }
 
-function Message({ message, course, onOpenSource }) {
+function Message({ message, onOpenSource, onQuizFinish, onAsk, busy }) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -176,8 +147,26 @@ function Message({ message, course, onOpenSource }) {
     )
   }
 
+  // Un quiz non è testo da leggere: è un'interfaccia da compilare, con le fonti dentro le singole domande.
+  if (message.quiz) {
+    return (
+      <div className={`flex gap-3 ${ENTER}`}>
+        <AssistantAvatar />
+        <div className="min-w-0 max-w-[min(100%,46rem)] flex-1">
+          <QuizPlayer
+            quiz={message.quiz}
+            sources={message.sources}
+            busy={busy}
+            onOpenSource={onOpenSource}
+            onFinish={(summary) => onQuizFinish?.(message.id, summary)}
+            onAsk={onAsk}
+          />
+        </div>
+      </div>
+    )
+  }
+
   const sources = citedSources(message)
-  const flashcards = message.mode === 'flashcards' ? extractFlashcards(message.content) : null
 
   async function handleCopy() {
     if (await copyToClipboard(message.content)) setCopied(true)
@@ -194,7 +183,7 @@ function Message({ message, course, onOpenSource }) {
               if (source) onOpenSource(source)
             }}
           >
-            {message.mode === 'flashcards' ? stripCitationsInFences(message.content) : message.content}
+            {message.content}
           </Markdown>
           {message.truncated && (
             <p className="mt-2 text-xs text-[var(--dashboard-text-muted)]">
@@ -228,16 +217,6 @@ function Message({ message, course, onOpenSource }) {
             {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'Copiata' : 'Copia'}
           </ActionButton>
-          {flashcards && (
-            <ActionButton
-              onClick={() => downloadFlashcards(flashcards, course)}
-              label="Scarica le flashcard per Anki"
-              className="text-[var(--dashboard-accent)] hover:text-[var(--dashboard-accent-hover)]"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Scarica per Anki ({flashcards.length} schede)
-            </ActionButton>
-          )}
         </div>
       </div>
     </div>
@@ -276,13 +255,14 @@ export default function ChatPanel({
   onReset,
   mode,
   onModeChange,
-  course,
   readyDocuments,
   scope,
   onScopeChange,
   count,
   onCountChange,
   onOpenSource,
+  onQuizFinish,
+  onAsk,
   onReportBug,
   hasDocuments,
   attachments,
@@ -337,11 +317,12 @@ export default function ChatPanel({
     // Espandendo cambia la posizione della griglia: l'altezza va ricalcolata.
   }, [expanded])
 
-  // Si scorre solo la lista dei messaggi, non la pagina intera.
+  // Si scorre solo la lista dei messaggi, non la pagina intera. Solo quando ne arriva uno nuovo:
+  // il risultato di un quiz aggiorna un messaggio esistente e non deve spostare la vista.
   useEffect(() => {
     const scroller = scrollerRef.current
     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages.length, loading])
 
   // La casella di testo cresce con il contenuto fino a un massimo, poi scorre.
   useLayoutEffect(() => {
@@ -362,7 +343,7 @@ export default function ChatPanel({
   }
 
   const currentMode = MODES.find((item) => item.id === mode) ?? MODES[0]
-  const showCount = mode === 'quiz' || mode === 'flashcards'
+  const showCount = mode === 'quiz'
   const showDocumentOptions = readyDocuments.length > 0 || showCount
   const canSend = !loading && !uploading && Boolean(input.trim())
   const nearLimit = input.length > MAX_MESSAGE_CHARS * 0.8
@@ -481,10 +462,10 @@ export default function ChatPanel({
             <input
               type="number"
               min={1}
-              max={mode === 'quiz' ? 10 : 20}
+              max={10}
               value={count}
               onChange={(event) => onCountChange(event.target.value)}
-              placeholder={mode === 'quiz' ? 'n. domande' : 'n. schede'}
+              placeholder="n. domande"
               aria-label="Quantità"
               className={`${FIELD} w-24`}
             />
@@ -542,7 +523,14 @@ export default function ChatPanel({
         )}
 
         {messages.map((message) => (
-          <Message key={message.id} message={message} course={course} onOpenSource={onOpenSource} />
+          <Message
+            key={message.id}
+            message={message}
+            onOpenSource={onOpenSource}
+            onQuizFinish={onQuizFinish}
+            onAsk={onAsk}
+            busy={loading}
+          />
         ))}
 
         {loading && <TypingIndicator />}

@@ -64,7 +64,16 @@ Limiti noti: un PDF di testo lungo con figure *vettoriali* ma senza immagini inc
 
 ## Modalità
 
-Domanda, Riassunto, Quiz, Flashcard (esportabili per Anki), Piano di ripasso. Con un documento selezionato, riassunto/quiz/flashcard leggono il documento in ordine (opzionalmente un intervallo di pagine) invece di cercare i passaggi più simili.
+Domanda, Riassunto, Quiz. Con un documento selezionato, riassunto e quiz leggono il documento in ordine (opzionalmente un intervallo di pagine) invece di cercare i passaggi più simili.
+
+### Quiz interattivo
+
+In modalità Quiz il modello non scrive testo ma un JSON di domande (`choice`, `truefalse`, `open`), che `lib/assistant/quiz.js` estrae, valida domanda per domanda (quelle malformate si scartano) e normalizza: le opzioni si rimescolano lato server, tranne quando dicono "tutte le precedenti" o simili. La chat mostra un `QuizPlayer`: una domanda alla volta, si può tornare indietro e saltare, e la correzione arriva solo alla fine (percentuale, rassegna domanda per domanda con spiegazione e fonte cliccabile, "Rifai gli errori", "Spiegami gli errori").
+
+- Scelta multipla e vero/falso si correggono nel browser, all'istante.
+- Le **risposte aperte** si correggono a fine quiz con una sola chiamata a `POST /api/assistant/quiz/grade` (un'unica generazione per tutte): esito `correct` / `partial` (mezzo punto) / `wrong` e un commento. Se la correzione fallisce, quelle risposte restano fuori dal punteggio e si può riprovare.
+- Il risultato non è salvato nel database: vive nel messaggio, e il riepilogo (percentuale e domande da rivedere) entra nel testo del messaggio così l'assistente lo vede nei turni successivi.
+- Se il modello non produce un JSON utilizzabile la route risponde con un errore e basta riprovare (non c'è un retry automatico: con `maxDuration = 60` non ci sarebbe il tempo).
 
 ## Configurazione e limiti
 

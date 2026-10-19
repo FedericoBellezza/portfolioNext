@@ -266,7 +266,7 @@ export async function resolveScopeDocumentIds({ supabase, courses = [], folders 
     .map((doc) => doc.id);
 }
 
-// Elenco dei materiali di un corso: utile al piano di ripasso e ai riassunti generali.
+// Elenco dei materiali di un corso: utile ai riassunti generali.
 export async function listCourseDocuments({ supabase, course }) {
   let query = supabase
     .from("assistant_documents")

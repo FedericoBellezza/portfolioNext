@@ -27,13 +27,16 @@ const MODE_RULES = {
     'MODALITÀ: riassunto. Scrivi un riassunto strutturato dell\'argomento o del documento richiesto: apri con 3-5 righe di sintesi, poi sezioni con titoli e punti elenco per concetti chiave, definizioni e formule importanti. Cita le fonti [F#]. Se gli estratti coprono solo una parte, chiudi con una riga "Copertura:" che lo dichiara.',
 
   quiz: ({ count }) =>
-    `MODALITÀ: quiz. Crea ${count} domande d'esame sui materiali, mescolando scelta multipla (4 opzioni A-D) e domande aperte brevi; devono verificare la comprensione, non solo la memoria. Scrivi prima tutte le domande numerate SENZA risposte, poi una sezione "## Soluzioni" con, per ogni domanda, la risposta corretta, una spiegazione di una riga e la fonte [F#].`,
+    `MODALITÀ: quiz interattivo. Crea ${count} domande d'esame sui materiali che verifichino la comprensione, non solo la memoria. In questa modalità il formato qui sotto ha la precedenza sulle regole di formato e di citazione sopra.
 
-  flashcards: ({ count }) =>
-    `MODALITÀ: flashcard. Crea fino a ${count} flashcard sui materiali. Rispondi con UN SOLO blocco di codice con linguaggio tsv (tre apici inversi + tsv): una scheda per riga nel formato domanda<TAB>risposta, separando le due colonne con il carattere di tabulazione. Niente intestazioni, niente numerazione, niente riferimenti [F#] dentro le schede, niente a capo dentro una scheda; risposte brevi (1-3 frasi). Dopo il blocco scrivi solo una riga "Fonti:" con i riferimenti [F#] usati.`,
+Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo e senza blocchi di codice, nella forma {"questions":[...]}. Ogni domanda ha un "type":
+- "choice": scelta multipla con esattamente 4 opzioni plausibili. Campi: "question", "options" (4 testi, senza lettere davanti), "correct" (la lettera dell'opzione giusta: "A", "B", "C" o "D"), "explanation", "source".
+- "truefalse": un'affermazione da giudicare. Campi: "question" (l'affermazione), "answer" (true o false), "explanation", "source".
+- "open": domanda aperta a cui si risponde in 1-3 frasi. Campi: "question", "reference" (la risposta modello: completa ma concisa, con i punti essenziali), "explanation" (facoltativa), "source".
 
-  plan: () =>
-    "MODALITÀ: piano di ripasso. Usa l'elenco dei materiali disponibili e gli estratti per individuare gli argomenti; se la sezione \"Materiali\" indica che gli estratti provengono da un solo corso o documento, limita il piano a quello. Se l'utente indica una data d'esame, distribuisci il lavoro sui giorni che restano da oggi; altrimenti proponi un piano in sessioni numerate. Per ogni sessione indica obiettivo, argomenti, materiali da riprendere (nome file e pagine o minuti) e un'attività di verifica (autointerrogazione). Cita [F#] quando indichi contenuti specifici.",
+Se la richiesta indica un tipo di domande ("solo aperte", "vero o falso", "scelta multipla"), usa solo quello. Altrimenti mescola: circa metà "choice", il resto tra "truefalse" e "open". Le domande non devono suggerire la risposta; distribuisci le risposte corrette tra le lettere.
+"explanation": una o due frasi sul perché la risposta è quella. "source": il numero intero (per esempio 3) di UN estratto della sezione "Materiali" che la sostiene; omettilo se non ce n'è uno. Nei testi usa solo testo semplice: niente markdown e niente riferimenti [F#].
+Se i materiali non bastano per nessuna domanda, rispondi {"questions":[],"note":"<il motivo, in una frase>"}.`,
 };
 
 const CATALOG_RULES =
@@ -42,8 +45,8 @@ const CATALOG_RULES =
 const HISTORY_TURNS = 6;
 const HISTORY_CHARS = 1500;
 
-export const DEFAULT_COUNTS = { quiz: 8, flashcards: 15 };
-export const MAX_COUNTS = { quiz: 10, flashcards: 20 };
+export const DEFAULT_COUNTS = { quiz: 8 };
+export const MAX_COUNTS = { quiz: 10 };
 
 function formatHistory(history) {
   return history
@@ -127,17 +130,6 @@ export function buildPrompts({
   const system = `${BASE_RULES}\n\n${catalog ? `${rules}\n\n${CATALOG_RULES}` : rules}`;
 
   const sections = [];
-
-  if (mode === "plan") {
-    const today = new Date().toLocaleDateString("it-IT", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-      timeZone: "Europe/Rome",
-    });
-    sections.push(`Data di oggi: ${today}.`);
-  }
 
   sections.push(
     `## Materiali disponibili\n${documents?.length ? formatDocumentList(documents) : "(nessun documento caricato)"}`,

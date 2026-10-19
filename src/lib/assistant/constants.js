@@ -40,9 +40,7 @@ export const FILE_TYPE_LABELS = {
 export const MODES = [
   { id: "ask", label: "Domanda", hint: "Risponde dai tuoi materiali, con le fonti" },
   { id: "summary", label: "Riassunto", hint: "Riassunto strutturato di un argomento o di un documento" },
-  { id: "quiz", label: "Quiz", hint: "Domande d'esame con soluzioni commentate" },
-  { id: "flashcards", label: "Flashcard", hint: "Schede domanda/risposta da importare in Anki" },
-  { id: "plan", label: "Piano di ripasso", hint: "Piano di studio basato sui materiali caricati" },
+  { id: "quiz", label: "Quiz", hint: "Quiz interattivo: una domanda alla volta, correzione e punteggio alla fine" },
 ];
 
 export const MAX_MESSAGE_CHARS = 4000;
