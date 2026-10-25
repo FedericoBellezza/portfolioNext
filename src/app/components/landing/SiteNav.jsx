@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useScroll, useMotionValueEvent } from "motion/react";
 import { ListIcon, XIcon, WhatsappLogoIcon } from "@phosphor-icons/react";
 import { NAV_LINKS, CTA, CONTACT } from "@/lib/site-data";
-import ThemeControl from "./ThemeControl";
 
 export default function SiteNav() {
   const [open, setOpen] = useState(false);
@@ -81,7 +80,6 @@ export default function SiteNav() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <ThemeControl />
           <a
             href="#contatti"
             className="whitespace-nowrap rounded-[var(--fb-r-sm)] px-4 py-2.5 text-sm font-medium transition-colors duration-200"
@@ -152,12 +150,6 @@ export default function SiteNav() {
             {CTA.whatsapp}
           </a>
 
-          <div className="mt-5 flex items-center justify-between">
-            <span className="text-xs" style={{ color: "var(--fb-ink-3)" }}>
-              Tema
-            </span>
-            <ThemeControl />
-          </div>
         </div>
       </div>
     </header>

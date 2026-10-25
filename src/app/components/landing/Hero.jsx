@@ -3,83 +3,109 @@ import {
   ArrowRightIcon,
   WhatsappLogoIcon,
 } from "@phosphor-icons/react/dist/ssr";
-import { CTA, CONTACT } from "@/lib/site-data";
+import { CTA, CONTACT, HERO } from "@/lib/site-data";
 
-// Seven words, so it lands on two lines at desktop instead of three.
-const HEADLINE = [
-  { text: "Costruisco" },
-  { text: "software" },
-  { text: "su", accent: true },
-  { text: "misura", accent: true },
-  { text: "per" },
-  { text: "la" },
-  { text: "tua" },
-  { text: "azienda." },
-];
-
-// The intro used to be a GSAP timeline built inside a layout effect, which tied
-// the first frame of the hero to hydration: the animation could only start once
-// the client bundle for the whole landing page had parsed and run, and then it
-// competed with that same work for the main thread, so it played in steps.
-// It is plain CSS now. The keyframes are transform/opacity only, so the
-// compositor runs them off the main thread and the hero is a server component
-// shipping zero JS. Every delay below is in seconds and mirrors the old
-// timeline: headline first, then the supporting copy, then the buttons.
-const WORD_START = 0.14;
-const WORD_STAGGER = 0.035;
-const SUB_START = 0.7;
-const CTA_START = 0.84;
+// The intro is plain CSS on purpose: the keyframes run from the first paint,
+// before and regardless of hydration, and touch only transform and opacity,
+// so the compositor plays them off the main thread. The hero ships zero JS.
+// Delays are in seconds: headline first, then the copy, then the buttons,
+// then the screenshots settle in.
+const HEADLINE_START = 0.1;
+const SUB_START = 0.42;
+const CTA_START = 0.54;
 const CTA_STAGGER = 0.06;
+const SHOT_START = 0.3;
+const SHOT_STAGGER = 0.14;
 
 const delay = (seconds) => ({ "--fb-hero-delay": `${seconds}s` });
 
+/** A real screenshot inside a light browser frame. */
+function Shot({ shot, priority, className, style }) {
+  return (
+    <figure
+      className={`fb-hero-shot overflow-hidden rounded-[var(--fb-r)] border ${className}`}
+      style={{
+        background: "var(--fb-surface)",
+        borderColor: "var(--fb-line-strong)",
+        boxShadow: "var(--fb-shadow-lg)",
+        ...style,
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className="flex h-7 items-center gap-1.5 border-b px-3"
+        style={{
+          borderColor: "var(--fb-line)",
+          background: "var(--fb-surface-2)",
+        }}
+      >
+        <span className="h-2 w-2 rounded-full" style={{ background: "var(--fb-line-strong)" }} />
+        <span className="h-2 w-2 rounded-full" style={{ background: "var(--fb-line-strong)" }} />
+        <span className="h-2 w-2 rounded-full" style={{ background: "var(--fb-line-strong)" }} />
+      </div>
+      <Image
+        src={shot.src}
+        alt={shot.alt}
+        width={shot.width}
+        height={shot.height}
+        priority={priority}
+        fetchPriority={priority ? "high" : undefined}
+        sizes="(max-width: 1024px) 92vw, 560px"
+        className="block h-auto w-full"
+      />
+    </figure>
+  );
+}
+
 export default function Hero() {
+  const [front, back] = HERO.shots;
+
   return (
     <section
       id="hero"
-      className="relative flex min-h-[100dvh] items-center px-5 pb-16 pt-24 sm:px-8"
+      className="relative flex min-h-[100dvh] items-center overflow-hidden px-5 pb-16 pt-28 sm:px-8 lg:pt-24"
     >
-      <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-12 lg:grid-cols-12 lg:gap-16">
+      {/* One soft wash of the brand green behind the screenshots, so the
+          right half has depth without a decorative object in it. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(60% 55% at 82% 45%, var(--fb-accent-soft) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="relative mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-14 lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-7">
           <p
             className="hero-eyebrow mb-6 font-mono text-xs uppercase tracking-[0.18em]"
             style={{ color: "var(--fb-ink-3)" }}
           >
-            Full stack developer e automazioni
+            {HERO.eyebrow}
           </p>
 
-          <h1 className="mb-7 text-[2.5rem] font-semibold leading-[1.06] tracking-tight sm:text-5xl lg:text-6xl">
-            {HEADLINE.map((word, i) => (
-              <span
-                key={`${word.text}-${i}`}
-                className="inline-block overflow-hidden pb-[0.12em] align-bottom"
-              >
-                <span
-                  className="hero-word inline-block"
-                  style={{
-                    ...delay(WORD_START + i * WORD_STAGGER),
-                    ...(word.accent ? { color: "var(--fb-accent)" } : null),
-                  }}
-                >
-                  {word.text}
-                </span>
-                {i < HEADLINE.length - 1 && <span>&nbsp;</span>}
-              </span>
-            ))}
+          <h1
+            className="hero-sub mb-7 text-[2.4rem] font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl xl:text-[3.6rem]"
+            style={delay(HEADLINE_START)}
+          >
+            {HERO.headline.lead}{" "}
+            <span className="lg:block" style={{ color: "var(--fb-accent)" }}>
+              {HERO.headline.accent}
+            </span>
           </h1>
 
           <p
-            className="hero-sub mb-10 max-w-[52ch] text-lg leading-relaxed"
+            className="hero-sub mb-10 max-w-[50ch] text-lg leading-relaxed"
             style={{ ...delay(SUB_START), color: "var(--fb-ink-2)" }}
           >
-            Siti, e-commerce, gestionali e automazioni. Sviluppo da solo,
-            consegno funzionante, resto raggiungibile dopo.
+            {HERO.sub}
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <a
               href="#contatti"
-              className="hero-cta group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--fb-r)] px-7 py-4 text-sm font-medium transition-colors duration-200"
+              className="hero-cta group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--fb-r)] px-7 py-4 text-sm font-medium transition-[background-color,transform] duration-200 hover:bg-[var(--fb-accent-hover)] active:translate-y-px"
               style={{
                 ...delay(CTA_START),
                 background: "var(--fb-accent)",
@@ -95,7 +121,7 @@ export default function Hero() {
 
             <a
               href="#progetti"
-              className="hero-cta hidden items-center justify-center whitespace-nowrap rounded-[var(--fb-r)] border px-7 py-4 text-sm font-medium transition-colors duration-200 sm:inline-flex"
+              className="hero-cta hidden items-center justify-center whitespace-nowrap rounded-[var(--fb-r)] border px-7 py-4 text-sm font-medium transition-colors duration-200 hover:bg-[var(--fb-surface-2)] sm:inline-flex"
               style={{
                 ...delay(CTA_START + CTA_STAGGER),
                 borderColor: "var(--fb-line-strong)",
@@ -122,32 +148,27 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Portrait, offset inside an accent frame so the split is asymmetric
-            rather than two balanced halves. */}
-        <div className="hidden lg:col-span-5 lg:block">
-          <div className="relative ml-auto w-full max-w-[420px]">
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-5 -right-5 h-full w-full rounded-[var(--fb-r-lg)] border"
-              style={{ borderColor: "var(--fb-accent)" }}
+        {/* Two shipped products, overlapped: the back one peeks out above,
+            the front one carries the eye. Links to the full list below. */}
+        <a
+          href="#progetti"
+          aria-label="Vedi i progetti realizzati"
+          className="group relative block lg:col-span-5"
+        >
+          <div className="relative mx-auto w-full max-w-[640px] lg:mr-0">
+            <Shot
+              shot={back}
+              className="relative ml-[16%] w-[84%] transition-transform duration-500 group-hover:-translate-y-1"
+              style={delay(SHOT_START)}
             />
-            {/* The mask does the reveal with overflow instead of animating
-                clip-path on the image: clip-path repaints the whole portrait
-                every frame, a transform does not. */}
-            <div className="relative overflow-hidden rounded-[var(--fb-r-lg)]">
-              <Image
-                src="/foto-profilo.jpg"
-                alt="Federico Bellezza, sviluppatore web freelance"
-                width={840}
-                height={1050}
-                priority
-                fetchPriority="high"
-                sizes="(max-width: 1024px) 0px, 420px"
-                className="fb-hero-portrait aspect-[4/5] w-full object-cover"
-              />
-            </div>
+            <Shot
+              shot={front}
+              priority
+              className="relative -mt-[16%] w-[84%] transition-transform duration-500 group-hover:translate-y-1"
+              style={delay(SHOT_START + SHOT_STAGGER)}
+            />
           </div>
-        </div>
+        </a>
       </div>
     </section>
   );

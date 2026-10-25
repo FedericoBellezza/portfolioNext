@@ -108,15 +108,15 @@ export default async function Image() {
             marginBottom: 52,
           }}
         >
-          Siti web e automazioni che fanno{" "}
+          Meno lavoro ripetitivo,{" "}
           <span style={{ color: "#79af9b", fontWeight: 600 }}>
-            crescere il tuo business
+            più tempo per i tuoi clienti
           </span>
         </div>
 
         {/* Servizi pill */}
         <div style={{ display: "flex", gap: 14 }}>
-          {["Siti Web", "E-Commerce", "Automazioni", "App Web"].map((s) => (
+          {["Automazioni", "Assistenti AI", "Siti web", "Software su misura"].map((s) => (
             <div
               key={s}
               style={{

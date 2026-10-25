@@ -4,6 +4,38 @@ import { Badge } from "@/components/ui/badge";
 import { PLANS, PRICING_FAQ, CTA } from "@/lib/site-data";
 import Reveal from "./Reveal";
 
+function PriceBlock({ plan }) {
+  return (
+    <div
+      className="flex min-h-[6rem] flex-col justify-center border-y py-6"
+      style={{ borderColor: "var(--fb-line)" }}
+    >
+      {plan.price ? (
+        <p className="flex items-baseline gap-2">
+          <span className="text-sm" style={{ color: "var(--fb-ink-3)" }}>
+            da
+          </span>
+          <span className="fb-nums text-4xl font-semibold tracking-tight">
+            &euro;{plan.price}
+          </span>
+          <span className="text-sm" style={{ color: "var(--fb-ink-2)" }}>
+            {plan.priceUnit}
+          </span>
+        </p>
+      ) : (
+        <p className="text-2xl font-semibold leading-10 tracking-tight">
+          {plan.priceNote}
+        </p>
+      )}
+      <p className="mt-1.5 text-xs" style={{ color: "var(--fb-ink-3)" }}>
+        {plan.price
+          ? "Regime forfettario, nessuna IVA da aggiungere"
+          : "L'analisi dei processi è gratuita e senza impegno"}
+      </p>
+    </div>
+  );
+}
+
 export default function Pricing() {
   return (
     <section
@@ -17,22 +49,22 @@ export default function Pricing() {
       <div className="mx-auto max-w-[1400px]">
         <Reveal className="mb-14 max-w-2xl">
           <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-            Quanto costa, detto prima
+            Quanto costa, prima di iniziare
           </h2>
           <p
             className="mt-5 max-w-[60ch] text-lg leading-relaxed"
             style={{ color: "var(--fb-ink-2)" }}
           >
-            Due punti di partenza reali. Dopo la prima call ricevi un preventivo
+            Punti di partenza reali. Dopo la call gratuita ricevi un preventivo
             chiuso, con una cifra sola.
           </p>
         </Reveal>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {PLANS.map((plan, index) => (
-            <Reveal key={plan.id} delay={index * 0.1} className="h-full">
+            <Reveal key={plan.id} delay={index * 0.08} className="h-full">
               <article
-                className="flex h-full flex-col rounded-[var(--fb-r-lg)] border p-8 sm:p-10"
+                className="flex h-full flex-col rounded-[var(--fb-r-lg)] border p-7 sm:p-9"
                 style={{
                   background: "var(--fb-surface)",
                   borderColor: plan.featured
@@ -41,53 +73,24 @@ export default function Pricing() {
                   boxShadow: plan.featured ? "var(--fb-shadow-lg)" : "none",
                 }}
               >
-                {/* Fixed-height header block so both feature lists start on
-                    the same baseline regardless of copy length. */}
-                <header className="min-h-[9.5rem]">
-                  <div className="flex items-center gap-3">
+                {/* Fixed-height header block so the three feature lists start
+                    on the same baseline regardless of copy length. */}
+                <header className="lg:min-h-[9rem]">
+                  <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-2xl font-semibold tracking-tight">
                       {plan.name}
                     </h3>
-                    {plan.featured && (
-                      <Badge variant="soft">Il più richiesto</Badge>
-                    )}
+                    {plan.badge && <Badge variant="soft">{plan.badge}</Badge>}
                   </div>
                   <p
-                    className="mt-3 max-w-[42ch] text-sm leading-relaxed"
+                    className="mt-3 max-w-[42ch] pb-6 text-sm leading-relaxed"
                     style={{ color: "var(--fb-ink-2)" }}
                   >
                     {plan.description}
                   </p>
                 </header>
 
-                <div
-                  className="flex min-h-[6rem] flex-col justify-center border-y py-6"
-                  style={{ borderColor: "var(--fb-line)" }}
-                >
-                  <p className="flex items-baseline gap-2">
-                    <span
-                      className="text-sm"
-                      style={{ color: "var(--fb-ink-3)" }}
-                    >
-                      da
-                    </span>
-                    <span className="fb-nums text-4xl font-semibold tracking-tight">
-                      &euro;{plan.price}
-                    </span>
-                    <span
-                      className="text-sm"
-                      style={{ color: "var(--fb-ink-2)" }}
-                    >
-                      {plan.priceUnit}
-                    </span>
-                  </p>
-                  <p
-                    className="mt-1.5 text-xs"
-                    style={{ color: "var(--fb-ink-3)" }}
-                  >
-                    Regime forfettario, nessuna IVA da aggiungere
-                  </p>
-                </div>
+                <PriceBlock plan={plan} />
 
                 <ul className="mt-7 space-y-3.5">
                   {plan.features.map((feature) => (
@@ -130,7 +133,7 @@ export default function Pricing() {
                   </ul>
                 </div>
 
-                {/* mt-auto keeps both CTAs on one horizontal line. */}
+                {/* mt-auto keeps the three CTAs on one horizontal line. */}
                 <div className="mt-auto pt-9">
                   <Button
                     asChild
@@ -147,8 +150,9 @@ export default function Pricing() {
         </div>
 
         {/* Side-by-side answers instead of an accordion: nothing here is long
-            enough to be worth a click. */}
-        <div className="mt-20">
+            enough to be worth a click. The first three are the objections a
+            company raises before it even asks about money. */}
+        <div className="mt-24">
           <Reveal className="mb-10">
             <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
               Le domande che mi fanno sempre
@@ -157,7 +161,7 @@ export default function Pricing() {
 
           <dl className="grid grid-cols-1 gap-x-12 gap-y-9 md:grid-cols-2">
             {PRICING_FAQ.map((item, index) => (
-              <Reveal key={item.q} delay={index * 0.05}>
+              <Reveal key={item.q} delay={(index % 2) * 0.05}>
                 <dt className="text-base font-semibold">{item.q}</dt>
                 <dd
                   className="mt-2.5 max-w-[60ch] text-sm leading-relaxed"

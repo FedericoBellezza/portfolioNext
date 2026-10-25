@@ -1,6 +1,11 @@
 /**
  * Single source of truth for every piece of landing-page content.
  * Edit text here, never inside the section components.
+ *
+ * Who reads this page: owners and managers of Italian SMBs, most of them
+ * arriving from a direct message. They think in problems and hours lost, not
+ * in frameworks, so the copy leads with their situation and keeps the stack
+ * for the people who ask about it.
  */
 
 /**
@@ -28,94 +33,116 @@ export const CONTACT = {
   linkedin: "https://www.linkedin.com/in/federicobellezzadev/",
   github: "https://github.com/FedericoBellezza",
   responseTime: "Entro 24-48 ore",
-  availability: "Full-time / Freelance",
+  availability: "Da remoto, in tutta Italia",
 };
 
 /**
  * One label per intent. The whole page reuses these strings so there is
  * never a "Contattami" next to a "Parliamone" next to a "Scrivimi".
+ * The contact CTA names what the visitor gets (a free call), and says
+ * "richiedi" because it opens a form, not a calendar.
  */
 export const CTA = {
-  contact: "Prenota una consulenza",
+  contact: "Richiedi una call gratuita",
   work: "Vedi i progetti",
   whatsapp: "Scrivimi su WhatsApp",
 };
 
 export const NAV_LINKS = [
   { label: "Servizi", href: "#servizi" },
-  { label: "Metodo", href: "#metodo" },
   { label: "Progetti", href: "#progetti" },
+  { label: "Metodo", href: "#metodo" },
   { label: "Prezzi", href: "#prezzi" },
 ];
 
-export const STACK = [
-  { name: "React", src: "/react.svg" },
-  { name: "Next.js", src: "/next.svg" },
-  { name: "Node.js", src: "/node-js.svg" },
-  { name: "Tailwind CSS", src: "/tailwind-css.svg" },
-  { name: "n8n", src: "/n8n-logo.png" },
-  { name: "Supabase", src: "/supabase.svg" },
-  { name: "MySQL", src: "/mysql.svg" },
-  { name: "JavaScript", src: "/javascript.svg" },
-  { name: "Directus", src: "/directus-logo.svg" },
-  { name: "Java", src: "/java.svg" },
-  { name: "Motion", src: "/motion.svg" },
+export const HERO = {
+  eyebrow: "Sviluppatore freelance per PMI",
+  // Split so the accent can sit on the benefit, not on the problem.
+  headline: {
+    lead: "Meno lavoro ripetitivo,",
+    accent: "più tempo per i tuoi clienti.",
+  },
+  sub: "Automazioni, AI e software su misura che lavorano con gli strumenti che usi già. Un solo interlocutore, preventivo chiuso.",
+  // Real screenshots of shipped work stand where the portrait used to be:
+  // proof that the page is about results, not about the person.
+  shots: [
+    {
+      src: "/ai-bandi-screenshot.png",
+      alt: "AI.Bandi, piattaforma che abbina le aziende ai bandi pubblici",
+      width: 1900,
+      height: 908,
+    },
+    {
+      src: "/alma-screenshot.png",
+      alt: "Alma, assistente nutrizionale con intelligenza artificiale",
+      width: 1900,
+      height: 934,
+    },
+  ],
+};
+
+/**
+ * Hard facts, directly under the hero. Every number here is a commitment
+ * also written in the process and in the FAQ, so they can never disagree.
+ */
+export const PROOF = [
+  { value: "30 min", label: "di call gratuita per capire se e come posso aiutarti" },
+  { value: "3 giorni", label: "per ricevere un preventivo scritto, con una cifra sola" },
+  { value: "2-6 sett.", label: "dalla firma alla messa online, per la maggior parte dei progetti" },
+  { value: "30 giorni", label: "di assistenza inclusa dopo il rilascio" },
 ];
 
 /**
- * Bento cells. `tone` drives surface variation so the grid is never
- * six identical white cards; `area` drives the asymmetric desktop grid.
+ * Services, written as the problem the visitor recognises.
+ * `label` is the service name (also used by schema.org and llms.txt),
+ * `title` is the situation, `body` the fix, `example` one concrete case.
+ * `tone` drives surface variation, `area` the asymmetric desktop grid.
  */
 export const SERVICES = [
   {
-    id: "fullstack",
-    title: "Sviluppo full stack",
-    body: "Siti, e-commerce e web app costruiti con Next.js, React e Node. Veloci da caricare, semplici da gestire, tuoi al 100%.",
-    points: ["Next.js e React", "API e integrazioni", "Deploy su Vercel"],
-    tone: "ink",
-    area: "lg:col-span-7 lg:row-span-2",
+    id: "automation",
+    label: "Automazione dei processi",
+    title: "Copiate gli stessi dati in tre programmi diversi.",
+    body: "Collego gestionale, CRM, fogli Excel ed email con workflow n8n. Il dato si inserisce una volta e arriva ovunque serva, senza errori di battitura.",
+    example: "Un ordine online crea il cliente, prepara la fattura e avvisa il magazzino.",
+    tone: "dots",
+    area: "lg:col-span-7",
   },
   {
-    id: "automation",
-    title: "Automazione dei processi",
-    body: "Workflow n8n che tolgono di mezzo il lavoro ripetitivo: preventivi, report, email, sincronizzazioni fra gestionali.",
-    points: [],
-    tone: "dots",
+    id: "ai",
+    label: "Assistenti AI",
+    title: "Rispondete ogni giorno alle stesse domande.",
+    body: "Un assistente AI che legge i vostri documenti e risponde a clienti o colleghi citando la fonte. Le domande difficili passano a una persona.",
+    example: "Un assistente interno su manuali, listini e procedure.",
+    tone: "accent",
     area: "lg:col-span-5",
   },
   {
-    id: "data",
-    title: "Database e cloud",
-    body: "Supabase, Firebase e MySQL configurati per reggere la crescita, con backup e permessi fatti come si deve.",
-    points: [],
+    id: "documents",
+    label: "AI sui documenti",
+    title: "Preventivi e report vi portano via ore.",
+    body: "Li preparo in automatico a partire dai vostri dati e dai vostri modelli. Voi controllate, correggete se serve e inviate.",
+    example: "Il report vendite della settimana pronto il lunedì mattina.",
     tone: "plain",
     area: "lg:col-span-5",
   },
   {
-    id: "ai",
-    title: "Integrazione AI",
-    body: "Modelli linguistici messi al lavoro dove servono davvero, dentro i tuoi strumenti esistenti.",
-    points: [],
-    tone: "accent",
+    id: "web",
+    label: "Siti web ed e-commerce",
+    title: "Il sito c'è, ma non porta contatti.",
+    body: "Un sito veloce, chiaro e trovato su Google, con form e WhatsApp che finiscono dritti nel vostro CRM invece che in una casella dimenticata.",
+    example: "Ogni richiesta dal sito diventa un contatto da seguire.",
+    tone: "plain",
+    area: "lg:col-span-7",
+  },
+  {
+    id: "software",
+    label: "Software su misura",
+    title: "Lo strumento che vi serve non esiste.",
+    body: "Gestionali, portali clienti e web app costruiti sul vostro modo di lavorare, con accessi per ruolo e dati che restano vostri.",
+    example: "Un portale dove i clienti seguono le pratiche senza telefonare.",
+    tone: "muted",
     area: "lg:col-span-12",
-    children: [
-      {
-        title: "Chatbot e assistenti",
-        body: "Supporto clienti e risposte alle domande ricorrenti, 24 ore su 24.",
-      },
-      {
-        title: "Automazioni intelligenti",
-        body: "Lettura documenti, generazione contenuti, smistamento email.",
-      },
-      {
-        title: "AI dentro le tue app",
-        body: "OpenAI, Claude e modelli custom integrati nel prodotto.",
-      },
-      {
-        title: "Analisi dei dati",
-        body: "Report automatici e dashboard che spiegano cosa sta succedendo.",
-      },
-    ],
   },
 ];
 
@@ -126,64 +153,58 @@ export const PROCESS = [
   {
     id: "ascolto",
     title: "Ascolto",
-    body: "Una call di quaranta minuti per capire il problema vero, non quello che sembra. Se non sono la persona giusta te lo dico subito.",
-    detail: "Call conoscitiva gratuita",
+    body: "Una call di trenta minuti per capire il problema vero. Se non sono la persona giusta te lo dico subito.",
+    detail: "Call gratuita",
   },
   {
     id: "progetto",
     title: "Progetto",
-    body: "Preventivo scritto con tempi, costi e cosa resta fuori. Niente sorprese a metà lavoro e niente voci vaghe.",
-    detail: "Preventivo dettagliato in 3 giorni",
+    body: "Preventivo scritto con tempi, costi e cosa resta fuori. Niente voci vaghe e niente sorprese a metà lavoro.",
+    detail: "Entro 3 giorni",
   },
   {
     id: "costruisco",
     title: "Costruisco",
-    body: "Sviluppo a blocchi con un link di anteprima sempre aggiornato. Vedi il progetto crescere e correggi il tiro quando serve.",
-    detail: "Anteprima live dal primo giorno",
+    body: "Sviluppo a blocchi con un link di anteprima sempre aggiornato. Vedi il lavoro crescere e correggi il tiro quando serve.",
+    detail: "Anteprima live",
   },
   {
     id: "rilascio",
     title: "Rilascio",
-    body: "Messa online, dominio, analytics e una sessione per consegnarti le chiavi. Poi resto raggiungibile per le modifiche.",
-    detail: "Assistenza inclusa per 30 giorni",
+    body: "Messa online, formazione a chi lo userà e consegna di accessi e documentazione. Poi resto raggiungibile.",
+    detail: "30 giorni di assistenza",
   },
 ];
 
+/**
+ * Ordered by how much they say to a company: AI products first, then
+ * corporate work. The first one is shown large.
+ */
 export const PROJECTS = [
-  {
-    title: "Alma",
-    description:
-      "Assistente nutrizionale privato e collaboratore del professionista.",
-    image: "/alma-screenshot.png",
-    alt: "Interfaccia di Alma, assistente nutrizionale per professionisti",
-    url: "https://alma-sandy.vercel.app/",
-    tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
-    type: "Web app",
-  },
-  {
-    title: "Anduma",
-    description:
-      "Trasforma i ricordi di un viaggio in un sito da condividere.",
-    image: "/anduma-screenshot.jpg",
-    alt: "Interfaccia di Anduma, racconti di viaggio pubblicati come sito",
-    url: "https://anduma-cyan.vercel.app/",
-    tags: ["Next.js", "Supabase", "Leaflet", "Stripe"],
-    type: "Web app",
-  },
   {
     title: "AI.Bandi",
     description:
-      "Ricerca di bandi e finanziamenti per startup, PMI e professionisti, con suggerimenti generati su misura.",
+      "Abbina il profilo di un'azienda ai bandi e ai finanziamenti pubblici più adatti, con suggerimenti generati dall'AI e abbonamenti gestiti in autonomia.",
     image: "/ai-bandi-screenshot.png",
     alt: "Interfaccia di AI.Bandi, ricerca di bandi e finanziamenti",
     url: "https://ai-bandi.com/",
     tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
-    type: "Web app",
+    type: "Piattaforma SaaS con AI",
+  },
+  {
+    title: "Alma",
+    description:
+      "Foto, voce o testo diventano un diario alimentare compilato in automatico, condiviso con il nutrizionista.",
+    image: "/alma-screenshot.png",
+    alt: "Interfaccia di Alma, assistente nutrizionale per professionisti",
+    url: "https://alma-sandy.vercel.app/",
+    tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
+    type: "Web app con AI",
   },
   {
     title: "Knit",
     description:
-      "Piattaforma per una start-up sportiva: consulenza strategica, formazione e networking per atleti e club.",
+      "Sito per una start-up sportiva che offre consulenza, formazione e networking ad atleti e club.",
     image: "/knit2-screenshot.png",
     alt: "Sito di Knit, consulenza e formazione per atleti e organizzazioni sportive",
     url: "https://www.knit-networks.com/",
@@ -191,27 +212,61 @@ export const PROJECTS = [
     type: "Sito corporate",
   },
   {
+    title: "Anduma",
+    description:
+      "Trasforma tappe, foto e ricordi di un viaggio in un sito con mappa da condividere.",
+    image: "/anduma-screenshot.jpg",
+    alt: "Interfaccia di Anduma, racconti di viaggio pubblicati come sito",
+    url: "https://anduma-cyan.vercel.app/",
+    tags: ["Next.js", "Supabase", "Leaflet", "Stripe"],
+    type: "Web app",
+  },
+  {
     title: "Federica Autretto",
     description:
-      "Landing page per una biologa nutrizionista, con form di contatto, redirect WhatsApp e mappa integrata.",
+      "Sito per una biologa nutrizionista, pensato per trasformare le visite in richieste di appuntamento.",
     image: "/federica-autretto.com-screenshot.png",
     alt: "Sito di Federica Autretto, biologa nutrizionista",
     url: "https://federica-autretto.com/",
     tags: ["Next.js", "Tailwind", "Resend"],
-    type: "Landing page",
-  },
-  {
-    title: "Weather App",
-    description:
-      "Converte un indirizzo in coordinate e mostra le previsioni in tempo reale.",
-    image: "/weatherApp.jpg",
-    alt: "Interfaccia della Weather App con previsioni in tempo reale",
-    url: "https://weatherapp-federicobellezza.web.app/",
-    tags: ["React", "Vite", "Firebase"],
-    type: "Web app",
+    type: "Sito per professionisti",
   },
 ];
 
+/**
+ * Testimonials. Left empty on purpose: the section only renders once there
+ * is at least one real quote with a real name. Shape:
+ * { quote: "...", name: "Nome Cognome", role: "Ruolo, Azienda" }
+ */
+export const TESTIMONIALS = [];
+
+export const ABOUT = {
+  title: "Parli sempre con chi scrive il codice",
+  body: [
+    "Sono Federico, sviluppatore full stack. Niente account manager e niente passaggi di mano: la persona della prima call è la stessa che costruisce, consegna e risponde dopo.",
+    "Uso strumenti diffusi e documento quello che faccio, così il progetto non dipende da me. Codice, account e dati sono intestati a te dal primo giorno.",
+  ],
+  photo: {
+    src: "/foto-profilo.jpg",
+    alt: "Federico Bellezza, sviluppatore web freelance",
+  },
+};
+
+export const STACK = [
+  { name: "Next.js", src: "/next.svg" },
+  { name: "React", src: "/react.svg" },
+  { name: "Node.js", src: "/node-js.svg" },
+  { name: "n8n", src: "/n8n-logo.png" },
+  { name: "Supabase", src: "/supabase.svg" },
+  { name: "MySQL", src: "/mysql.svg" },
+  { name: "Tailwind CSS", src: "/tailwind-css.svg" },
+  { name: "Directus", src: "/directus-logo.svg" },
+];
+
+/**
+ * `price: null` means there is no honest starting number to publish: the
+ * card shows `priceNote` instead and schema.org gets no price for it.
+ */
 export const PLANS = [
   {
     id: "sito",
@@ -219,31 +274,47 @@ export const PLANS = [
     price: "400",
     priceUnit: "a pagina",
     description:
-      "Dalla singola landing page al sito multipagina completo, pronto a portarti contatti.",
+      "Dalla singola landing page al sito multipagina, pensato per portarti contatti.",
     featured: false,
     features: [
-      "Sviluppo in Next.js",
       "Design responsive, mobile first",
       "Ottimizzazione SEO tecnica",
-      "Form di contatto integrato",
-      "Hosting su Vercel configurato",
+      "Form e WhatsApp collegati",
+      "Hosting configurato",
     ],
     addOns: ["Brand identity", "CMS per i contenuti", "Analytics e cookie policy"],
   },
   {
+    id: "automazioni",
+    name: "Automazioni e AI",
+    price: null,
+    priceNote: "Prezzo chiuso dopo l'analisi",
+    priceUnit: "a progetto",
+    description:
+      "Si parte da un'analisi gratuita dei processi: ti dico cosa conviene automatizzare e cosa no.",
+    featured: true,
+    badge: "Analisi gratuita",
+    features: [
+      "Mappa dei processi da automatizzare",
+      "Workflow n8n fra i tuoi strumenti",
+      "Assistenti e agenti AI sui tuoi dati",
+      "Monitoraggio e avvisi se qualcosa si ferma",
+    ],
+    addOns: ["Manutenzione mensile", "Formazione del team"],
+  },
+  {
     id: "webapp",
-    name: "Web app e MVP",
+    name: "Web app e gestionali",
     price: "3.500",
     priceUnit: "a progetto",
     description:
-      "Gestionali, SaaS e applicazioni su misura con logica di business tua e dati tuoi.",
-    featured: true,
+      "Gestionali, portali clienti e SaaS con la tua logica di business e i tuoi dati.",
+    featured: false,
     features: [
-      "Stack Next.js e Supabase",
-      "Autenticazione utenti e ruoli",
+      "Accessi utenti e ruoli",
       "Database e dashboard di gestione",
       "Pagamenti con Stripe",
-      "Sviluppo API e integrazioni",
+      "API e integrazioni",
     ],
     addOns: ["Automazioni n8n", "Integrazione AI", "Manutenzione mensile"],
   },
@@ -251,23 +322,55 @@ export const PLANS = [
 
 export const PRICING_FAQ = [
   {
+    q: "Dobbiamo cambiare i programmi che usiamo?",
+    a: "Quasi mai. Parto da quello che avete già: gestionale, CRM, Excel, email. Se un programma non permette di collegarsi lo scopriamo nella prima call, prima di qualsiasi preventivo.",
+  },
+  {
+    q: "E i dati dei nostri clienti, con l'AI?",
+    a: "Decidiamo insieme quali dati può vedere ogni automazione. Uso le API di OpenAI e Anthropic, che non usano i dati inviati per addestrare i modelli, e dove serve scelgo servizi con server in Europa.",
+  },
+  {
+    q: "Lavori da solo: e se un giorno non ci sei?",
+    a: "Codice, account e documentazione sono vostri dal primo giorno. Uso strumenti molto diffusi, quindi qualsiasi altro sviluppatore può riprendere il progetto senza ripartire da zero.",
+  },
+  {
     q: "Perché un prezzo di partenza e non uno fisso?",
-    a: "Perché due siti da cinque pagine possono costare il doppio l'uno dell'altro a seconda di cosa devono fare. Il numero che vedi è il punto di partenza reale: dopo la prima call ti mando un preventivo chiuso, con una cifra sola e nessuna voce a sorpresa.",
+    a: "Perché due progetti simili possono costare il doppio l'uno dell'altro a seconda di cosa devono fare. Dopo la prima call ti mando un preventivo chiuso, con una cifra sola e nessuna voce a sorpresa.",
   },
   {
     q: "Quanto tempo serve?",
-    a: "Una landing page richiede circa due settimane. Un sito multipagina dalle tre alle cinque. Una web app parte da sei settimane e dipende da quante funzioni servono al lancio. Le date finiscono nel preventivo, non restano a voce.",
+    a: "Una landing page circa due settimane, un sito multipagina dalle tre alle cinque. Una prima automazione spesso è attiva in una o due settimane. Una web app parte da sei settimane. Le date finiscono nel preventivo, non restano a voce.",
   },
   {
     q: "Come mai non c'è l'IVA?",
     a: "Lavoro in regime forfettario, quindi le operazioni sono senza applicazione dell'IVA ai sensi dell'art. 1 comma 58 L. 190/2014. Sul totale risparmi il 22% rispetto a un fornitore in regime ordinario.",
   },
   {
-    q: "Il sito resta mio?",
-    a: "Sì. Codice, dominio e account di hosting sono intestati a te dal primo giorno. Se un domani vuoi cambiare fornitore porti via tutto senza chiedere permesso a nessuno.",
-  },
-  {
     q: "E dopo il rilascio?",
     a: "Trenta giorni di assistenza sono già compresi per correzioni e piccole modifiche. Dopo puoi lavorare a ore oppure attivare un canone mensile per aggiornamenti e monitoraggio.",
   },
+  {
+    q: "Il progetto resta nostro?",
+    a: "Sì. Codice, dominio e account sono intestati a voi dal primo giorno. Se un domani volete cambiare fornitore portate via tutto senza chiedere permesso a nessuno.",
+  },
+];
+
+/**
+ * Options for "Di cosa hai bisogno" in the contact form. They replace the old
+ * free-text subject, so the value still travels in the `object` field the
+ * EmailJS template reads.
+ */
+export const NEEDS = [
+  "Automatizzare un processo",
+  "Assistente AI",
+  "Sito web",
+  "Web app o gestionale",
+  "Non lo so ancora",
+];
+
+/** What happens after the form is sent: removes the "and then?" doubt. */
+export const NEXT_STEPS = [
+  "Ti rispondo entro 24-48 ore, di persona.",
+  "Fissiamo una call gratuita di 30 minuti.",
+  "Entro 3 giorni ricevi un preventivo chiuso.",
 ];

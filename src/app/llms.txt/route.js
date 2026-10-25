@@ -22,26 +22,21 @@ import {
 export const dynamic = "force-static";
 
 function body() {
-  const services = SERVICES.map((service) => {
-    const children = (service.children ?? [])
-      .map((child) => `  - ${child.title}: ${child.body}`)
-      .join("\n");
-    const points = service.points?.length
-      ? ` Include: ${service.points.join(", ")}.`
-      : "";
-    return `- **${service.title}**: ${service.body}${points}${
-      children ? `\n${children}` : ""
-    }`;
-  }).join("\n");
-
-  const plans = PLANS.map(
-    (plan) =>
-      `- **${plan.name}** — da ${plan.price} € ${plan.priceUnit}. ${
-        plan.description
-      }\n  - Incluso: ${plan.features.join("; ")}.\n  - Opzionale: ${plan.addOns.join(
-        "; ",
-      )}.`,
+  const services = SERVICES.map(
+    (service) =>
+      `- **${service.label}**: per chi ha questo problema: "${service.title}" ${service.body} Esempio: ${service.example}`,
   ).join("\n");
+
+  const plans = PLANS.map((plan) => {
+    const price = plan.price
+      ? `da ${plan.price} € ${plan.priceUnit}`
+      : plan.priceNote.toLowerCase();
+    return `- **${plan.name}**: ${price}. ${
+      plan.description
+    }\n  - Incluso: ${plan.features.join("; ")}.\n  - Opzionale: ${plan.addOns.join(
+      "; ",
+    )}.`;
+  }).join("\n");
 
   const process = PROCESS.map(
     (phase, i) => `${i + 1}. **${phase.title}** (${phase.detail}) — ${phase.body}`,
@@ -58,7 +53,7 @@ function body() {
 
   return `# ${SITE.name}
 
-> ${SITE.role}. Realizza siti web, e-commerce, web app e automazioni su misura per aziende e professionisti, lavorando da remoto in tutta ${SITE.areaServed}.
+> ${SITE.role}. Realizza automazioni dei processi, assistenti AI, siti web e software su misura per PMI e professionisti, lavorando da remoto in tutta ${SITE.areaServed}. La prima call di 30 minuti è gratuita.
 
 Sviluppatore singolo, non un'agenzia: chi scrive il codice è la stessa persona con cui parli. Stack principale Next.js, React, Node.js, Supabase e n8n. Sito ufficiale: ${SITE.url}
 

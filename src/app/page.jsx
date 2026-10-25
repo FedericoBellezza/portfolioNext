@@ -1,14 +1,20 @@
 import SiteNav from "./components/landing/SiteNav";
 import Hero from "./components/landing/Hero";
-import StackMarquee from "./components/landing/StackMarquee";
+import ProofStrip from "./components/landing/ProofStrip";
 import Services from "./components/landing/Services";
-import Process from "./components/landing/Process";
 import Work from "./components/landing/Work";
+import Process from "./components/landing/Process";
+import About from "./components/landing/About";
 import Pricing from "./components/landing/Pricing";
 import Contact from "./components/landing/Contact";
 import SiteFooter from "./components/landing/SiteFooter";
+import MobileCta from "./components/landing/MobileCta";
 import { homeGraph } from "@/lib/structured-data";
 
+/**
+ * Order follows the questions a buyer asks, in sequence: what do you do for
+ * me, can I trust it, how does it work, who are you, how much, how do I start.
+ */
 export default function Home() {
   return (
     <>
@@ -19,20 +25,22 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeGraph()) }}
       />
 
-      {/* <a href="#contenuto" className="fb-skip">
+      <a href="#contenuto" className="fb-skip">
         Vai al contenuto
-      </a> */}
+      </a>
       <SiteNav />
       <main id="contenuto">
         <Hero />
-        <StackMarquee />
+        <ProofStrip />
         <Services />
-        <Process />
         <Work />
+        <Process />
+        <About />
         <Pricing />
         <Contact />
       </main>
       <SiteFooter />
+      <MobileCta />
     </>
   );
 }

@@ -38,11 +38,11 @@ const AREA_SERVED = {
 };
 
 const SERVICE_TYPES = [
+  "Automazione dei processi aziendali",
+  "Integrazione AI e assistenti AI",
   "Sviluppo siti web",
   "Sviluppo e-commerce",
-  "Sviluppo web app e MVP",
-  "Automazione dei processi aziendali",
-  "Integrazione AI",
+  "Sviluppo web app e gestionali",
 ];
 
 function offerCatalog() {
@@ -55,15 +55,21 @@ function offerCatalog() {
       description: plan.description,
       availability: "https://schema.org/InStock",
       areaServed: AREA_SERVED,
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: numericPrice(plan.price),
-        minPrice: numericPrice(plan.price),
-        priceCurrency: "EUR",
-        // Flat-rate regime: the FAQ explains why no VAT is charged.
-        valueAddedTaxIncluded: false,
-        unitText: plan.priceUnit.replace(/^a\s+/, ""),
-      },
+      // A plan quoted only after the analysis publishes no price at all:
+      // an invented number would contradict the page.
+      ...(plan.price
+        ? {
+            priceSpecification: {
+              "@type": "UnitPriceSpecification",
+              price: numericPrice(plan.price),
+              minPrice: numericPrice(plan.price),
+              priceCurrency: "EUR",
+              // Flat-rate regime: the FAQ explains why no VAT is charged.
+              valueAddedTaxIncluded: false,
+              unitText: plan.priceUnit.replace(/^a\s+/, ""),
+            },
+          }
+        : null),
       itemOffered: {
         "@type": "Service",
         name: plan.name,
@@ -137,7 +143,7 @@ export function siteGraph() {
         serviceArea: AREA_SERVED,
         availableLanguage: { "@type": "Language", name: "Italian" },
         serviceType: SERVICE_TYPES,
-        knowsAbout: SERVICES.map((service) => service.title),
+        knowsAbout: SERVICES.map((service) => service.label),
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "sales",

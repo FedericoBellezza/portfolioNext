@@ -1,170 +1,147 @@
-"use client";
-
-import { useRef, useEffect } from "react";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ArrowUpRightIcon, GithubLogoIcon } from "@phosphor-icons/react";
+import { ArrowUpRightIcon } from "@phosphor-icons/react/dist/ssr";
 import { PROJECTS, CONTACT } from "@/lib/site-data";
 import Reveal from "./Reveal";
 
-gsap.registerPlugin(ScrollTrigger);
-
 /**
- * Horizontal pan. Motivation: storytelling through breadth. Six projects read
- * as one continuous walk past a wall rather than a grid the eye skips.
- * Below lg, and under reduced motion, it degrades to a native swipe rail.
+ * Asymmetric grid: the strongest project large on the left, two beside it,
+ * two below. It used to be a pinned horizontal pan, which cost the visitor
+ * several screens of scrolling before reaching prices and the form.
+ * The whole card is the link, so every project opens in one tap.
  */
-export default function Work() {
-  const wrap = useRef(null);
-  const track = useRef(null);
+const LAYOUT = [
+  { area: "lg:col-span-7 lg:row-span-2", featured: true },
+  { area: "lg:col-span-5" },
+  { area: "lg:col-span-5" },
+  { area: "lg:col-span-6" },
+  { area: "lg:col-span-6" },
+];
 
-  useEffect(() => {
-    const mm = gsap.matchMedia();
-
-    mm.add(
-      "(min-width: 1024px) and (prefers-reduced-motion: no-preference)",
-      () => {
-        if (!wrap.current || !track.current) return;
-
-        const getDistance = () =>
-          track.current.scrollWidth - window.innerWidth + 64;
-
-        gsap.to(track.current, {
-          x: () => -getDistance(),
-          ease: "none",
-          scrollTrigger: {
-            trigger: wrap.current,
-            start: "top top",
-            end: () => `+=${getDistance()}`,
-            pin: true,
-            scrub: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-      },
-    );
-
-    return () => mm.revert();
-  }, []);
-
+function ProjectCard({ project, featured }) {
   return (
-    <>
-      <section id="progetti" className="scroll-mt-24 px-5 pt-24 sm:px-8 lg:pt-32">
-        <div className="mx-auto max-w-[1400px]">
-          <Reveal className="max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
-              Cose che ho messo online
-            </h2>
-            <p
-              className="mt-5 max-w-[60ch] text-lg leading-relaxed"
-              style={{ color: "var(--fb-ink-2)" }}
-            >
-              Sei progetti veri, tutti raggiungibili. Aprili e guarda come si
-              comportano.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
+    <a
+      href={project.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex h-full flex-col overflow-hidden rounded-[var(--fb-r-lg)] border transition-[border-color,box-shadow] duration-300 hover:border-[var(--fb-line-strong)] hover:shadow-[var(--fb-shadow)]"
+      style={{
+        background: "var(--fb-surface)",
+        borderColor: "var(--fb-line)",
+      }}
+    >
       <div
-        ref={wrap}
-        className="relative overflow-hidden py-12 lg:flex lg:h-[100dvh] lg:items-center lg:py-0"
+        className={`relative overflow-hidden border-b ${
+          featured
+            ? "aspect-[16/10] lg:aspect-auto lg:min-h-[320px] lg:flex-1"
+            : "aspect-[16/9]"
+        }`}
+        style={{ borderColor: "var(--fb-line)" }}
       >
-        <div
-          ref={track}
-          className="flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-4 sm:px-8 lg:items-stretch lg:overflow-x-visible lg:pb-0"
-        >
-          {PROJECTS.map((project) => (
-            <article
-              key={project.title}
-              className="group flex w-[86vw] shrink-0 snap-center flex-col overflow-hidden rounded-[var(--fb-r-lg)] border transition-colors duration-300 sm:w-[62vw] lg:w-[clamp(380px,30vw,460px)]"
-              style={{
-                background: "var(--fb-surface)",
-                borderColor: "var(--fb-line)",
-              }}
-            >
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <Image
-                  src={project.image}
-                  alt={project.alt}
-                  fill
-                  sizes="(max-width: 640px) 86vw, (max-width: 1024px) 62vw, 460px"
-                  className="object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
-                />
-              </div>
-
-              <div className="flex flex-1 flex-col p-6 sm:p-7">
-                <p
-                  className="text-xs font-medium"
-                  style={{ color: "var(--fb-accent)" }}
-                >
-                  {project.type}
-                </p>
-
-                <h3 className="mt-2 text-xl font-semibold tracking-tight">
-                  {project.title}
-                </h3>
-
-                <p
-                  className="mt-3 text-sm leading-relaxed"
-                  style={{ color: "var(--fb-ink-2)" }}
-                >
-                  {project.description}
-                </p>
-
-                <ul className="mt-5 flex flex-wrap gap-1.5">
-                  {project.tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="rounded-[var(--fb-r-sm)] px-2.5 py-1 font-mono text-[11px]"
-                      style={{
-                        background: "var(--fb-surface-2)",
-                        color: "var(--fb-ink-2)",
-                      }}
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Pinned to the bottom so every card's link sits on one line. */}
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-auto inline-flex items-center gap-1.5 pt-7 text-sm font-medium"
-                  style={{ color: "var(--fb-ink)" }}
-                >
-                  Apri {project.title}
-                  <ArrowUpRightIcon
-                    size={15}
-                    className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
+        <Image
+          src={project.image}
+          alt={project.alt}
+          fill
+          sizes={
+            featured
+              ? "(max-width: 1024px) 92vw, 760px"
+              : "(max-width: 1024px) 92vw, 560px"
+          }
+          className="object-cover object-left-top transition-transform duration-700 group-hover:scale-[1.03]"
+        />
       </div>
 
-      <div className="mx-auto max-w-[1400px] px-5 pb-24 sm:px-8 lg:pb-32">
-        <Reveal>
+      <div className={featured ? "p-7 sm:p-9" : "p-6 sm:p-7"}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p
+              className="text-xs font-medium"
+              style={{ color: "var(--fb-accent)" }}
+            >
+              {project.type}
+            </p>
+            <h3
+              className={`mt-1.5 font-semibold tracking-tight ${
+                featured ? "text-2xl sm:text-3xl" : "text-xl"
+              }`}
+            >
+              {project.title}
+            </h3>
+          </div>
+          <span
+            aria-hidden="true"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--fb-r-sm)] border transition-colors duration-200 group-hover:bg-[var(--fb-accent)] group-hover:text-[var(--fb-accent-ink)] group-hover:border-[var(--fb-accent)]"
+            style={{ borderColor: "var(--fb-line-strong)" }}
+          >
+            <ArrowUpRightIcon size={16} />
+          </span>
+        </div>
+
+        <p
+          className={`mt-3 leading-relaxed ${featured ? "max-w-[58ch]" : "text-sm"}`}
+          style={{ color: "var(--fb-ink-2)" }}
+        >
+          {project.description}
+        </p>
+
+        <p
+          className="mt-4 font-mono text-[11px]"
+          style={{ color: "var(--fb-ink-3)" }}
+        >
+          {project.tags.join(" / ")}
+        </p>
+        <span className="sr-only">(apre {project.title} in una nuova scheda)</span>
+      </div>
+    </a>
+  );
+}
+
+export default function Work() {
+  return (
+    <section
+      id="progetti"
+      className="scroll-mt-24 px-5 pb-24 sm:px-8 lg:pb-32"
+    >
+      <div className="mx-auto max-w-[1400px]">
+        <Reveal className="mb-14 max-w-2xl">
+          <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl lg:text-5xl">
+            Progetti online, da aprire e provare
+          </h2>
+          <p
+            className="mt-5 max-w-[60ch] text-lg leading-relaxed"
+            style={{ color: "var(--fb-ink-2)" }}
+          >
+            Niente mockup: sono tutti in produzione. Aprili e guarda come si
+            comportano.
+          </p>
+        </Reveal>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          {PROJECTS.map((project, index) => {
+            const slot = LAYOUT[index] ?? { area: "lg:col-span-6" };
+            return (
+              <Reveal
+                key={project.title}
+                delay={(index % 3) * 0.06}
+                className={slot.area}
+              >
+                <ProjectCard project={project} featured={slot.featured} />
+              </Reveal>
+            );
+          })}
+        </div>
+
+        <Reveal className="mt-10">
           <a
             href={CONTACT.github}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-[var(--fb-r)] border px-6 py-3.5 text-sm font-medium transition-colors duration-200"
-            style={{
-              borderColor: "var(--fb-line-strong)",
-              color: "var(--fb-ink)",
-            }}
+            className="text-sm font-medium underline decoration-[var(--fb-line-strong)] underline-offset-4 transition-colors duration-200 hover:decoration-[var(--fb-accent)]"
+            style={{ color: "var(--fb-ink-2)" }}
           >
-            <GithubLogoIcon size={18} />
-            Il resto sta su GitHub
+            Altro codice su GitHub
           </a>
         </Reveal>
       </div>
-    </>
+    </section>
   );
 }

@@ -26,7 +26,7 @@ export const metadata = {
     template: "%s | Federico Bellezza",
   },
   description:
-    "Sviluppatore web freelance in tutta Italia: siti, e-commerce, web app e automazioni su misura. Preventivo chiuso dopo la prima call, consegna in 2-6 settimane.",
+    "Sviluppatore freelance per PMI in tutta Italia: automazioni, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
   keywords: [
     "sviluppatore web freelance",
     "sviluppatore web Italia",
@@ -58,7 +58,7 @@ export const metadata = {
   openGraph: {
     title: "Federico Bellezza | Sviluppatore Web Freelance e Automazioni",
     description:
-      "Sviluppatore web freelance in tutta Italia: siti, e-commerce, web app e automazioni su misura. Preventivo chiuso dopo la prima call, consegna in 2-6 settimane.",
+      "Sviluppatore freelance per PMI in tutta Italia: automazioni, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
     url: BASE_URL,
     siteName: SITE.name,
     locale: SITE.locale,
@@ -70,7 +70,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "Federico Bellezza | Sviluppatore Web Freelance e Automazioni",
     description:
-      "Sviluppatore web freelance in tutta Italia: siti, e-commerce, web app e automazioni su misura. Preventivo chiuso dopo la prima call, consegna in 2-6 settimane.",
+      "Sviluppatore freelance per PMI in tutta Italia: automazioni, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
   },
   robots: {
     index: true,
@@ -85,8 +85,12 @@ export const metadata = {
   },
 };
 
-// Applies the stored theme before paint so the page never flashes the wrong mode.
-const themeInit = `(function(){try{var t=localStorage.getItem("fb-theme");if(t==="light"||t==="dark"){document.documentElement.setAttribute("data-theme",t)}}catch(e){}})();`;
+// Dark only: tells the browser to draw its own UI (scrollbars, form controls,
+// mobile address bar) to match.
+export const viewport = {
+  colorScheme: "dark",
+  themeColor: "#08090b",
+};
 
 export default function RootLayout({ children }) {
   return (
@@ -97,10 +101,6 @@ export default function RootLayout({ children }) {
     >
       <head>
         <link rel="preconnect" href="https://api.emailjs.com" />
-        <script
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: themeInit }}
-        />
         <script
           suppressHydrationWarning
           type="application/ld+json"

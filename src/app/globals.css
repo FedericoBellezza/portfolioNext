@@ -3,81 +3,15 @@
 
 /* ============================================================
    FB DESIGN SYSTEM
-   Monochrome ink + one saturated accent (brand green, matching
+   Dark only. Monochrome ink + one saturated accent (brand green, matching
    the logo gradient: #5c9d85 -> #38735a).
    Consumed only by the landing page. Dashboard, login and privacy
    keep their own palettes and are untouched by these tokens.
    ============================================================ */
 
+/* The site is dark only: one set of tokens, no theme switch. */
 :root {
-  /* surfaces and ink (light) */
-  --fb-bg: #fbfbfc;
-  --fb-surface: #ffffff;
-  --fb-surface-2: #f3f4f6;
-  --fb-ink: #0b0c0e;
-  --fb-ink-2: #55595f;
-  --fb-ink-3: #666d79;
-  --fb-line: #e3e4e8;
-  --fb-line-strong: #cdcfd5;
-
-  /* the one accent */
-  --fb-accent: #39735a;
-  --fb-accent-hover: #2f5e4a;
-  --fb-accent-ink: #ffffff;
-  --fb-accent-soft: #ebf0ef;
-
-  /* form errors, the only other hue on the page */
-  --fb-danger: #d92d20;
-  --fb-danger-soft: #fef3f2;
-  --fb-danger-ink: #b42318;
-
-  /* shape: one radius scale, soft */
-  --fb-r-sm: 8px;
-  --fb-r: 14px;
-  --fb-r-lg: 20px;
-
-  /* tinted elevation, never pure black */
-  --fb-shadow: 0 1px 2px rgba(11, 12, 14, 0.04),
-    0 8px 24px -12px rgba(11, 12, 14, 0.14);
-  --fb-shadow-lg: 0 2px 4px rgba(11, 12, 14, 0.05),
-    0 24px 48px -20px rgba(11, 12, 14, 0.22);
-
-  /* z-index scale, no arbitrary values elsewhere */
-  --fb-z-sticky: 20;
-  --fb-z-nav: 50;
-  --fb-z-overlay: 60;
-  --fb-z-toast: 70;
-}
-
-/* Dark follows the system unless the visitor explicitly picked light. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --fb-bg: #08090b;
-    --fb-surface: #101115;
-    --fb-surface-2: #171920;
-    --fb-ink: #f4f5f7;
-    --fb-ink-2: #a2a7b0;
-    --fb-ink-3: #7f858f;
-    --fb-line: #212329;
-    --fb-line-strong: #32353e;
-
-    --fb-accent: #5c9d85;
-    --fb-accent-hover: #79af9b;
-    --fb-accent-ink: #06070a;
-    --fb-accent-soft: #141e1c;
-
-    --fb-danger: #ff8078;
-    --fb-danger-soft: #2a1210;
-    --fb-danger-ink: #ffb4ae;
-
-    --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5),
-      0 8px 24px -12px rgba(0, 0, 0, 0.7);
-    --fb-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.55),
-      0 24px 48px -20px rgba(0, 0, 0, 0.8);
-  }
-}
-
-:root[data-theme="dark"] {
+  /* surfaces and ink */
   --fb-bg: #08090b;
   --fb-surface: #101115;
   --fb-surface-2: #171920;
@@ -87,18 +21,33 @@
   --fb-line: #212329;
   --fb-line-strong: #32353e;
 
+  /* the one accent */
   --fb-accent: #5c9d85;
   --fb-accent-hover: #79af9b;
   --fb-accent-ink: #06070a;
   --fb-accent-soft: #141e1c;
 
+  /* form errors, the only other hue on the page */
   --fb-danger: #ff8078;
   --fb-danger-soft: #2a1210;
   --fb-danger-ink: #ffb4ae;
 
-  --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+  /* shape: one radius scale, soft */
+  --fb-r-sm: 8px;
+  --fb-r: 14px;
+  --fb-r-lg: 20px;
+
+  /* elevation on a dark ground */
+  --fb-shadow: 0 1px 2px rgba(0, 0, 0, 0.5),
+    0 8px 24px -12px rgba(0, 0, 0, 0.7);
   --fb-shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.55),
     0 24px 48px -20px rgba(0, 0, 0, 0.8);
+
+  /* z-index scale, no arbitrary values elsewhere */
+  --fb-z-sticky: 20;
+  --fb-z-nav: 50;
+  --fb-z-overlay: 60;
+  --fb-z-toast: 70;
 }
 
 @theme inline {
@@ -202,12 +151,6 @@
   }
   html {
     scroll-behavior: smooth;
-    color-scheme: light dark;
-  }
-  :root[data-theme="light"] {
-    color-scheme: light;
-  }
-  :root[data-theme="dark"] {
     color-scheme: dark;
   }
   body {
@@ -267,7 +210,7 @@
 /* Logos are knocked down to a single ink tone so a strip of mixed-colour
    brand assets reads as one row. Colour comes back on hover. */
 .fb-logo {
-  filter: grayscale(1) brightness(0);
+  filter: grayscale(1) brightness(0) invert(1);
   opacity: 0.55;
   transition: filter 0.3s ease, opacity 0.3s ease;
 }
@@ -275,36 +218,6 @@
   filter: none;
   opacity: 1;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .fb-logo {
-    filter: grayscale(1) brightness(0) invert(1);
-  }
-}
-:root[data-theme="dark"] .fb-logo {
-  filter: grayscale(1) brightness(0) invert(1);
-}
-:root[data-theme="dark"] .fb-logo:hover,
-:root:not([data-theme="light"]) .fb-logo:hover {
-  filter: none;
-}
-
-/* Infinite marquee for the stack strip */
-@keyframes fb-marquee {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-.fb-marquee-track {
-  animation: fb-marquee 46s linear infinite;
-  will-change: transform;
-}
-.fb-marquee:hover .fb-marquee-track {
-  animation-play-state: paused;
-}
-
 /* Hero intro.
    Pure CSS on purpose: these run from the first paint, before and regardless of
    hydration, so a busy main thread cannot stutter them. Only opacity and
@@ -321,22 +234,11 @@
   }
 }
 
-/* Headline words slide up from behind their own overflow-hidden wrapper. */
-@keyframes fb-hero-word {
+/* The two screenshots rise into place, the back one first. */
+@keyframes fb-hero-shot {
   from {
     opacity: 0;
-    transform: translate3d(0, 110%, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes fb-hero-portrait {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 6%, 0) scale(1.06);
+    transform: translate3d(0, 24px, 0) scale(0.98);
   }
   to {
     opacity: 1;
@@ -350,24 +252,19 @@
   animation: fb-hero-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1)
     var(--fb-hero-delay, 0s) both;
 }
-.hero-word {
-  animation: fb-hero-word 0.65s cubic-bezier(0.16, 1, 0.3, 1)
+.fb-hero-shot {
+  animation: fb-hero-shot 0.8s cubic-bezier(0.16, 1, 0.3, 1)
     var(--fb-hero-delay, 0s) both;
-}
-.fb-hero-portrait {
-  animation: fb-hero-portrait 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .fb-marquee-track,
   .hero-eyebrow,
   .hero-sub,
   .hero-cta,
-  .hero-word,
-  .fb-hero-portrait {
+  .fb-hero-shot {
     animation: none;
   }
   *,

@@ -23,16 +23,16 @@ export default function SiteFooter() {
           <div>
             <p className="flex items-center gap-2.5 font-mono text-[15px] font-medium tracking-tight">
               <img src="/logo.svg" alt="" className="h-6 w-auto" />
-              <div>
-              federico<span style={{ color: "var(--fb-accent)" }}>.</span>
-              bellezza
-              </div>
+              <span>
+                federico<span style={{ color: "var(--fb-accent)" }}>.</span>bellezza
+              </span>
             </p>
             <p
               className="mt-2 max-w-[38ch] text-sm leading-relaxed"
               style={{ color: "var(--fb-ink-2)" }}
             >
-              Sviluppo web e automazioni per aziende e professionisti in Italia.
+              Automazioni, AI e software su misura per PMI e professionisti in
+              tutta Italia.
             </p>
           </div>
 
