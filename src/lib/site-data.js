@@ -182,6 +182,16 @@ export const PROCESS = [
  */
 export const PROJECTS = [
   {
+    title: "Alma",
+    description:
+    "Foto, voce o testo diventano un diario alimentare compilato in automatico, condiviso con il nutrizionista.",
+    image: "/alma-screenshot.jpg",
+    alt: "Interfaccia di Alma, assistente nutrizionale per professionisti",
+    url: "https://alma-sandy.vercel.app/",
+    tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
+    type: "Web app con AI",
+  },
+  {
     title: "AI.Bandi",
     description:
       "Abbina il profilo di un'azienda ai bandi e ai finanziamenti pubblici più adatti, con suggerimenti generati dall'AI e abbonamenti gestiti in autonomia.",
@@ -190,16 +200,6 @@ export const PROJECTS = [
     url: "https://ai-bandi.com/",
     tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
     type: "Piattaforma SaaS con AI",
-  },
-  {
-    title: "Alma",
-    description:
-      "Foto, voce o testo diventano un diario alimentare compilato in automatico, condiviso con il nutrizionista.",
-    image: "/alma-screenshot.png",
-    alt: "Interfaccia di Alma, assistente nutrizionale per professionisti",
-    url: "https://alma-sandy.vercel.app/",
-    tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
-    type: "Web app con AI",
   },
   {
     title: "Knit",

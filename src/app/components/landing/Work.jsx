@@ -4,15 +4,18 @@ import { PROJECTS, CONTACT } from "@/lib/site-data";
 import Reveal from "./Reveal";
 
 /**
- * Asymmetric grid: the strongest project large on the left, two beside it,
- * two below. It used to be a pinned horizontal pan, which cost the visitor
- * several screens of scrolling before reaching prices and the form.
- * The whole card is the link, so every project opens in one tap.
+ * The strongest project spans the full width as a horizontal card, the other
+ * four sit below in two columns. It used to be a pinned horizontal pan, which
+ * cost the visitor several screens of scrolling before reaching prices and the
+ * form. The whole card is the link, so every project opens in one tap.
+ * The featured image keeps a fixed aspect ratio instead of stretching to fill
+ * the row: stretching crops it and scales it past the size next/image serves,
+ * which is what made it blurry.
  */
 const LAYOUT = [
-  { area: "lg:col-span-7 lg:row-span-2", featured: true },
-  { area: "lg:col-span-5" },
-  { area: "lg:col-span-5" },
+  { area: "lg:col-span-12", featured: true },
+  { area: "lg:col-span-6" },
+  { area: "lg:col-span-6" },
   { area: "lg:col-span-6" },
   { area: "lg:col-span-6" },
 ];
@@ -23,7 +26,9 @@ function ProjectCard({ project, featured }) {
       href={project.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex h-full flex-col overflow-hidden rounded-[var(--fb-r-lg)] border transition-[border-color,box-shadow] duration-300 hover:border-[var(--fb-line-strong)] hover:shadow-[var(--fb-shadow)]"
+      className={`group flex h-full flex-col overflow-hidden rounded-[var(--fb-r-lg)] border transition-[border-color,box-shadow] duration-300 hover:border-[var(--fb-line-strong)] hover:shadow-[var(--fb-shadow)] ${
+        featured ? "lg:flex-row" : ""
+      }`}
       style={{
         background: "var(--fb-surface)",
         borderColor: "var(--fb-line)",
@@ -32,7 +37,7 @@ function ProjectCard({ project, featured }) {
       <div
         className={`relative overflow-hidden border-b ${
           featured
-            ? "aspect-[16/10] lg:aspect-auto lg:min-h-[320px] lg:flex-1"
+            ? "aspect-[16/10] lg:w-[58%] lg:shrink-0 lg:border-b-0 lg:border-r"
             : "aspect-[16/9]"
         }`}
         style={{ borderColor: "var(--fb-line)" }}
@@ -43,14 +48,18 @@ function ProjectCard({ project, featured }) {
           fill
           sizes={
             featured
-              ? "(max-width: 1024px) 92vw, 760px"
-              : "(max-width: 1024px) 92vw, 560px"
+              ? "(max-width: 1024px) 92vw, 820px"
+              : "(max-width: 1024px) 92vw, 690px"
           }
           className="object-cover object-left-top transition-transform duration-700 group-hover:scale-[1.03]"
         />
       </div>
 
-      <div className={featured ? "p-7 sm:p-9" : "p-6 sm:p-7"}>
+      <div
+        className={
+          featured ? "p-7 sm:p-9 lg:flex lg:flex-1 lg:flex-col lg:justify-center" : "p-6 sm:p-7"
+        }
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <p
