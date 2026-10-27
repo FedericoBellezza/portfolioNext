@@ -48,6 +48,16 @@ Se i materiali non bastano per nessuna domanda, rispondi {"questions":[],"note":
 const CATALOG_RULES =
   'DOMANDA SUI DOCUMENTI: la richiesta riguarda i file caricati, non il loro contenuto, e in questa richiesta non ci sono estratti. Rispondi dall\'elenco "Materiali disponibili" e dalla sezione "Controllo duplicati", senza citare fonti [F#] e senza scrivere "Non lo trovo nei materiali caricati". Per i duplicati: segnala quelli del controllo automatico e, in un elenco a parte, i file che dai nomi sembrano coprire lo stesso argomento (per esempio un riassunto in più formati, le slide di una lezione e il testo della stessa lezione), dicendo chiaramente che è un\'ipotesi dal nome e che il contenuto non è stato confrontato. Sii sintetico.';
 
+const FILE_RULES = `FILE DA SCARICARE: se, e solo se, l'utente chiede esplicitamente un file, un documento, un PDF o un testo da scaricare/salvare/esportare (per esempio "fammi un PDF con lo schema del capitolo 3"), scrivi il contenuto del file così:
+<<<FILE: nome-del-file.pdf>>>
+...contenuto in markdown...
+<<<END FILE>>>
+- Estensione: "pdf" per un documento da leggere o stampare (il default), "md" o "txt" solo se l'utente li chiede. Il nome è breve, in minuscolo, con trattini e senza spazi.
+- Dentro il blocco scrivi il documento completo e autonomo: titolo (#), sezioni, elenchi, tabelle e blocchi di codice vanno bene. Non scrivere riferimenti [F#] (nel file non avrebbero senso): in fondo metti una sezione "Fonti" con i nomi dei file usati. Evita emoji e simboli speciali (frecce, disuguaglianze matematiche come ≤): scrivi a parole o in ASCII.
+- Fuori dal blocco scrivi al massimo due righe per dire cosa contiene il file, senza ripeterne il contenuto. Puoi creare più file solo se richiesto (massimo 3).
+- Anche per i file vale la regola sui dati: usa solo i materiali. Se mancano, dillo fuori dal blocco e non creare il file.
+- Se l'utente non chiede un file, rispondi come al solito e non usare questi delimitatori.`;
+
 const HISTORY_TURNS = 6;
 const HISTORY_CHARS = 1500;
 
@@ -135,7 +145,10 @@ export function buildPrompts({
   exclude = [],
 }) {
   const rules = (MODE_RULES[mode] ?? MODE_RULES.ask)({ count, part: quizPart });
-  const system = `${BASE_RULES}\n\n${catalog ? `${rules}\n\n${CATALOG_RULES}` : rules}`;
+  // Il quiz è JSON e le domande sull'archivio non producono documenti: negli altri casi si può chiedere un file.
+  const system = `${BASE_RULES}\n\n${catalog ? `${rules}\n\n${CATALOG_RULES}` : rules}${
+    mode === "quiz" || catalog ? "" : `\n\n${FILE_RULES}`
+  }`;
 
   const sections = [];
 

@@ -3,6 +3,7 @@ import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/aut
 import { loadAttachments } from "@/lib/assistant/attachments";
 import { findNamedDocuments, isCatalogQuestion } from "@/lib/assistant/catalog";
 import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
+import { parseFiles } from "@/lib/assistant/files";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
 import { parseQuiz, quizToText } from "@/lib/assistant/quiz";
@@ -174,9 +175,14 @@ export async function POST(request) {
     });
 
     let text = result.text;
+    let files = [];
     let quiz = null;
     let quizSources = null;
-    if (mode === "quiz") {
+    if (mode !== "quiz") {
+      ({ text, files } = parseFiles(text));
+      // Se il modello ha scritto solo il file, il messaggio non resta vuoto.
+      if (files.length && !text) text = files.length === 1 ? "Ecco il file richiesto." : "Ecco i file richiesti.";
+    } else {
       const parsed = parseQuiz(text, { validSources: new Set(passages.map((p) => p.n)), max: count });
       if (!parsed.questions.length) {
         throw new AssistantError(
@@ -192,6 +198,7 @@ export async function POST(request) {
     return Response.json({
       ok: true,
       text,
+      files,
       quiz,
       truncated,
       // Un quiz mostra solo le fonti citate dalle sue domande.

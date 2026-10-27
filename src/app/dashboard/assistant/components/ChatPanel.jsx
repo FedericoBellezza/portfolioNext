@@ -8,6 +8,7 @@ import {
   Bug,
   Check,
   Copy,
+  FileDown,
   FileText,
   FolderOpen,
   ListChecks,
@@ -31,6 +32,7 @@ import {
   formatBytes,
 } from '@/lib/assistant/constants'
 import { copyToClipboard } from '@/lib/assistant/bugReport'
+import { downloadFile } from '@/lib/assistant/download'
 import ContextSelect from './ContextSelect'
 import Markdown from './Markdown'
 import QuizPlayer from './QuizPlayer'
@@ -60,6 +62,7 @@ const SUGGESTIONS = {
     'Spiegami i concetti principali del corso',
     'Cosa dicono le slide sul tema…?',
     'Confronta come i miei corsi trattano…',
+    'Fammi un PDF con lo schema di…',
   ],
   summary: ['Riassumi il capitolo su…', 'Fammi uno schema delle definizioni chiave', 'Riassumi l\'ultima lezione in 10 punti'],
   quiz: [
@@ -87,6 +90,56 @@ function ActionButton({ onClick, children, label, className = '' }) {
       className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--dashboard-text-muted)] transition-colors hover:bg-[var(--dashboard-bg-secondary)] hover:text-[var(--dashboard-text)] active:scale-[0.97] ${FOCUS_RING} ${className}`}
     >
       {children}
+    </button>
+  )
+}
+
+const FORMAT_LABELS = { pdf: 'PDF', md: 'Markdown', txt: 'Testo' }
+
+// Un file generato dall'assistente: il PDF si costruisce solo al clic, nel browser.
+function FileCard({ file }) {
+  const [state, setState] = useState('idle')
+
+  useEffect(() => {
+    if (state !== 'done' && state !== 'error') return
+    const timer = setTimeout(() => setState('idle'), 2500)
+    return () => clearTimeout(timer)
+  }, [state])
+
+  async function handleDownload() {
+    setState('working')
+    try {
+      await downloadFile(file)
+      setState('done')
+    } catch {
+      setState('error')
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleDownload}
+      disabled={state === 'working'}
+      title="Scarica il file"
+      className={`group flex w-full max-w-sm cursor-pointer items-center gap-3 rounded-xl border border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-3 py-2.5 text-left transition-all hover:border-[var(--dashboard-accent-light)] hover:shadow-[0_8px_18px_-12px_rgba(120,80,60,0.35)] active:scale-[0.99] disabled:cursor-wait ${FOCUS_RING}`}
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--dashboard-accent)]/10 text-[var(--dashboard-accent)]">
+        <FileText className="h-4 w-4" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-[var(--dashboard-text)]">{file.name}</span>
+        <span className={`block text-xs ${state === 'error' ? 'text-red-600' : 'text-[var(--dashboard-text-muted)]'}`}>
+          {state === 'error' ? 'Download non riuscito: riprova' : FORMAT_LABELS[file.format] ?? file.format}
+        </span>
+      </span>
+      {state === 'working' ? (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--dashboard-text-muted)]" />
+      ) : state === 'done' ? (
+        <Check className="h-4 w-4 shrink-0 text-emerald-600" />
+      ) : (
+        <FileDown className="h-4 w-4 shrink-0 text-[var(--dashboard-text-muted)] transition-colors group-hover:text-[var(--dashboard-accent)]" />
+      )}
     </button>
   )
 }
@@ -198,6 +251,14 @@ function Message({ message, onOpenSource, onQuizFinish, onQuizRetry, onAsk, busy
             </p>
           )}
         </div>
+
+        {message.files?.length > 0 && (
+          <div className="space-y-1.5">
+            {message.files.map((file) => (
+              <FileCard key={file.name} file={file} />
+            ))}
+          </div>
+        )}
 
         {sources.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

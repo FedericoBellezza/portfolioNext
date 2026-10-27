@@ -518,7 +518,9 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
       .slice(-10)
       .map((message) => {
         const files = message.attachments?.length ? `[Allegati: ${message.attachments.map((a) => a.name).join(', ')}]\n` : ''
-        return { role: message.role, content: `${files}${message.content}`.slice(0, 8000) }
+        // Il contenuto dei file generati non torna al modello: nella storia resta solo il loro nome.
+        const generated = message.files?.length ? `\n[File generati: ${message.files.map((f) => f.name).join(', ')}]` : ''
+        return { role: message.role, content: `${files}${message.content}${generated}`.slice(0, 8000) }
       })
 
     setMessages((current) => [
@@ -575,6 +577,7 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           // Un quiz si compila nell'interfaccia: `content` resta la sua versione testuale per cronologia e copia.
           ...(questions ? { quiz: { questions, expected: total, pending: batches.length > 1, error: null } } : {}),
           sources: data.sources,
+          files: data.files ?? [],
           truncated: data.truncated,
           mode: sendMode,
         },
