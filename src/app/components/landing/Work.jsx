@@ -42,6 +42,23 @@ function ProjectCard({ project, featured }) {
         }`}
         style={{ borderColor: "var(--fb-line)" }}
       >
+        {project.status && (
+          <span
+            className="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium"
+            style={{
+              background: "var(--fb-surface)",
+              borderColor: "var(--fb-line-strong)",
+              color: "var(--fb-ink)",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--fb-accent)" }}
+            />
+            {project.status}
+          </span>
+        )}
         <Image
           src={project.image}
           alt={project.alt}
@@ -119,8 +136,8 @@ export default function Work() {
             className="mt-5 max-w-[60ch] text-lg leading-relaxed"
             style={{ color: "var(--fb-ink-2)" }}
           >
-            Niente mockup: sono tutti in produzione. Aprili e guarda come si
-            comportano.
+            Niente mockup: sono tutti online, anche quello ancora in sviluppo.
+            Aprili e guarda come si comportano.
           </p>
         </Reveal>
 

@@ -67,16 +67,16 @@ export const HERO = {
   // proof that the page is about results, not about the person.
   shots: [
     {
-      src: "/ai-bandi-screenshot.png",
-      alt: "AI.Bandi, piattaforma che abbina le aziende ai bandi pubblici",
-      width: 1900,
-      height: 908,
+      src: "/alma-screenshot.jpg",
+      alt: "Alma, assistente nutrizionale con intelligenza artificiale",
+      width: 1540,
+      height: 982,
     },
     {
-      src: "/alma-screenshot.png",
-      alt: "Alma, assistente nutrizionale con intelligenza artificiale",
-      width: 1900,
-      height: 934,
+      src: "/anduma-screenshot.jpg",
+      alt: "Anduma, racconti di viaggio pubblicati come sito con mappa",
+      width: 1917,
+      height: 1027,
     },
   ],
 };
@@ -202,14 +202,16 @@ export const PROJECTS = [
     type: "Piattaforma SaaS con AI",
   },
   {
-    title: "Knit",
+    title: "Zoan",
     description:
-      "Sito per una start-up sportiva che offre consulenza, formazione e networking ad atleti e club.",
-    image: "/knit2-screenshot.png",
-    alt: "Sito di Knit, consulenza e formazione per atleti e organizzazioni sportive",
-    url: "https://www.knit-networks.com/",
-    tags: ["Next.js", "Tailwind", "GSAP"],
-    type: "Sito corporate",
+      "Piattaforma che mette in contatto il pubblico con eventi, locali e artisti emergenti della propria zona.",
+    image: "/zoan-screenshot.png",
+    alt: "Pagina di lancio di Zoan, piattaforma per eventi, locali e artisti",
+    url: "https://zoaneventi.com/",
+    tags: ["Next.js", "Supabase"],
+    type: "Piattaforma web",
+    // Shown as a badge on the card: the project is live only as a launch page.
+    status: "In sviluppo",
   },
   {
     title: "Anduma",

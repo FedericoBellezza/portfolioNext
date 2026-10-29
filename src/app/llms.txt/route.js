@@ -44,7 +44,9 @@ function body() {
 
   const projects = PROJECTS.map(
     (project) =>
-      `- [${project.title}](${project.url}) — ${project.type}. ${project.description} Stack: ${project.tags.join(", ")}.`,
+      `- [${project.title}](${project.url}) — ${project.type}${
+        project.status ? ` (${project.status.toLowerCase()})` : ""
+      }. ${project.description} Stack: ${project.tags.join(", ")}.`,
   ).join("\n");
 
   const faq = PRICING_FAQ.map((item) => `### ${item.q}\n\n${item.a}`).join(
