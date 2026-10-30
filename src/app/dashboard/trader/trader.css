@@ -1,0 +1,43 @@
+/* ============================================================
+   Dashboard Trader AI — stessi toni del tema .dashboard-theme
+   (carta calda, inchiostro, accento terracotta per le azioni).
+   Il blu è riservato ai dati dei grafici. Tutto vive sotto .tr.
+   ============================================================ */
+
+.tr {
+  --tr-surface: #fffdf9;
+  --tr-ink: var(--dashboard-text, #2d2d2d);
+  --tr-ink-2: var(--dashboard-text-secondary, #6b6b6b);
+  --tr-muted: var(--dashboard-text-muted, #9b9b9b);
+  --tr-rule: var(--dashboard-border, #e0d6cc);
+  --tr-grid: #ece4db;
+  --tr-axis: #cfc3b6;
+  --tr-series: #2a78d6;
+  --tr-good: #0ca30c;
+  --tr-good-text: #006300;
+  --tr-critical: #b3392f;
+  --tr-warning: #fab219;
+  --tr-action: var(--dashboard-accent, #c4735b);
+  --tr-action-hover: var(--dashboard-accent-hover, #b56549);
+  --tr-action-ink: #ffffff;
+  color: var(--tr-ink);
+}
+
+.tr .tr-display {
+  font-family: var(--font-ld-display), Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.tr .tr-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.tr :focus-visible {
+  outline: 2px solid var(--tr-action);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.tr pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
-import { LogOut, Home, LayoutDashboard, GraduationCap } from "lucide-react";
+import { LogOut, Home, LayoutDashboard, GraduationCap, TrendingUp } from "lucide-react";
 
 export default function DashboardNav({ user }) {
   const router = useRouter();
@@ -33,6 +33,13 @@ export default function DashboardNav({ user }) {
           >
             <GraduationCap className="h-4 w-4" />
             <span className="hidden sm:inline">Assistente</span>
+          </Link>
+          <Link
+            href="/dashboard/trader"
+            className="text-[var(--dashboard-text-secondary)] hover:text-[var(--dashboard-accent)] transition-colors flex items-center gap-1 uppercase text-sm tracking-wide"
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:inline">Trader</span>
           </Link>
         </div>
 
