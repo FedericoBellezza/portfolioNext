@@ -8,7 +8,8 @@
   --tr-surface: #fffdf9;
   --tr-ink: var(--dashboard-text, #2d2d2d);
   --tr-ink-2: var(--dashboard-text-secondary, #6b6b6b);
-  --tr-muted: var(--dashboard-text-muted, #9b9b9b);
+  /* Etichette degli assi: tono caldo con contrasto ≥ 4.5:1 sul fondo carta. */
+  --tr-muted: #73695f;
   --tr-rule: var(--dashboard-border, #e0d6cc);
   --tr-grid: #ece4db;
   --tr-axis: #cfc3b6;
@@ -20,6 +21,11 @@
   --tr-action: var(--dashboard-accent, #c4735b);
   --tr-action-hover: var(--dashboard-accent-hover, #b56549);
   --tr-action-ink: #ffffff;
+  color: var(--tr-ink);
+}
+
+.tr ::selection {
+  background: color-mix(in srgb, var(--tr-action) 28%, transparent);
   color: var(--tr-ink);
 }
 
@@ -38,6 +44,79 @@
   border-radius: 4px;
 }
 
-.tr pre {
+.tr pre,
+.tr .tr-code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.tr .tr-code {
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+}
+
+/* Bottoni: un solo vocabolario per hover, pressione e disabilitato.
+   Area di tocco di 44px sui dispositivi touch, più compatta col mouse. */
+.tr .tr-btn {
+  min-height: 2.5rem;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    color 150ms ease-out,
+    transform 100ms ease-out;
+}
+.tr .tr-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.tr .tr-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Link testuali piccoli (es. "Tabella"): area cliccabile più grande del testo. */
+.tr .tr-hit {
+  min-height: 2rem;
+  padding-block: 0.25rem;
+}
+
+@media (pointer: coarse) {
+  .tr .tr-btn {
+    min-height: 2.75rem;
+  }
+  .tr .tr-hit {
+    min-height: 2.75rem;
+  }
+}
+
+/* <details> con freccia disegnata al posto del triangolo del browser. */
+.tr .tr-details > summary {
+  list-style: none;
+}
+.tr .tr-details > summary::-webkit-details-marker {
+  display: none;
+}
+.tr .tr-details > summary::before {
+  content: '';
+  width: 0.4rem;
+  height: 0.4rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 150ms ease-out;
+}
+.tr .tr-details[open] > summary::before {
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* Scrollbar sottili nei riquadri di testo (log, output dei comandi). */
+.tr .tr-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tr-axis) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr .tr-btn,
+  .tr .tr-details > summary::before {
+    transition: none;
+  }
 }

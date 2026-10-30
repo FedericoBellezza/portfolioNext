@@ -43,9 +43,9 @@ export const CATALYST = {
 export const PRICED_IN = { no: 'non nel prezzo', partially: 'in parte nel prezzo', yes: 'già nel prezzo' }
 
 export const DIRECTION = {
-  bullish: { label: 'rialzo', glyph: '▲' },
-  bearish: { label: 'ribasso', glyph: '▼' },
-  neutral: { label: 'neutra', glyph: '◆' },
+  bullish: { label: 'rialzo' },
+  bearish: { label: 'ribasso' },
+  neutral: { label: 'neutra' },
 }
 
 // Stessa lista del workflow n8n "Trader AI - Comandi Dashboard": se ne aggiungi uno, aggiornali entrambi.

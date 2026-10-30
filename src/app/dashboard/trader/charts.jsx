@@ -31,19 +31,24 @@ function niceTicks(min, max, count = 4) {
   return ticks
 }
 
-const M = { top: 12, right: 12, bottom: 24, left: 40 }
+// Margini del grafico: quello sinistro si allarga quanto serve alle etichette dell'asse Y.
+function margins(tickLabels) {
+  const longest = Math.max(...tickLabels.map((t) => String(t).length))
+  return { top: 12, right: 12, bottom: 24, left: Math.max(32, Math.ceil(longest * 6.4) + 10) }
+}
 
 function ChartFrame({ title, caption, table, children }) {
   const [showTable, setShowTable] = useState(false)
   return (
     <figure className="m-0">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <figcaption className="text-[15px] font-semibold">{title}</figcaption>
         <button
           type="button"
           onClick={() => setShowTable((v) => !v)}
-          className="cursor-pointer text-[13px] text-[var(--tr-ink-2)] underline decoration-[var(--tr-rule)] underline-offset-4 hover:text-[var(--tr-ink)]"
+          className="tr-hit -my-1 -mr-2 shrink-0 cursor-pointer rounded px-2 text-[13px] text-[var(--tr-ink-2)] underline decoration-[var(--tr-rule)] underline-offset-4 hover:text-[var(--tr-ink)] hover:decoration-[var(--tr-ink-2)]"
           aria-pressed={showTable}
+          aria-label={showTable ? `${title}: mostra il grafico` : `${title}: mostra i dati in tabella`}
         >
           {showTable ? 'Grafico' : 'Tabella'}
         </button>
@@ -55,7 +60,7 @@ function ChartFrame({ title, caption, table, children }) {
             <thead>
               <tr className="text-left text-[var(--tr-ink-2)]">
                 {table.head.map((h, i) => (
-                  <th key={i} className="pb-1 font-medium">{h}</th>
+                  <th key={i} scope="col" className="pb-1 pr-3 font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -63,7 +68,7 @@ function ChartFrame({ title, caption, table, children }) {
               {table.rows.map((r, i) => (
                 <tr key={i} className="border-t border-[var(--tr-rule)]">
                   {r.map((c, j) => (
-                    <td key={j} className="py-1">{c}</td>
+                    <td key={j} className="py-1 pr-3">{c}</td>
                   ))}
                 </tr>
               ))}
@@ -106,6 +111,7 @@ export function LineChart({ title, caption, points, format, height = 180 }) {
 
   const values = points.map((p) => p.value)
   const ticks = niceTicks(Math.min(0, ...values), Math.max(0, ...values))
+  const M = margins(ticks.map(format))
   const lo = ticks[0]
   const hi = ticks[ticks.length - 1]
   const iw = Math.max(0, width - M.left - M.right)
@@ -150,6 +156,9 @@ export function LineChart({ title, caption, points, format, height = 180 }) {
               ) : null,
             )}
             <path d={d} fill="none" stroke="var(--tr-series)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            {hover === null && (
+              <circle cx={x(points.length - 1)} cy={y(values[values.length - 1])} r={3.5} fill="var(--tr-series)" />
+            )}
             {hover !== null && (
               <g>
                 <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={M.top + ih} stroke="var(--tr-axis)" strokeWidth={1} />
@@ -188,6 +197,7 @@ export function BarChart({ title, caption, points, format, reference, max, heigh
 
   const top = max ?? Math.max(...points.map((p) => p.value), reference?.value ?? 0)
   const ticks = niceTicks(0, top || 1, 3)
+  const M = margins(ticks.map(format))
   const hi = ticks[ticks.length - 1]
   const iw = Math.max(0, width - M.left - M.right)
   const ih = height - M.top - M.bottom
