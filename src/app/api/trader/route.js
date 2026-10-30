@@ -1,4 +1,4 @@
-import { protectedRoute, readJson, json, fail } from '@/lib/leads/server'
+import { protectedRoute, readJson, json, fail } from '@/lib/server/api'
 import { COMMANDS } from '@/app/dashboard/trader/format'
 
 export const dynamic = 'force-dynamic'

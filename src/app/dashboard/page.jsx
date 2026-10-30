@@ -1,7 +1,6 @@
-import LeadsApp from './components/leads/LeadsApp'
+import { redirect } from 'next/navigation'
 
-// Autenticazione: middleware + layout di /dashboard (sessione Supabase, solo OWNER_EMAIL).
-// I dati passano esclusivamente dalle API protette /api/leads, mai dal browser verso Supabase.
+// La home della dashboard è la pagina del Trader AI (la sezione lead è stata rimossa).
 export default function DashboardPage() {
-  return <LeadsApp />
+  redirect('/dashboard/trader')
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { fraunces } from '../components/leads/fonts'
+import { fraunces } from '../components/fonts'
 import { BarChart, LineChart } from './charts'
 import { demoStatus } from './demo'
 import { ago, CATALYST, conf, dayMonth, DIRECTION, pct, PRICED_IN, ratio, shortDay, time, usd } from './format'

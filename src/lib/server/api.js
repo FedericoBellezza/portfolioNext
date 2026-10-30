@@ -1,32 +1,12 @@
-// SOLO SERVER. Importare questo file esclusivamente da route handler / server component:
-// legge SUPABASE_SERVICE_ROLE_KEY, che non deve mai arrivare nel bundle del browser.
+// SOLO SERVER. Helper comuni per i route handler della dashboard privata
+// (in origine in lib/leads/server.js, spostati qui quando la sezione lead è stata rimossa).
 
 import { NextResponse } from 'next/server'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
 
 // Stesso default usato dal middleware per proteggere /dashboard.
 const OWNER_EMAIL = () =>
   (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').toLowerCase()
-
-class ConfigError extends Error {}
-
-let adminClient
-
-/**
- * Client service-role: bypassa RLS, quindi va usato solo dopo la verifica in protectedRoute().
- * Stesso progetto Supabase del login (NEXT_PUBLIC_SUPABASE_URL): l'URL è pubblico, la chiave no.
- */
-export function getAdminClient() {
-  if (adminClient) return adminClient
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new ConfigError('Variabili NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY mancanti')
-  adminClient = createSupabaseClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  })
-  return adminClient
-}
 
 export function json(body, status = 200) {
   return NextResponse.json(body, {
@@ -61,12 +41,11 @@ function isSameOrigin(request) {
 /**
  * Wrapper per i route handler: verifica sessione + owner (401/403), protezione
  * CSRF sulle scritture e risposta 500 generica (niente dettagli interni al client).
+ * Il middleware protegge solo le pagine /dashboard, non le /api: serve questo controllo.
  */
 export function protectedRoute(handler) {
   return async function route(request, ctx) {
     try {
-      // Difesa in profondità oltre al cookie SameSite=Lax: le scritture
-      // devono arrivare dalla stessa origine ed essere JSON.
       if (!['GET', 'HEAD'].includes(request.method)) {
         if (!isSameOrigin(request)) {
           return fail(403, 'Origine non consentita')
@@ -87,10 +66,7 @@ export function protectedRoute(handler) {
       return await handler(request, ctx)
     } catch (e) {
       // Si logga solo il messaggio: mai request, header o chiavi.
-      console.error('[api/leads]', e instanceof Error ? e.message : 'errore sconosciuto')
-      if (e instanceof ConfigError) {
-        return fail(500, 'Configurazione del server incompleta')
-      }
+      console.error('[api]', e instanceof Error ? e.message : 'errore sconosciuto')
       return fail(500, 'Errore interno del server')
     }
   }
