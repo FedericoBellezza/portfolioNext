@@ -461,7 +461,14 @@ function EvaluatedTable({ rows }) {
               <td className="py-2 pr-4">
                 <Outcome hit={p.hit} />
               </td>
-              <td className={`py-2 ${C.ink2}`}>{p.evaluated_at ? dayMonth(p.evaluated_at) : '—'}</td>
+              <td className={`py-2 ${C.ink2}`}>
+                {p.evaluated_at ? dayMonth(p.evaluated_at) : '—'}
+                {p.closed_reason === 'superseded' && (
+                  <span title="Chiusa in anticipo perché una previsione più recente sullo stesso titolo l'ha sostituita">
+                    , sostituita
+                  </span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
