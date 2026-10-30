@@ -238,6 +238,7 @@ export default function TraderApp() {
                 reference={{ value: 50, label: '50%' }}
               />
             </div>
+            <Baselines status={s} />
             <Breakdown status={s} />
           </Section>
 
@@ -413,6 +414,16 @@ function Hero({ status: s, now }) {
             sul benchmark.
           </>
         )}
+        {s.counts.predictions_evaluated_directional !== undefined && (
+          <>
+            {' '}
+            Previsioni con una direzione valutate:{' '}
+            <span className="tr-num text-[var(--tr-ink)]">
+              {s.counts.predictions_evaluated_directional} su {s.phase2_review_after ?? 50}
+            </span>
+            , poi si decide la fase 2.
+          </>
+        )}
       </p>
     </div>
   )
@@ -542,6 +553,11 @@ function OpenPredictions({ rows }) {
             {p.expected_move_pct !== null && p.direction !== 'neutral' && <>, movimento atteso {pct(p.expected_move_pct, 1)}</>}
             . Rischi: {p.key_risks}
           </p>
+          {p.entry_mode === 'next_open' && !p.entry_filled_at && p.entry_due && (
+            <p className={`mt-1 text-[13px] ${C.ink2}`}>
+              Fatta a borsa chiusa: il prezzo d&apos;ingresso sarà quello di apertura del {dayMonth(p.entry_due)}.
+            </p>
+          )}
         </li>
       ))}
     </ul>
@@ -649,6 +665,59 @@ function EvaluatedTable({ rows }) {
         >
           {limit >= all.length ? 'Mostra meno' : `Mostra tutte (${all.length})`}
         </button>
+      )}
+    </div>
+  )
+}
+
+// Il bot contro strategie semplici sulle stesse previsioni: vale qualcosa solo se le batte.
+function Baselines({ status: s }) {
+  const b = s.stats.baselines
+  if (!b) return null
+  if (!b.n && !b.all_n) {
+    return (
+      <p className={`mt-10 max-w-[65ch] text-[14px] ${C.ink2}`}>
+        Quando ci saranno previsioni valutate, qui il bot verrà confrontato con strategie semplici: seguire il
+        movimento dell&apos;ultimo giorno, dire sempre rialzo, dire sempre neutra. Vale qualcosa solo se le batte.
+      </p>
+    )
+  }
+  const rows = [
+    { label: 'Il bot', hits: b.bot, n: b.n, bot: true },
+    { label: "Segui il movimento dell'ultimo giorno", hits: b.momentum, n: b.momentum_n },
+    { label: 'Dì sempre rialzo', hits: b.always_bullish, n: b.n },
+  ].filter((r) => r.n > 0)
+  return (
+    <div className="mt-10 min-w-0">
+      <h3 className="text-[15px] font-semibold">Contro le strategie semplici</h3>
+      <p className={`mt-0.5 max-w-[65ch] text-[13px] ${C.ink2}`}>
+        Quota di giuste sulle previsioni con una direzione. Lanciando una moneta si arriva al 50%.
+      </p>
+      <ul className="mt-3 space-y-2.5">
+        {rows.map((r) => {
+          const share = r.hits / r.n
+          return (
+            <li key={r.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 sm:grid-cols-[16rem_minmax(0,1fr)_auto]">
+              <span className={`text-[14px] ${r.bot ? 'font-semibold' : C.ink2}`}>{r.label}</span>
+              <span aria-hidden className="relative order-last col-span-2 h-2 overflow-hidden rounded-full bg-[var(--tr-rule)] sm:order-none sm:col-span-1">
+                <span
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{ width: `${share * 100}%`, background: r.bot ? 'var(--tr-series)' : 'var(--tr-ink-2)' }}
+                />
+                <span className="absolute inset-y-0 left-1/2 w-px bg-[var(--tr-ink)] opacity-40" />
+              </span>
+              <span className="tr-num text-[14px]">
+                {r.hits}/{r.n} <span className={C.ink2}>({ratio(share)})</span>
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+      {b.all_n > 0 && (
+        <p className={`mt-3 text-[13px] ${C.ink2}`}>
+          Contando anche le neutre: il bot <span className="tr-num">{b.bot_all}/{b.all_n}</span>, «dì sempre neutra»{' '}
+          <span className="tr-num">{b.always_neutral}/{b.all_n}</span>.
+        </p>
       )}
     </div>
   )
