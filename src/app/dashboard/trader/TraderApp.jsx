@@ -239,6 +239,7 @@ export default function TraderApp() {
               />
             </div>
             <Baselines status={s} />
+            <Horizons status={s} />
             <Breakdown status={s} />
           </Section>
 
@@ -723,15 +724,52 @@ function Baselines({ status: s }) {
   )
 }
 
+// Stesse previsioni, misurate dopo 1, 3, 5 e 10 giorni: quale orizzonte funziona davvero.
+function Horizons({ status: s }) {
+  const rows = (s.stats.by_horizon ?? []).filter((h) => h.n > 0)
+  if (!rows.length) return null
+  return (
+    <div className="mt-10 min-w-0">
+      <h3 className="text-[15px] font-semibold">Dopo quanti giorni funziona</h3>
+      <p className={`mt-0.5 max-w-[65ch] text-[13px] ${C.ink2}`}>
+        Le previsioni con una direzione, misurate dopo 1, 3, 5 e 10 giorni dall&apos;ingresso, qualunque fosse la scadenza scelta.
+      </p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="tr-num w-full min-w-[360px] text-[14px]">
+          <thead>
+            <tr className={`border-b ${C.rule} text-left text-[13px] ${C.ink2}`}>
+              <th className="py-1.5 pr-4 font-medium">Dopo</th>
+              <th className="py-1.5 pr-4 font-medium">Giuste</th>
+              <th className="py-1.5 text-right font-medium">Rendimento medio seguendo il segnale</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((h) => (
+              <tr key={h.days} className={`border-b ${C.rule}`}>
+                <td className="py-1.5 pr-4">{h.days === 1 ? '1 giorno' : `${h.days} giorni`}</td>
+                <td className="py-1.5 pr-4">
+                  {h.hits}/{h.n} <span className={C.ink2}>({ratio(h.hit_rate)})</span>
+                </td>
+                <td className="py-1.5 text-right">{pct(h.avg_signed_return_pct, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function Breakdown({ status: s }) {
   if (!s.stats.all.n) return null
   const blocks = [
     { title: 'Per catalizzatore', rows: s.stats.by_catalyst, label: (k) => CATALYST[k] ?? k },
     { title: 'Già nel prezzo?', rows: s.stats.by_priced_in, label: (k) => PRICED_IN[k] ?? k },
     { title: 'Per mercato', rows: s.stats.by_asset_class, label: (k) => (k === 'crypto' ? 'crypto' : 'azioni') },
+    { title: 'Per versione delle istruzioni', rows: s.stats.by_version ?? [], label: (k) => k },
   ]
   return (
-    <div className="mt-10 grid gap-8 sm:grid-cols-3">
+    <div className="mt-10 grid gap-8 sm:grid-cols-2 2xl:grid-cols-4">
       {blocks.map((b) => (
         <div key={b.title} className="min-w-0">
           <h3 className="text-[14px] font-semibold">{b.title}</h3>
