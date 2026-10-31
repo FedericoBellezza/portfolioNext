@@ -559,6 +559,13 @@ function OpenPredictions({ rows }) {
               Fatta a borsa chiusa: il prezzo d&apos;ingresso sarà quello di apertura del {dayMonth(p.entry_due)}.
             </p>
           )}
+          {p.last_confirmation && (
+            <p className={`mt-1.5 max-w-[75ch] border-l-2 border-[var(--tr-rule)] pl-3 text-[13px] leading-snug ${C.ink2}`}>
+              {p.confirmations === 1 ? 'Confermata' : `Confermata ${p.confirmations} volte`}, l&apos;ultima il{' '}
+              {dayMonth(p.last_confirmation.at)} (confidenza {conf(p.last_confirmation.confidence)}):{' '}
+              {p.last_confirmation.reasoning}
+            </p>
+          )}
         </li>
       ))}
     </ul>
@@ -585,7 +592,9 @@ function Closed({ p }) {
     <>
       {p.evaluated_at ? dayMonth(p.evaluated_at) : '—'}
       {p.closed_reason === 'superseded' && (
-        <span title="Chiusa in anticipo perché una previsione più recente sullo stesso titolo l'ha sostituita">, sostituita</span>
+        <span title="Chiusa in anticipo, ai prezzi di quel momento, perché il bot ha cambiato direzione sullo stesso titolo">
+          , cambio d&apos;idea
+        </span>
       )}
     </>
   )

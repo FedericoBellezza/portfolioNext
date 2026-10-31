@@ -43,7 +43,14 @@ export function demoStatus(now = Date.now()) {
     prediction(2, 'ETH/USD', 'bullish', 0.66, 7, 'crypto_specific', 'no', 'Afflussi netti negli ETF per il quinto giorno; il prezzo non ha ancora seguito BTC.', now - 0.6 * DAY),
     prediction(3, 'BA', 'bearish', 0.64, 14, 'legal_regulatory', 'partially', 'Nuova ispezione FAA sulle consegne: rischio di ulteriori ritardi nel trimestre.', now - 1.1 * DAY),
     prediction(4, 'JPM', 'neutral', 0.58, 5, 'macro', 'yes', "Dati sull'inflazione in linea: notizia già scontata dal mercato.", now - 1.4 * DAY),
-    prediction(5, 'LLY', 'bullish', 0.69, 15, 'product', 'no', 'Approvazione anticipata in Europa per la nuova formulazione.', now - 2.3 * DAY),
+    {
+      ...prediction(5, 'LLY', 'bullish', 0.69, 15, 'product', 'no', 'Approvazione anticipata in Europa per la nuova formulazione.', now - 2.3 * DAY),
+      confirmations: 1,
+      last_confirmation: {
+        at: iso(now - 0.9 * DAY), confidence: 0.67,
+        reasoning: 'Confermo il rialzo: gli analisti alzano i prezzi obiettivo, il titolo non ha ancora seguito.',
+      },
+    },
   ]
   const outcomes = [
     ['AAPL', 'bullish', 0.71, 3.4, 'earnings'], ['TSLA', 'bearish', 0.62, 2.1, 'management'],
