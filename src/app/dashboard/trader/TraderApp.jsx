@@ -240,6 +240,7 @@ export default function TraderApp() {
             </div>
             <Baselines status={s} />
             <Horizons status={s} />
+            <ModelComparison status={s} />
             <Breakdown status={s} />
           </Section>
 
@@ -765,6 +766,82 @@ function Horizons({ status: s }) {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+// "claude-opus-5-5" → "Opus 5.5"
+function modelName(id) {
+  if (!id) return '—'
+  const [family, ...version] = id.replace(/^claude-/, '').split('-')
+  return `${family.charAt(0).toUpperCase()}${family.slice(1)} ${version.join('.')}`
+}
+
+// Stessa notizia, stesso momento, due modelli: quello ufficiale e quello di confronto.
+function ModelComparison({ status: s }) {
+  const mc = s.stats.model_comparison
+  if (!mc?.pairs) return null
+  const a = modelName(mc.official_model)
+  const b = modelName(mc.challenger_model)
+  const rows = mc.by_horizon.filter((h) => h.n > 0)
+  return (
+    <div className="mt-10 min-w-0">
+      <h3 className="text-[15px] font-semibold">
+        {a} contro {b}
+      </h3>
+      <p className={`mt-0.5 max-w-[65ch] text-[13px] ${C.ink2}`}>
+        Sulle notizie importanti anche {b} analizza la stessa notizia, nello stesso momento. Le sue previsioni non
+        contano nelle statistiche: servono a capire se conviene cambiare modello. Finora {mc.pairs}{' '}
+        {mc.pairs === 1 ? 'coppia' : 'coppie'}, in disaccordo {mc.disagreements}{' '}
+        {mc.disagreements === 1 ? 'volta' : 'volte'}; con una direzione {a} {mc.official_directional}, {b}{' '}
+        {mc.challenger_directional}.
+      </p>
+      {rows.length ? (
+        <div className="mt-3 overflow-x-auto">
+          <table className="tr-num w-full min-w-[420px] text-[14px]">
+            <thead>
+              <tr className={`border-b ${C.rule} text-left text-[13px] ${C.ink2}`}>
+                <th className="py-1.5 pr-4 font-medium">Dopo</th>
+                <th className="py-1.5 pr-4 font-medium">Giuste {a}</th>
+                <th className="py-1.5 pr-4 font-medium">Giuste {b}</th>
+                <th className="py-1.5 text-right font-medium">Rendimento medio {a} / {b}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((h) => (
+                <tr key={h.days} className={`border-b ${C.rule}`}>
+                  <td className="py-1.5 pr-4">{h.days === 1 ? '1 giorno' : `${h.days} giorni`}</td>
+                  <td className="py-1.5 pr-4">
+                    {h.official_hits}/{h.n}
+                  </td>
+                  <td className="py-1.5 pr-4">
+                    {h.challenger_hits}/{h.n}
+                  </td>
+                  <td className="py-1.5 text-right">
+                    {pct(h.official_avg_signed_pct, 2)} / {pct(h.challenger_avg_signed_pct, 2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className={`mt-2 text-[13px] ${C.ink2}`}>I primi risultati arrivano il giorno dopo l&apos;ingresso.</p>
+      )}
+      {mc.recent_disagreements?.length > 0 && (
+        <ul className={`mt-4 divide-y divide-[var(--tr-rule)] border-y ${C.rule}`}>
+          {mc.recent_disagreements.slice(0, 4).map((d) => (
+            <li key={d.id} className="py-2.5 text-[13px] leading-snug">
+              <span className="font-semibold">{d.symbol}</span>{' '}
+              <span className={C.ink2}>
+                il {dayMonth(d.created_at)}: {a} {DIRECTION[d.official]?.label ?? d.official} {conf(d.official_confidence)},{' '}
+                {b} {DIRECTION[d.challenger]?.label ?? d.challenger} {conf(d.challenger_confidence)}
+              </span>
+              <p className="mt-0.5 max-w-[75ch]">{d.reasoning}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

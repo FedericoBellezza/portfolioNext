@@ -130,6 +130,23 @@ export function demoStatus(now = Date.now()) {
       by_priced_in: groups(directional, (r) => r.priced_in),
       by_asset_class: groups(evaluated, (r) => r.asset_class),
       daily,
+      model_comparison: {
+        official_model: 'claude-sonnet-5-5', challenger_model: 'claude-opus-5-5',
+        pairs: 9, disagreements: 3, official_directional: 4, challenger_directional: 5,
+        by_horizon: [
+          { days: 1, n: 9, official_hits: 5, challenger_hits: 6, official_avg_signed_pct: 0.4, challenger_avg_signed_pct: 0.7 },
+          { days: 3, n: 7, official_hits: 4, challenger_hits: 4, official_avg_signed_pct: 0.2, challenger_avg_signed_pct: 0.5 },
+          { days: 5, n: 5, official_hits: 3, challenger_hits: 3, official_avg_signed_pct: -0.3, challenger_avg_signed_pct: 0.1 },
+          { days: 10, n: 2, official_hits: 1, challenger_hits: 1, official_avg_signed_pct: 0.9, challenger_avg_signed_pct: 1.4 },
+        ],
+        recent_disagreements: [
+          {
+            id: 901, created_at: iso(now - 0.4 * DAY), symbol: 'BA', challenger: 'bearish', challenger_confidence: 0.61,
+            official: 'neutral', official_confidence: 0.5,
+            reasoning: 'Il comunicato alla SEC indica ritardi nelle consegne non ancora riflessi nelle stime degli analisti.',
+          },
+        ],
+      },
     },
     open_predictions: open,
     evaluated_predictions: evaluated,
