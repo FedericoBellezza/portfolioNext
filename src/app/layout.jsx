@@ -44,8 +44,8 @@ export const metadata = {
   category: "technology",
   icons: {
     icon: [
-      { url: "/logo.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
+      { url: "/logo.svg", type: "image/svg+xml" },
     ],
   },
   alternates: {
