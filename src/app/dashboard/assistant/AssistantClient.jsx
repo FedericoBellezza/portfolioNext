@@ -6,10 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import {
   ASSISTANT_BUCKET,
   ATTACHMENT_FOLDER,
+  DEFAULT_EFFORT,
+  DEFAULT_MODEL,
+  EFFORTS,
   MAX_ATTACHMENTS,
   MAX_ATTACHMENT_BYTES,
   MAX_FILE_BYTES,
   QUIZ_BATCH_SIZE,
+  MODELS,
   QUIZ_MAX_QUESTIONS,
   isAcceptedFile,
   sanitizeFileName,
@@ -70,6 +74,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
   // Contesto della chat: corsi, cartelle e documenti, anche mescolati. Tutto vuoto = tutti i materiali.
   const [scope, setScope] = useState(EMPTY_SCOPE)
   const [count, setCount] = useState('')
+  // Modello ed effort di Claude Code: valgono per chat, quiz e correzione. Si ricordano tra le visite.
+  const [generation, setGeneration] = useState({ model: DEFAULT_MODEL, effort: DEFAULT_EFFORT })
 
   // Allegati del prossimo messaggio: { id, name, size, status: 'uploading' | 'ready' | 'error', path?, message? }
   const [attachments, setAttachments] = useState([])
@@ -103,6 +109,27 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
       setExpanded(localStorage.getItem('assistant-expanded') === '1')
     } catch {}
   }, [])
+  useEffect(() => {
+    try {
+      const model = localStorage.getItem('assistant-model')
+      const effort = localStorage.getItem('assistant-effort')
+      setGeneration({
+        model: MODELS.some((item) => item.id === model) ? model : DEFAULT_MODEL,
+        effort: EFFORTS.some((item) => item.id === effort) ? effort : DEFAULT_EFFORT,
+      })
+    } catch {}
+  }, [])
+  function changeGeneration(patch) {
+    setGeneration((current) => {
+      const next = { ...current, ...patch }
+      try {
+        localStorage.setItem('assistant-model', next.model)
+        localStorage.setItem('assistant-effort', next.effort)
+      } catch {}
+      return next
+    })
+  }
+
   function toggleExpanded() {
     setExpanded((current) => {
       try {
@@ -425,6 +452,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
         course: [...scope.courses, ...scope.folders.map((folder) => `${folder.course} / ${folder.name}`)].join(', '),
         documentNames: scope.documentIds.map((id) => documents.find((doc) => doc.id === id)?.name).filter(Boolean),
         count,
+        model: generation.model,
+        effort: generation.effort,
       },
     })
     return copyToClipboard(report)
@@ -546,6 +575,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
         folders: scope.folders,
         documentIds: scope.documentIds,
         history,
+        model: generation.model,
+        effort: generation.effort,
       }
       const attachmentsPayload = sent.map((item) => ({ path: item.path, name: item.name }))
 
@@ -678,6 +709,8 @@ export default function AssistantClient({ initialDocuments, initialFolders, dbEr
           onReset={resetChat}
           mode={mode}
           onModeChange={setMode}
+          generation={generation}
+          onGenerationChange={changeGeneration}
           readyDocuments={readyDocuments}
           scope={scope}
           onScopeChange={setScope}

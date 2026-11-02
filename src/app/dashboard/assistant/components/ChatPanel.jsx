@@ -7,6 +7,7 @@ import {
   ArrowUp,
   Bug,
   Check,
+  Clock,
   Copy,
   FileDown,
   FileText,
@@ -24,15 +25,19 @@ import {
 import { Button } from '@/app/components/ui/button'
 import {
   ACCEPTED_EXTENSIONS,
+  EFFORTS,
   MAX_ATTACHMENTS,
   MAX_MESSAGE_CHARS,
+  MODELS,
   MODES,
   QUIZ_BATCH_SIZE,
   QUIZ_MAX_QUESTIONS,
   formatBytes,
+  isSlowGeneration,
 } from '@/lib/assistant/constants'
 import { copyToClipboard } from '@/lib/assistant/bugReport'
 import { downloadFile } from '@/lib/assistant/download'
+import AssistantSelect from './AssistantSelect'
 import ContextSelect from './ContextSelect'
 import Markdown from './Markdown'
 import QuizPlayer from './QuizPlayer'
@@ -155,7 +160,7 @@ function AssistantAvatar() {
   )
 }
 
-function Message({ message, onOpenSource, onQuizFinish, onQuizRetry, onAsk, busy }) {
+function Message({ message, onOpenSource, onQuizFinish, onQuizRetry, onAsk, busy, generation }) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -216,6 +221,7 @@ function Message({ message, onOpenSource, onQuizFinish, onQuizRetry, onAsk, busy
           <QuizPlayer
             quiz={message.quiz}
             busy={busy}
+            generation={generation}
             onOpenSource={onOpenSource}
             onFinish={(summary) => onQuizFinish?.(message.id, summary)}
             onAsk={onAsk}
@@ -323,6 +329,8 @@ export default function ChatPanel({
   onReset,
   mode,
   onModeChange,
+  generation,
+  onGenerationChange,
   readyDocuments,
   scope,
   onScopeChange,
@@ -414,6 +422,7 @@ export default function ChatPanel({
   const currentMode = MODES.find((item) => item.id === mode) ?? MODES[0]
   const showCount = mode === 'quiz'
   const showDocumentOptions = readyDocuments.length > 0 || showCount
+  const slow = isSlowGeneration(generation.model, generation.effort)
   const canSend = !loading && !uploading && Boolean(input.trim())
   const nearLimit = input.length > MAX_MESSAGE_CHARS * 0.8
 
@@ -517,8 +526,8 @@ export default function ChatPanel({
         </div>
       </div>
 
-      {showDocumentOptions && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-3 py-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--dashboard-card-border)] bg-[var(--dashboard-card-bg)] px-3 py-2">
+        {showDocumentOptions && (
           <ContextSelect
             documents={readyDocuments}
             scope={scope}
@@ -527,21 +536,50 @@ export default function ChatPanel({
             aria-label="Contesto: corsi, cartelle e documenti"
             className="w-auto min-w-44 max-w-72"
           />
-          {showCount && (
-            <input
-              type="number"
-              min={1}
-              max={QUIZ_MAX_QUESTIONS}
-              value={count}
-              onChange={(event) => onCountChange(event.target.value)}
-              placeholder="n. domande"
-              aria-label={`Numero di domande (massimo ${QUIZ_MAX_QUESTIONS})`}
-              title={`Fino a ${QUIZ_MAX_QUESTIONS} domande: oltre ${QUIZ_BATCH_SIZE} il quiz si genera a blocchi mentre rispondi`}
-              className={`${FIELD} w-24`}
-            />
+        )}
+        {showCount && (
+          <input
+            type="number"
+            min={1}
+            max={QUIZ_MAX_QUESTIONS}
+            value={count}
+            onChange={(event) => onCountChange(event.target.value)}
+            placeholder="n. domande"
+            aria-label={`Numero di domande (massimo ${QUIZ_MAX_QUESTIONS})`}
+            title={`Fino a ${QUIZ_MAX_QUESTIONS} domande: oltre ${QUIZ_BATCH_SIZE} il quiz si genera a blocchi mentre rispondi`}
+            className={`${FIELD} w-24`}
+          />
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          {slow && (
+            <span
+              title="Opus ed effort molto alto o massimo sono più lenti: quiz e riassunti lunghi possono richiedere qualche minuto"
+              className="inline-flex items-center gap-1 text-xs text-[var(--dashboard-text-muted)]"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Più lento</span>
+            </span>
           )}
+          <AssistantSelect
+            size="sm"
+            value={generation.model}
+            onChange={(model) => onGenerationChange({ model })}
+            options={MODELS.map((item) => ({ value: item.id, label: item.label }))}
+            aria-label="Modello"
+            title={MODELS.find((item) => item.id === generation.model)?.hint}
+            className="w-auto text-xs"
+          />
+          <AssistantSelect
+            size="sm"
+            value={generation.effort}
+            onChange={(effort) => onGenerationChange({ effort })}
+            options={EFFORTS.map((item) => ({ value: item.id, label: item.label }))}
+            aria-label="Effort: quanto ragiona prima di rispondere"
+            title="Effort: quanto ragiona prima di rispondere. Più alto = più accurato ma più lento"
+            className="w-auto text-xs"
+          />
         </div>
-      )}
+      </div>
 
       <div
         ref={scrollerRef}
@@ -601,6 +639,7 @@ export default function ChatPanel({
             onQuizRetry={onQuizRetry}
             onAsk={onAsk}
             busy={loading}
+            generation={generation}
           />
         ))}
 

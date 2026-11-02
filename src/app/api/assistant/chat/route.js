@@ -2,7 +2,7 @@ import { z } from "zod";
 import { AssistantError, errorResponse, requireOwner } from "@/lib/assistant/auth";
 import { loadAttachments } from "@/lib/assistant/attachments";
 import { findNamedDocuments, isCatalogQuestion } from "@/lib/assistant/catalog";
-import { MAX_ATTACHMENTS, MAX_MESSAGE_CHARS } from "@/lib/assistant/constants";
+import { EFFORTS, MAX_ATTACHMENTS, MAX_MESSAGE_CHARS, MODELS } from "@/lib/assistant/constants";
 import { parseFiles } from "@/lib/assistant/files";
 import { generate } from "@/lib/assistant/generate";
 import { DEFAULT_COUNTS, MAX_COUNTS, buildPrompts } from "@/lib/assistant/prompt";
@@ -16,9 +16,9 @@ import {
   searchPassages,
 } from "@/lib/assistant/retrieve";
 
-// Se il tuo piano Vercel lo permette puoi alzarlo (e ASSISTANT_TIMEOUT_MS di conseguenza):
-// quiz e riassunti lunghi possono richiedere più di un minuto.
-export const maxDuration = 60;
+// 300 s è il massimo del piano Hobby con Fluid compute: Opus o effort alti su quiz e riassunti lunghi
+// superano facilmente il minuto. generate() si ferma poco prima (ASSISTANT_TIMEOUT_MS, default 290 s).
+export const maxDuration = 300;
 
 // Il workflow n8n rifiuta system + prompt oltre 85000 caratteri.
 const TOTAL_CHAR_BUDGET = 80000;
@@ -34,6 +34,9 @@ const MODE_SETTINGS = {
 const BodySchema = z.object({
   message: z.string().trim().min(1).max(MAX_MESSAGE_CHARS),
   mode: z.enum(["ask", "summary", "quiz"]).default("ask"),
+  // Assenti o non validi: generate() usa i predefiniti.
+  model: z.enum(MODELS.map((item) => item.id)).optional().catch(undefined),
+  effort: z.enum(EFFORTS.map((item) => item.id)).optional().catch(undefined),
   // Contesto della domanda: corsi, cartelle e documenti, anche mescolati. Tutto vuoto = tutti i materiali.
   courses: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
   folders: z
@@ -75,7 +78,7 @@ export async function POST(request) {
       const issue = parsed.error.issues[0];
       throw new AssistantError(`Richiesta non valida: ${issue?.path.join(".") || "body"} ${issue?.message ?? ""}`, 422);
     }
-    const { message, mode, courses, folders, documentIds, history, exclude } = parsed.data;
+    const { message, mode, courses, folders, documentIds, history, exclude, model, effort } = parsed.data;
     const quizPart = mode === "quiz" ? (parsed.data.quizPart ?? null) : null;
     const settings = MODE_SETTINGS[mode];
     const count = Math.min(parsed.data.count ?? DEFAULT_COUNTS[mode] ?? 0, MAX_COUNTS[mode] ?? 20);
@@ -163,13 +166,20 @@ export async function POST(request) {
       built = buildPrompts({ ...promptInput, passages, truncated });
     }
 
-    const result = await generate({ system: built.system, prompt: built.prompt, signal: request.signal });
+    const result = await generate({
+      system: built.system,
+      prompt: built.prompt,
+      model,
+      effort,
+      signal: request.signal,
+    });
 
     console.log("[assistant] chat", {
       mode,
       passages: passages.length,
       attachments: attachments.length,
       model: result.model,
+      effort,
       durationMs: result.durationMs,
       costUsd: result.costUsd,
     });

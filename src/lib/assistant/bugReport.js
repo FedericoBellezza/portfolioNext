@@ -66,7 +66,7 @@ function formatMessage(message) {
  * @param {object} input
  * @param {Array} input.messages    messaggi della chat così come li tiene AssistantClient
  * @param {Array} input.documents   tutti i documenti dell'utente (anche non pronti)
- * @param {object} input.filters    { mode, course, documentNames, count }
+ * @param {object} input.filters    { mode, course, documentNames, count, model, effort }
  */
 export function buildBugReport({ messages, documents, filters }) {
   const when = new Date().toLocaleString("it-IT", { timeZone: "Europe/Rome" });
@@ -78,6 +78,7 @@ export function buildBugReport({ messages, documents, filters }) {
       ? `Documenti: ${filters.documentNames.join(", ")}`
       : `Documento: ${filters.documentNames?.[0] || "tutti i documenti"}`,
     filters.count ? `Quantità: ${filters.count}` : null,
+    filters.model ? `Modello: ${filters.model} · effort ${filters.effort}` : null,
   ].filter(Boolean);
 
   const chat = messages.length ? messages.map(formatMessage).join("\n\n") : "(nessun messaggio)";

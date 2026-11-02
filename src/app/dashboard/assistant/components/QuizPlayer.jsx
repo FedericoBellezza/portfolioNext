@@ -101,7 +101,7 @@ function AnswerBlock({ label, text, code = false, tone = 'text-[var(--dashboard-
  * quiz: { questions, expected, pending, error }. Un quiz lungo arriva a blocchi: finché `pending` è vero
  * `questions` continua a crescere fino a `expected`.
  */
-export default function QuizPlayer({ quiz, busy = false, onOpenSource, onFinish, onAsk, onRetryLoad }) {
+export default function QuizPlayer({ quiz, busy = false, generation, onOpenSource, onFinish, onAsk, onRetryLoad }) {
   // Un nuovo giro ("Rifai gli errori") lavora su un sottoinsieme; null = tutte le domande del quiz.
   const [subset, setSubset] = useState(null)
   const [phase, setPhase] = useState('play') // play | grading | results
@@ -170,7 +170,11 @@ export default function QuizPlayer({ quiz, busy = false, onOpenSource, onFinish,
         const response = await fetch('/api/assistant/quiz/grade', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: group.map((item) => gradeRequestItem(item, answers[item.id])) }),
+          body: JSON.stringify({
+            items: group.map((item) => gradeRequestItem(item, answers[item.id])),
+            model: generation?.model,
+            effort: generation?.effort,
+          }),
         })
         const data = await response.json().catch(() => null)
         if (!response.ok || !data?.ok) throw new Error(data?.error ?? `Errore ${response.status}`)

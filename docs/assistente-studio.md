@@ -31,7 +31,7 @@ Browser ─▶ /api/assistant/chat ─▶ ricerca ibrida (vettori + full-text, R
    | `OWNER_EMAIL` | la tua email di login (nessun fallback: se manca le route rispondono 500) |
    | `N8N_ASSISTANT_URL` | `https://n8n.federicobellezza-dev.com/webhook/assistant-generate` |
    | `N8N_ASSISTANT_SECRET` | il valore (campo *Value*) della credenziale *Header Auth* del webhook |
-   | `ASSISTANT_TIMEOUT_MS` | opzionale, default 55000 |
+   | `ASSISTANT_TIMEOUT_MS` | opzionale, default 290000 (sotto i 300 s delle route) |
    | `ASSISTANT_VISION_MODEL` | opzionale, default `gpt-4o-mini`: modello per OCR e figure |
 
 4. Deploy, poi apri `/dashboard/assistant` (link "Assistente" nella barra).
@@ -75,27 +75,27 @@ In modalità Quiz il modello non scrive testo ma un JSON di domande (`choice`, `
 - **Esercizi di codice** (`type: "code"`): lo studente scrive la soluzione in un campo monospace (Tab = rientro, Esc esce dal campo). Il codice **non viene eseguito**: il modello lo confronta con la soluzione modello giudicando la logica, non lo stile. Qualunque domanda può avere uno `snippet` di codice da leggere ("cosa stampa?", "dov'è l'errore?"). I tipi pratici compaiono solo se i materiali o la richiesta riguardano programmazione.
 - **Simulazione d'esame (fino a 40 domande)**: una sola generazione sta sotto il minuto solo per poche domande, quindi `count` è il totale e il client lo divide in blocchi da ~8 (`QUIZ_BATCH_SIZE`, `QUIZ_MAX_QUESTIONS` in `constants.js`). Il primo blocco appare subito; gli altri si generano uno alla volta mentre si risponde (se si arriva in fondo prima, il pulsante mostra "Genero altre domande…"). Ogni blocco riceve `quizPart` (`{ index, total }`), che fa leggere una parte diversa dei materiali (documenti scelti: la fetta i-esima in ordine; altrimenti la "pagina" i-esima dei risultati di ricerca), e `exclude` (le domande già fatte) per non ripetersi. Se un blocco fallisce il quiz si ferma e compare "Riprova". Con un allegato il quiz resta in un solo blocco, perché gli allegati si leggono una volta sola. "Nuova chat" ferma i blocchi ancora in generazione.
 - Il risultato non è salvato nel database: vive nel messaggio, e il riepilogo (percentuale e domande da rivedere) entra nel testo del messaggio così l'assistente lo vede nei turni successivi.
-- Se il modello non produce un JSON utilizzabile la route risponde con un errore e basta riprovare (non c'è un retry automatico: con `maxDuration = 60` non ci sarebbe il tempo).
+- Se il modello non produce un JSON utilizzabile la route risponde con un errore e basta riprovare (non c'è un retry automatico).
 
 ## Configurazione e limiti
 
-- **Modello ed effort** sono costanti nel nodo Code "Prepara Comando" del workflow (`MODEL`, `EFFORT`).
+- **Modello ed effort** si scelgono dai due menu sopra la chat (Sonnet 5.5 / Opus 5.5 / Haiku 5.5; effort da basso a massimo) e restano salvati nel browser. Valgono per chat, quiz a blocchi e correzione delle risposte scritte. Il portfolio li manda al webhook come `model` ed `effort`; il nodo "Prepara Comando" accetta solo i valori della sua lista (`MODELS`, `EFFORTS`) e in tutti gli altri casi usa Sonnet 5.5 + medium. **Aggiungendo un modello va aggiornata sia `MODELS` in `src/lib/assistant/constants.js` sia la lista nel workflow.** Fable 5.1 non è in elenco: sul server non è incluso nell'abbonamento.
 - **Dimensione del prompt**: il workflow rifiuta system + prompt oltre 85000 caratteri (un singolo argomento di riga di comando su Linux non supera ~128 KiB). La route limita il contesto di conseguenza.
-- **Durata**: le route hanno `maxDuration = 60`. Se il tuo piano Vercel lo consente, alzalo in `chat/route.js` e `ingest/route.js` e imposta `ASSISTANT_TIMEOUT_MS` (`visuals/route.js` elabora lotti da 8 elementi, 4-12 secondi nelle prove: di solito non serve). Quiz e riassunti lunghi possono avvicinarsi al limite.
+- **Durata**: `chat/route.js` e `quiz/grade/route.js` hanno `maxDuration = 300` (il massimo del piano Hobby con Fluid compute); `generate()` si ferma a 290 s e sul server `claude` viene chiuso a 295 s (`timeout` nel comando). Con Opus o effort molto alto/massimo la chat mostra "Più lento". `ingest` e `visuals` restano a 60 s.
 - **Niente streaming**: la risposta arriva intera a generazione finita.
 - **Limiti dell'abbonamento** condivisi con gli altri workflow che usano Claude Code (bot Telegram, analisi lead delle 3 di notte).
 - n8n salva prompt e risposte nelle esecuzioni: attiva la pulizia automatica dei dati di esecuzione.
 
 ## Cambiare il motore di generazione
 
-Tutto il testo passa da `generate({ system, prompt })` in `src/lib/assistant/generate.js`. Per usare altro (per esempio le API Anthropic) basta riscrivere quella funzione: deve restituire `{ text, model, costUsd, durationMs }`.
+Tutto il testo passa da `generate({ system, prompt, model, effort })` in `src/lib/assistant/generate.js`. Per usare altro (per esempio le API Anthropic) basta riscrivere quella funzione: deve restituire `{ text, model, costUsd, durationMs }`.
 
 ## Test rapido del webhook
 
 ```bash
 curl -s -X POST "$N8N_ASSISTANT_URL" \
   -H "X-Webhook-Secret: $N8N_ASSISTANT_SECRET" -H "Content-Type: application/json" \
-  -d '{"system":"Rispondi in italiano.","prompt":"Dimmi ciao in una frase."}'
-# → {"ok":true,"httpStatus":200,"text":"…","model":"claude-sonnet-5",…}
+  -d '{"system":"Rispondi in italiano.","prompt":"Dimmi ciao in una frase.","model":"claude-haiku-5-5","effort":"low"}'
+# → {"ok":true,"httpStatus":200,"text":"…","model":"claude-haiku-5-5","effort":"low",…}
 ```
 Senza il segreto n8n risponde 403.

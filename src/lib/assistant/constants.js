@@ -43,6 +43,29 @@ export const MODES = [
   { id: "quiz", label: "Quiz", hint: "Quiz interattivo: una domanda alla volta, correzione e punteggio alla fine" },
 ];
 
+// Modello ed effort di Claude Code, scelti dalla chat. Il workflow n8n ha la stessa lista e
+// rifiuta valori diversi (finiscono in un comando SSH): aggiungendo un modello va aggiornato anche lì.
+// Fable non c'è: sul server non è incluso nell'abbonamento e richiede crediti a parte.
+export const MODELS = [
+  { id: "claude-sonnet-5-5", label: "Sonnet 5.5", hint: "Equilibrato: buono per quasi tutto" },
+  { id: "claude-opus-5-5", label: "Opus 5.5", hint: "Il più capace, più lento" },
+  { id: "claude-haiku-5-5", label: "Haiku 5.5", hint: "Il più veloce, per domande semplici" },
+];
+export const EFFORTS = [
+  { id: "low", label: "Effort basso" },
+  { id: "medium", label: "Effort medio" },
+  { id: "high", label: "Effort alto" },
+  { id: "xhigh", label: "Effort molto alto" },
+  { id: "max", label: "Effort massimo" },
+];
+export const DEFAULT_MODEL = "claude-sonnet-5-5";
+export const DEFAULT_EFFORT = "medium";
+
+// Combinazioni che su quiz e riassunti lunghi possono avvicinarsi al limite di durata delle route.
+export function isSlowGeneration(model, effort) {
+  return model === "claude-opus-5-5" || effort === "xhigh" || effort === "max";
+}
+
 export const MAX_MESSAGE_CHARS = 4000;
 
 // Un quiz lungo (simulazione d'esame) si genera a blocchi: una singola generazione sta sotto il minuto

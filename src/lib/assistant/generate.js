@@ -1,13 +1,17 @@
 import { AssistantError } from "./auth";
+import { DEFAULT_EFFORT, DEFAULT_MODEL, EFFORTS, MODELS } from "./constants";
 
 // Unico punto in cui il testo viene generato. Oggi: webhook n8n -> SSH -> `claude -p` sul server
 // (abbonamento, nessuna API Anthropic). Per passare ad altro basta riscrivere questa funzione:
-// riceve { system, prompt } e restituisce { text, model, costUsd, durationMs }.
+// riceve { system, prompt, model, effort } e restituisce { text, model, costUsd, durationMs }.
 
-// Sotto il maxDuration delle route, così l'errore è nostro e pulito invece di un timeout della piattaforma.
-const DEFAULT_TIMEOUT_MS = 55000;
+// Sotto il maxDuration delle route (300 s), così l'errore è nostro e pulito invece di un timeout della piattaforma.
+const DEFAULT_TIMEOUT_MS = 290000;
 
-export async function generate({ system, prompt, signal }) {
+const MODEL_IDS = new Set(MODELS.map((item) => item.id));
+const EFFORT_IDS = new Set(EFFORTS.map((item) => item.id));
+
+export async function generate({ system, prompt, model, effort, signal }) {
   const url = process.env.N8N_ASSISTANT_URL;
   const secret = process.env.N8N_ASSISTANT_SECRET;
   if (!url || !secret) {
@@ -22,7 +26,12 @@ export async function generate({ system, prompt, signal }) {
     response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Webhook-Secret": secret },
-      body: JSON.stringify({ system, prompt }),
+      body: JSON.stringify({
+        system,
+        prompt,
+        model: MODEL_IDS.has(model) ? model : DEFAULT_MODEL,
+        effort: EFFORT_IDS.has(effort) ? effort : DEFAULT_EFFORT,
+      }),
       signal: combined,
       cache: "no-store",
     });
