@@ -33,9 +33,9 @@ export function demoCopyStatus() {
     ['CACI', 'Lisa McClain', 512, 0.008, 9],
     ['SNOW', 'Maria Elvira Salazar', 214, 0.051, 18],
   ].map(([symbol, member, price, r, d]) => ({
-    symbol, qty: 2500 / price, cost_usd: 2500, price, value_usd: 2500 * (1 + r), pnl_pct: r * 100,
+    symbol, qty: 1250 / price, cost_usd: 1250, price, value_usd: 1250 * (1 + r), pnl_pct: r * 100,
     opened_at: iso(now - d * DAY), member, source: '20035669', price_at: iso(now), target_pct: null,
-    weight_pct: ((2500 * (1 + r)) / 50_200) * 100,
+    weight_pct: ((1250 * (1 + r)) / 50_100) * 100,
   }))
   const sum = (rows) => rows.reduce((a, p) => a + p.value_usd, 0)
   const fundValue = sum(fundPositions) + 50_000 * 0.149
@@ -68,7 +68,7 @@ export function demoCopyStatus() {
     config: {
       fund_share_pct: 50, min_order_usd: 5, max_orders_per_day: 40,
       fund: { name: 'Berkshire Hathaway', cik: 1067983, max_holdings: 20, max_weight_pct: 25, rebalance_band_pct: 1 },
-      congress: { max_positions: 20, hold_days: 90, sell_on_member_sale: true, min_amount_usd: 15001, max_trade_age_days: 60, members: [] },
+      congress: { max_positions: 40, hold_days: 0, sell_on_member_sale: true, partial_sale_fraction: 0.5, replace_oldest_when_full: true, min_amount_usd: 15001, max_trade_age_days: 60, members: [] },
     },
     sleeves: [
       { name: 'fund', label: 'Copia del fondo', capital_usd: 50_000, cash_usd: 7450, invested_usd: sum(fundPositions), value_usd: fundValue, realized_usd: 0, return_pct: (fundValue / 50_000 - 1) * 100, positions: fundPositions },
@@ -100,8 +100,8 @@ export function demoCopyStatus() {
       recent_sells: [],
     },
     orders: [
-      { id: 3, created_at: iso(now - 9 * DAY), sleeve: 'congress', symbol: 'SNOW', side: 'buy', notional: 2500, qty: null, status: 'filled', filled_qty: 11.68, filled_avg_price: 214, reason: 'acquisto dichiarato da Maria Elvira Salazar' },
-      { id: 2, created_at: iso(now - 15 * DAY), sleeve: 'congress', symbol: 'NVDA', side: 'buy', notional: 2500, qty: null, status: 'filled', filled_qty: 14.12, filled_avg_price: 177, reason: 'acquisto dichiarato da Cleo Fields' },
+      { id: 3, created_at: iso(now - 9 * DAY), sleeve: 'congress', symbol: 'SNOW', side: 'buy', notional: 1250, qty: null, status: 'filled', filled_qty: 11.68, filled_avg_price: 214, reason: 'acquisto dichiarato da Maria Elvira Salazar' },
+      { id: 2, created_at: iso(now - 15 * DAY), sleeve: 'congress', symbol: 'NVDA', side: 'buy', notional: 1250, qty: null, status: 'filled', filled_qty: 14.12, filled_avg_price: 177, reason: 'acquisto dichiarato da Cleo Fields' },
       { id: 1, created_at: iso(start), sleeve: 'fund', symbol: 'AAPL', side: 'buy', notional: 11550, qty: null, status: 'filled', filled_qty: 51.8, filled_avg_price: 223, reason: 'peso obiettivo 23.1% (ora 0.0%)' },
     ],
     history,

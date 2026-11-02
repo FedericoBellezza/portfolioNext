@@ -51,6 +51,21 @@ async function send(command) {
   }
 }
 
+// Regola di uscita della quota Congresso, a parole (config.congress di copybot/status.py).
+function exitRule(c) {
+  const parts = []
+  if (c.sell_on_member_sale) {
+    parts.push('si tiene finché lo stesso deputato non dichiara di aver venduto')
+    if (c.partial_sale_fraction > 0 && c.partial_sale_fraction < 1) {
+      parts.push(`(se vende solo in parte, il bot vende il ${Math.round(c.partial_sale_fraction * 100)}%)`)
+    }
+  }
+  if (c.hold_days) parts.push(`${parts.length ? 'o al massimo' : 'si tiene'} ${c.hold_days} giorni`)
+  if (!parts.length) parts.push('nessuna regola di uscita')
+  if (c.replace_oldest_when_full) parts.push('; a posti pieni il nuovo acquisto prende il posto della posizione più vecchia')
+  return parts.join(' ').replace(' ;', ';')
+}
+
 const money = (v) => (v === null || v === undefined ? '—' : usd(v, 0))
 const amountRange = (lo, hi) => (lo == null ? '—' : hi == null ? `oltre ${usd(lo, 0)}` : `${usd(lo, 0)} – ${usd(hi, 0)}`)
 const days = (from, now) => Math.max(0, Math.floor((now - new Date(from).getTime()) / 86_400_000))
@@ -472,8 +487,7 @@ function CongressPanel({ status: s, sleeve, now }) {
       <p className={`mb-4 text-[14px] ${C.ink2}`}>
         {c.counts.ptr_parsed} dichiarazioni lette{c.counts.ptr_unreadable ? `, ${c.counts.ptr_unreadable} scansionate e saltate` : ''}
         {c.checked_at && <>, ultimo controllo {ago(c.checked_at, now)}</>}. Ogni acquisto copiato occupa un posto da{' '}
-        {sleeve ? money(sleeve.capital_usd / s.config.congress.max_positions) : '—'} e si vende dopo {s.config.congress.hold_days} giorni o
-        quando lo stesso deputato dichiara la vendita.
+        {sleeve ? money(sleeve.capital_usd / s.config.congress.max_positions) : '—'}: {exitRule(s.config.congress)}.
       </p>
       {sleeve && <SleeveSummary sleeve={sleeve} />}
 
@@ -676,8 +690,8 @@ function Rules({ status: s }) {
           {f.rebalance_band_pct} {f.rebalance_band_pct === 1 ? 'punto' : 'punti'} di scarto.
         </li>
         <li>
-          Congresso: acquisti da {usd(c.min_amount_usd, 0)} in su, fatti da meno di {c.max_trade_age_days} giorni, {c.max_positions} posti,
-          vendita dopo {c.hold_days} giorni{c.sell_on_member_sale ? ' o alla vendita dichiarata dallo stesso deputato' : ''}.
+          Congresso: acquisti da {usd(c.min_amount_usd, 0)} in su, fatti da meno di {c.max_trade_age_days} giorni, {c.max_positions} posti;{' '}
+          {exitRule(c)}.
           {c.members.length > 0 && <> Solo: {c.members.join(', ')}.</>}
         </li>
         <li>
