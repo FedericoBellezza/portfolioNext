@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-// Grafici SVG con tooltip al passaggio e vista tabella alternativa.
+// Grafici SVG a serie singola, con tooltip al passaggio e vista tabella alternativa.
 
 function useWidth() {
   const ref = useRef(null)
@@ -271,133 +271,6 @@ export function BarChart({ title, caption, points, format, reference, max, heigh
             <div className="text-[var(--tr-ink-2)]">{points[hover].short ?? points[hover].label}</div>
             <div className="tr-num font-semibold">{format(points[hover].value)}</div>
             {points[hover].detail && <div className="text-[var(--tr-ink-2)]">{points[hover].detail}</div>}
-          </Tooltip>
-        )}
-      </div>
-    </ChartFrame>
-  )
-}
-
-/**
- * Più linee sullo stesso asse (es. rendimento di due strategie e del benchmark), con legenda.
- * series: [{ key, label, color, dashed }]; rows: [{ label, short, values: { [key]: number | null } }].
- */
-export function MultiLineChart({ title, caption, series, rows, format, height = 200 }) {
-  const [ref, width] = useWidth()
-  const [hover, setHover] = useState(null)
-  const table = {
-    head: ['Giorno', ...series.map((s) => s.label)],
-    rows: rows.map((r) => [r.label, ...series.map((s) => (r.values[s.key] == null ? '—' : format(r.values[s.key])))]),
-  }
-
-  const legend = (
-    <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--tr-ink-2)]">
-      {series.map((s) => (
-        <li key={s.key} className="inline-flex items-center gap-1.5">
-          <svg aria-hidden width="18" height="6">
-            <line x1="1" x2="17" y1="3" y2="3" stroke={s.color} strokeWidth="2" strokeDasharray={s.dashed ? '4 3' : undefined} />
-          </svg>
-          {s.label}
-        </li>
-      ))}
-    </ul>
-  )
-
-  if (rows.length < 2) {
-    return (
-      <ChartFrame title={title} caption={caption} table={table}>
-        {legend}
-        <p className="text-[13px] text-[var(--tr-ink-2)]">Servono almeno due giorni di dati per disegnare l&apos;andamento.</p>
-      </ChartFrame>
-    )
-  }
-
-  const values = rows.flatMap((r) => series.map((s) => r.values[s.key])).filter((v) => v != null)
-  const ticks = niceTicks(Math.min(0, ...values), Math.max(0, ...values))
-  const M = margins(ticks.map(format))
-  const lo = ticks[0]
-  const hi = ticks[ticks.length - 1]
-  const iw = Math.max(0, width - M.left - M.right)
-  const ih = height - M.top - M.bottom
-  const x = (i) => M.left + (i / (rows.length - 1)) * iw
-  const y = (v) => M.top + ih - ((v - lo) / (hi - lo)) * ih
-  const labelEvery = Math.ceil(rows.length / Math.max(2, Math.floor(iw / 70)))
-  const path = (key) =>
-    rows
-      .map((r, i) => [i, r.values[key]])
-      .filter(([, v]) => v != null)
-      .map(([i, v], j) => `${j ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`)
-      .join('')
-
-  const onMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const i = Math.round(((e.clientX - rect.left - M.left) / iw) * (rows.length - 1))
-    setHover(Math.min(rows.length - 1, Math.max(0, i)))
-  }
-  const last = rows[rows.length - 1]
-
-  return (
-    <ChartFrame title={title} caption={caption} table={table}>
-      {legend}
-      <div ref={ref} className="relative" style={{ height }}>
-        {width > 0 && (
-          <svg
-            width={width}
-            height={height}
-            role="img"
-            aria-label={`${title}: ${series.map((s) => `${s.label} ${last.values[s.key] == null ? '—' : format(last.values[s.key])}`).join(', ')}`}
-            onPointerMove={onMove}
-            onPointerLeave={() => setHover(null)}
-            className="touch-pan-y"
-          >
-            {ticks.map((t) => (
-              <g key={t}>
-                <line x1={M.left} x2={width - M.right} y1={y(t)} y2={y(t)} stroke={t === 0 ? 'var(--tr-axis)' : 'var(--tr-grid)'} strokeWidth={1} />
-                <text x={M.left - 6} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill="var(--tr-muted)" className="tr-num">
-                  {format(t)}
-                </text>
-              </g>
-            ))}
-            {rows.map((r, i) =>
-              (rows.length - 1 - i) % labelEvery === 0 ? (
-                <text key={r.label} x={x(i)} y={height - 6} textAnchor="middle" fontSize={11} fill="var(--tr-muted)" className="tr-num">
-                  {r.short ?? r.label}
-                </text>
-              ) : null,
-            )}
-            {series.map((s) => (
-              <path
-                key={s.key}
-                d={path(s.key)}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2}
-                strokeDasharray={s.dashed ? '5 4' : undefined}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-              />
-            ))}
-            {hover !== null && (
-              <g>
-                <line x1={x(hover)} x2={x(hover)} y1={M.top} y2={M.top + ih} stroke="var(--tr-axis)" strokeWidth={1} />
-                {series.map((s) =>
-                  rows[hover].values[s.key] == null ? null : (
-                    <circle key={s.key} cx={x(hover)} cy={y(rows[hover].values[s.key])} r={4} fill={s.color} stroke="var(--tr-surface)" strokeWidth={2} />
-                  ),
-                )}
-              </g>
-            )}
-          </svg>
-        )}
-        {hover !== null && width > 0 && (
-          <Tooltip x={x(hover)} y={M.top + 8} width={width}>
-            <div className="text-[var(--tr-ink-2)]">{rows[hover].label}</div>
-            {series.map((s) => (
-              <div key={s.key} className="tr-num flex items-center gap-1.5">
-                <span aria-hidden className="size-2 rounded-full" style={{ background: s.color }} />
-                {s.label}: <span className="font-semibold">{rows[hover].values[s.key] == null ? '—' : format(rows[hover].values[s.key])}</span>
-              </div>
-            ))}
           </Tooltip>
         )}
       </div>
