@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { ok: boolean; message: string } | null;
 
+const COMPENSATED_NOTE = "Pagato in compensazione con un credito d'imposta";
+
 const BUCKET = "fiscale-f24";
 const MAX_BYTES = 5 * 1024 * 1024;
 const EXT: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png" };
@@ -71,6 +73,8 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
   });
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Dati non validi." };
   const { key, paidAt, amount, reference } = parsed.data;
+  // F24 "a zero": the tax is paid, but with a credit instead of cash.
+  const notes = formData.get("compensated") === "on" ? COMPENSATED_NOTE : null;
 
   const target = obligationTarget(key);
   if (!target) return { ok: false, message: "Adempimento sconosciuto." };
@@ -93,6 +97,7 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
           f24_causale: target.causale,
           f24_reference: reference ?? null,
           receipt_path: path,
+          notes,
         })
       : ctx.db.from("tax_payments").insert({
           paid_at: paidAt,
@@ -102,6 +107,7 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
           amount: euro,
           f24_reference: reference ?? null,
           receipt_path: path,
+          notes,
         });
   const { error } = await insert;
   if (error) {

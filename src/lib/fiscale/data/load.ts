@@ -108,6 +108,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       amount: toCents(r.amount as string),
       reference: str(r.f24_reference),
       receiptPath: str(r.receipt_path),
+      compensated: String(r.notes ?? "").startsWith("Pagato in compensazione"),
     })),
     taxPayments: (taxes.data ?? []).map((r: Row) => ({
       id: String(r.id),
@@ -117,6 +118,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       tributeCode: str(r.tribute_code),
       amount: toCents(r.amount as string),
       receiptPath: str(r.receipt_path),
+      compensated: String(r.notes ?? "").startsWith("Pagato in compensazione"),
     })),
     expenses: (expenses.data ?? []).map((r: Row) => ({
       id: String(r.id),

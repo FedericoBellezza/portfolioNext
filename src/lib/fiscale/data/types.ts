@@ -48,6 +48,7 @@ export interface InpsPaymentRow extends InpsPayment {
   id: string;
   reference: string | null;
   receiptPath: string | null;
+  compensated?: boolean;
 }
 
 export interface TaxPaymentRow {
@@ -58,6 +59,7 @@ export interface TaxPaymentRow {
   tributeCode: string | null;
   amount: Cents;
   receiptPath: string | null;
+  compensated?: boolean;
 }
 
 export interface ExpenseRow {

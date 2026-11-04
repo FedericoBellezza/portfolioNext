@@ -133,6 +133,15 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
             className="file:mr-3 file:rounded-md file:border-0 file:bg-[var(--fi-fill)] file:px-3 file:py-1 file:text-sm"
           />
         </div>
+        <label className="flex items-start gap-2 text-sm sm:col-span-4">
+          <input type="checkbox" name="compensated" className="mt-0.5" />
+          <span>
+            Pagato in compensazione
+            <span className="block text-xs text-[var(--fi-muted)]">
+              F24 a zero perché coperto da un credito (es. IRPEF): inserisci comunque l&apos;importo del tributo.
+            </span>
+          </span>
+        </label>
         <div className="sm:col-span-3">
           <label htmlFor={`${id}-ref`} className={fieldLabel}>Protocollo o nota (facoltativo)</label>
           <input id={`${id}-ref`} name="reference" maxLength={100} />

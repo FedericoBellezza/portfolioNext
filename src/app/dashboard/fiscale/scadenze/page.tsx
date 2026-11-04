@@ -82,10 +82,10 @@ export default async function TassePage() {
   const upcoming = m.schedule.filter((i) => i.dueDate >= asOf && (i.amount > 0 || i.unknownAmount));
   const past = m.schedule.filter((i) => i.dueDate < asOf && (i.amount > 0 || m.paid.has(i.key)));
 
-  type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null };
+  type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null; compensated?: boolean };
   const payments: Payment[] = [
-    ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath })),
-    ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath })),
+    ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
+    ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
   ]
     .filter((p) => yearOf(p.date) === m.year)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -154,7 +154,10 @@ export default async function TassePage() {
                 return (
                   <li key={p.id} className="flex items-baseline gap-4 py-2.5">
                     <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
-                    <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {p.label}
+                      {p.compensated && <span className="ml-2 text-xs text-[var(--fi-muted)]">in compensazione</span>}
+                    </span>
                     {href && (
                       <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--fi-action)] underline-offset-4 hover:underline">
                         Ricevuta

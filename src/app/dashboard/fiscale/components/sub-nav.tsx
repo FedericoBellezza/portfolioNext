@@ -12,6 +12,7 @@ const TABS = [
     label: "Tasse",
     match: ["/dashboard/fiscale/scadenze", "/dashboard/fiscale/inps-spese", "/dashboard/fiscale/export"],
   },
+  { href: "/dashboard/fiscale/documenti", label: "Documenti", match: ["/dashboard/fiscale/documenti"] },
 ];
 
 export function SubNav() {
