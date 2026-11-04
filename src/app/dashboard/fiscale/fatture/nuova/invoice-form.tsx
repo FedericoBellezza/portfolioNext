@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import type { ClientRow } from "@/lib/fiscale/data/types";
 import { computeInvoiceTotals } from "@/lib/fiscale/invoice-math";
@@ -94,6 +95,15 @@ export function InvoiceForm({
                   </option>
                 ))}
               </select>
+              {clients.length === 0 && (
+                <p className="mt-1.5 text-xs text-[var(--fi-ink-2)]">
+                  Nessun cliente in anagrafica.{" "}
+                  <Link href="/dashboard/fiscale/clienti" className="text-[var(--fi-action)] underline">
+                    Aggiungine uno
+                  </Link>
+                  .
+                </p>
+              )}
               {client && (
                 <p className="mt-1.5 text-xs text-[var(--fi-muted)]">
                   Recapito SdI: {client.pec ? `PEC ${client.pec}` : `codice ${client.sdiCode}`} · {client.city}

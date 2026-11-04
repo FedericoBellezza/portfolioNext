@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { FileUp, TriangleAlert } from "lucide-react";
 import type { F24Item } from "@/lib/fiscale/tax-calculator";
 import { dismissObligation, registerF24, type ActionState } from "../obligations-actions";
@@ -74,7 +74,15 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
 
   return (
     <div className="mt-3 rounded-lg bg-white/60 p-4">
-      <form action={action} className="grid gap-3 sm:grid-cols-4">
+      <form
+        className="grid gap-3 sm:grid-cols-4"
+        onSubmit={(e) => {
+          // Manual submit keeps date, amount and file selected if the server rejects it.
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          startTransition(() => action(fd));
+        }}
+      >
         <input type="hidden" name="key" value={item.key} />
         <div>
           <label htmlFor={`${id}-date`} className={fieldLabel}>Pagato il</label>
