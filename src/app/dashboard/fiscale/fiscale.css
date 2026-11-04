@@ -53,6 +53,15 @@
   font-family: var(--font-sans);
 }
 
+/* The site background is dark: while the fiscal section is on screen, the page
+   behind it (scroll bounce, short pages) matches its light ground instead. */
+html:has(.fi),
+html:has(.fi) body {
+  background-color: #f4f5f9;
+  color-scheme: light;
+  overscroll-behavior-y: none;
+}
+
 .fi ::selection {
   background: color-mix(in srgb, var(--fi-action) 22%, transparent);
   color: var(--fi-ink);
