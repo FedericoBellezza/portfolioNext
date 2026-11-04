@@ -5,15 +5,9 @@
 
 import { z } from "zod";
 
-export const CLIENT_KINDS = ["company", "individual", "public_administration", "foreign"] as const;
-export type ClientKind = (typeof CLIENT_KINDS)[number];
+import { CLIENT_KINDS, type ClientKind } from "./client-kinds";
 
-export const CLIENT_KIND_LABEL: Record<ClientKind, string> = {
-  company: "Azienda o professionista con P.IVA",
-  individual: "Privato (persona fisica)",
-  public_administration: "Pubblica amministrazione",
-  foreign: "Cliente estero",
-};
+export { CLIENT_KIND_LABEL, CLIENT_KINDS, type ClientKind } from "./client-kinds";
 
 /** Italian VAT number: 11 digits with the Luhn-like check digit. */
 export function isValidItalianVat(vat: string): boolean {

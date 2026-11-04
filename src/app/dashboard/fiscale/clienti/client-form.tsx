@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { UserPlus } from "lucide-react";
-import { CLIENT_KIND_LABEL, CLIENT_KINDS, type ClientKind } from "@/lib/fiscale/clients";
+import { CLIENT_KIND_LABEL, CLIENT_KINDS, type ClientKind } from "@/lib/fiscale/client-kinds";
 import { btn, cx } from "../components/ui";
 import { createClientAction, type ClientFormState } from "./actions";
 
