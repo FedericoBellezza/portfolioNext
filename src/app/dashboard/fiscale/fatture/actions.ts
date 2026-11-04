@@ -107,5 +107,5 @@ export async function createDraftInvoice(_prev: DraftState, formData: FormData):
     return { ok: false, message: "Errore nel salvataggio delle righe." };
   }
 
-  redirect("/dashboard/fiscale/fatture");
+  redirect(`/dashboard/fiscale/fatture/${invoice.id}`);
 }

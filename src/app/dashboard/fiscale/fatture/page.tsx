@@ -9,7 +9,7 @@ export const metadata = { title: "Fatture | Fiscale" };
 
 type Tone = "neutral" | "outline" | "critical" | "good";
 const SDI: Record<SdiStatus, { label: string; tone: Tone }> = {
-  not_sent: { label: "Non inviata", tone: "outline" },
+  not_sent: { label: "Da inviare", tone: "outline" },
   queued: { label: "In coda", tone: "outline" },
   sent: { label: "Inviata", tone: "neutral" },
   delivered: { label: "Consegnata", tone: "good" },
@@ -68,7 +68,9 @@ export default async function FatturePage() {
                 {data.invoices.map((i) => (
                   <tr key={i.id} className="hover:bg-white">
                     <td className={`${td} fi-num pl-5 font-medium`}>
-                      {i.status === "draft" ? <Badge tone="outline">Bozza</Badge> : `${i.number}/${i.fiscalYear}`}
+                      <Link href={`/dashboard/fiscale/fatture/${i.id}`} className="hover:text-[var(--fi-action)] hover:underline">
+                        {i.status === "draft" ? <Badge tone="outline">Bozza</Badge> : `${i.number}/${i.fiscalYear}`}
+                      </Link>
                     </td>
                     <td className={`${td} fi-num`}>{date(i.issueDate)}</td>
                     <td className={td}>{i.clientName}</td>
