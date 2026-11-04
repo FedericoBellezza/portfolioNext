@@ -41,9 +41,14 @@ export default async function FatturePage() {
         title="Fatture"
         description="FatturaPA · RF19 · Natura N2.2 · bollo virtuale oltre 77,47 €"
         action={
-          <Link href="/dashboard/fiscale/fatture/nuova" className={btn.primary}>
-            Nuova fattura
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/dashboard/fiscale/fatture/importa" className={btn.outline}>
+              Importa fatture passate
+            </Link>
+            <Link href="/dashboard/fiscale/fatture/nuova" className={btn.primary}>
+              Nuova fattura
+            </Link>
+          </div>
         }
       />
       <DemoNotice show={data.source === "demo"} />

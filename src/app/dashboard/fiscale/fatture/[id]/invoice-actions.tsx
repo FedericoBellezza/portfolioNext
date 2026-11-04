@@ -2,7 +2,7 @@
 
 import { startTransition, useActionState } from "react";
 import { btn, cx } from "../../components/ui";
-import { issueInvoiceAction, updateSdiStatusAction, type InvoiceActionState } from "./actions";
+import { issueInvoiceAction, registerCollectionAction, updateSdiStatusAction, type InvoiceActionState } from "./actions";
 
 const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 
@@ -71,6 +71,29 @@ export function SdiStatusForm({ id, current, identifier }: { id: string; current
       </div>
       <button type="submit" className={cx(btn.outline, "w-full")} disabled={pending}>
         {pending ? "Salvataggio…" : "Aggiorna stato"}
+      </button>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
+export function CollectionForm({ id, remaining, today }: { id: string; remaining: number; today: string }) {
+  const [state, action, pending] = useActionState<InvoiceActionState, FormData>(registerCollectionAction, null);
+  return (
+    <form onSubmit={submit(action)} className="space-y-3">
+      <input type="hidden" name="id" value={id} />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="collectedAt" className={fieldLabel}>Incassata il</label>
+          <input id="collectedAt" name="collectedAt" type="date" required max={today} defaultValue={today} />
+        </div>
+        <div>
+          <label htmlFor="amount" className={fieldLabel}>Importo (€)</label>
+          <input id="amount" name="amount" inputMode="decimal" required defaultValue={(remaining / 100).toFixed(2).replace(".", ",")} />
+        </div>
+      </div>
+      <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending}>
+        {pending ? "Salvataggio…" : "Registra incasso"}
       </button>
       <Feedback state={state} />
     </form>

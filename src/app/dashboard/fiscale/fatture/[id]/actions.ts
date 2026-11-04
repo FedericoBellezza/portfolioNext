@@ -192,3 +192,52 @@ export async function deleteDraftAction(formData: FormData): Promise<void> {
   revalidatePath("/dashboard/fiscale", "layout");
   redirect("/dashboard/fiscale/fatture");
 }
+
+/** Cash collection on an issued invoice: its date decides the tax year (principio di cassa). */
+export async function registerCollectionAction(_prev: InvoiceActionState, formData: FormData): Promise<InvoiceActionState> {
+  let db;
+  try {
+    db = await ctx();
+  } catch {
+    return { ok: false, message: "Non autorizzato." };
+  }
+  const id = String(formData.get("id") ?? "");
+  const collectedAt = String(formData.get("collectedAt") ?? "");
+  const raw = String(formData.get("amount") ?? "").trim();
+  const amount = Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw);
+  if (!UUID.test(id) || !ISO.test(collectedAt)) return { ok: false, message: "Dati non validi." };
+  if (collectedAt > todayRome()) return { ok: false, message: "La data d'incasso non può essere futura." };
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, message: "Importo non valido." };
+
+  const { data: invoice } = await db.from("invoices").select("status, total_amount, issue_date").eq("id", id).maybeSingle();
+  if (!invoice || invoice.status !== "issued") return { ok: false, message: "Si registrano incassi solo su fatture emesse." };
+  if (invoice.issue_date && collectedAt < String(invoice.issue_date)) {
+    return { ok: false, message: "La data d'incasso è precedente alla data della fattura." };
+  }
+  const { data: paid } = await db.from("invoice_payments").select("amount").eq("invoice_id", id);
+  const already = (paid ?? []).reduce((s, p) => s + Number(p.amount), 0);
+  if (already + amount > Number(invoice.total_amount) + 0.005) {
+    const left = (Number(invoice.total_amount) - already).toFixed(2).replace(".", ",");
+    return { ok: false, message: `Supera il totale: restano da incassare ${left} €.` };
+  }
+
+  const { error } = await db
+    .from("invoice_payments")
+    .insert({ invoice_id: id, collected_at: collectedAt, amount: Math.round(amount * 100) / 100, method: "bonifico" });
+  if (error) {
+    console.error("[fiscale] insert collection:", error.message);
+    return { ok: false, message: "Salvataggio non riuscito." };
+  }
+  revalidate(id);
+  return { ok: true, message: "Incasso registrato." };
+}
+
+export async function deleteCollectionAction(formData: FormData): Promise<void> {
+  const db = await ctx();
+  const id = String(formData.get("invoiceId") ?? "");
+  const paymentId = String(formData.get("paymentId") ?? "");
+  if (!UUID.test(id) || !UUID.test(paymentId)) return;
+  const { error } = await db.from("invoice_payments").delete().eq("id", paymentId).eq("invoice_id", id);
+  if (error) console.error("[fiscale] delete collection:", error.message);
+  revalidate(id);
+}

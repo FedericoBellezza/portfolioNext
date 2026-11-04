@@ -8,8 +8,8 @@ import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { toCents } from "@/lib/fiscale/money";
 import { daysBetween, date, eur } from "../../components/format";
 import { Badge, btn, PageTitle, Panel } from "../../components/ui";
-import { deleteDraftAction, regenerateXmlAction } from "./actions";
-import { IssueForm, SdiStatusForm } from "./invoice-actions";
+import { deleteCollectionAction, deleteDraftAction, regenerateXmlAction } from "./actions";
+import { CollectionForm, IssueForm, SdiStatusForm } from "./invoice-actions";
 
 export const metadata = { title: "Fattura | Fiscale" };
 
@@ -36,6 +36,14 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
   const loaded = await loadInvoiceForXml(db, id);
   if (!loaded) notFound();
   const { invoice, items, currentClient } = loaded;
+  const { data: paymentRows } = await db
+    .from("invoice_payments")
+    .select("id, collected_at, amount")
+    .eq("invoice_id", id)
+    .order("collected_at");
+  const payments = (paymentRows ?? []).map((p) => ({ id: String(p.id), date: String(p.collected_at), amount: toCents(p.amount as string) }));
+  const total = toCents(invoice.total_amount as string);
+  const remaining = Math.max(0, total - payments.reduce((s, p) => s + p.amount, 0));
 
   const today = todayInRome();
   const draft = invoice.status === "draft";
@@ -114,6 +122,32 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
         </div>
 
         <aside className="space-y-6 xl:col-span-2">
+          {!draft && (
+            <Panel
+              title="Incassi"
+              description="La data d'incasso decide l'anno in cui paghi le tasse"
+              action={<Badge tone={remaining === 0 ? "good" : "outline"}>{remaining === 0 ? "Incassata" : `Da incassare ${eur(remaining)}`}</Badge>}
+            >
+              {payments.length > 0 && (
+                <ul className="mb-4 divide-y divide-[var(--fi-rule)] text-sm">
+                  {payments.map((p) => (
+                    <li key={p.id} className="flex items-center gap-3 py-2">
+                      <span className="fi-num flex-1">{date(p.date)}</span>
+                      <span className="fi-num">{eur(p.amount)}</span>
+                      <form action={deleteCollectionAction}>
+                        <input type="hidden" name="invoiceId" value={id} />
+                        <input type="hidden" name="paymentId" value={p.id} />
+                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]">
+                          Elimina
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {remaining > 0 && <CollectionForm id={id} remaining={remaining} today={today} />}
+            </Panel>
+          )}
           {draft ? (
             <Panel title="Emissione">
               <IssueForm id={id} defaultDate={issueDate && issueDate <= today ? issueDate : today} today={today} />

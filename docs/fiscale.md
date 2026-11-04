@@ -49,6 +49,11 @@ Il legame tra scadenze del calendario e righe del DB è in `src/lib/fiscale/obli
 
 Generatore: `src/lib/fiscale/fatturapa.ts` (testato). Le fatture alla PA (FPA12, firma digitale) non sono ancora supportate.
 
+## Fatture passate e incassi
+
+- **Importa fatture passate** (`/dashboard/fiscale/fatture/importa`): si caricano gli XML (anche `.p7m`) delle fatture già inviate con un altro servizio. Ognuna viene registrata come emessa e consegnata, con numero e data originali, senza nessun invio allo SdI. Il cliente viene riconosciuto per P.IVA/CF o creato. La numerazione dell'anno riparte dopo il numero più alto importato. Un file già importato viene ignorato. Solo TD01 non PA; lettore in `src/lib/fiscale/fatturapa-import.ts` (testato).
+- **Incassi**: dal dettaglio di ogni fattura emessa si registrano data e importo incassato (anche parziali). La data d'incasso decide l'anno fiscale (principio di cassa).
+
 ## Da aggiornare ogni anno
 
 - Parametri INPS in `tax-config.ts` (`INPS_ARTIGIANI`): 2026 da circolare INPS n. 14/2026. Gli anni mancanti usano l'ultimo noto con un avviso.
@@ -57,4 +62,4 @@ Generatore: `src/lib/fiscale/fatturapa.ts` (testato). Le fatture alla PA (FPA12,
 
 ## Prossimi passi
 
-Modifica clienti, registrazione incassi, invio automatico via API (Openapi o Invoicetronic), nota di credito TD04, backup mensile dello schema via n8n.
+Modifica clienti, invio automatico via API (Openapi o Invoicetronic), nota di credito TD04, backup mensile dello schema via n8n.
