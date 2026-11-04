@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { buildDashboard } from "@/lib/fiscale/data/dashboard";
 import type { FiscalDataset } from "@/lib/fiscale/data/types";
+import { sumCents } from "@/lib/fiscale/money";
 import { yearOf } from "@/lib/fiscale/tax-calculator";
 import { DeadlineList, SplitBar, ThresholdMeter } from "./charts";
 import { date, daysBetween, eur, pct, shortDate } from "./format";
@@ -58,6 +59,13 @@ export function Overview({
   const toSend = data.invoices.filter((i) => i.status === "issued" && i.sdiStatus === "not_sent");
   const next = m.reserve.upcoming.find((i) => (i.amount > 0 || i.unknownAmount) && daysBetween(asOf, i.dueDate) <= 30);
   const limitWarning = m.projected.revenueLimit.status !== "ok";
+  // Invoiced this year, stamp duty charged to the client included (it is income too, as in
+  // collections). Taxes and the threshold stay on collections: the forfettario is cash-based.
+  const invoicedYtd = sumCents(
+    data.invoices
+      .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === m.year && i.issueDate <= asOf)
+      .map((i) => i.total),
+  );
 
   const todos: Todo[] = [];
   if (m.overdue.length > 0)
@@ -185,9 +193,17 @@ export function Overview({
         {/* Headline figures */}
         <div className="grid gap-4 md:grid-cols-3">
           <Stat
-            label={`Incassato nel ${m.year}`}
-            value={eur(m.ytd.grossRevenue)}
-            hint={<ThresholdMeter collected={m.ytd.grossRevenue} limit={m.ytd.revenueLimit.limit} warn={limitWarning} />}
+            label={`Fatturato nel ${m.year}`}
+            value={eur(invoicedYtd)}
+            hint={
+              <div className="space-y-1.5">
+                <p>
+                  Incassato <span className="fi-num font-medium text-[var(--fi-ink-2)]">{eur(m.ytd.grossRevenue)}</span>: tasse e
+                  soglia si calcolano su questo
+                </p>
+                <ThresholdMeter collected={m.ytd.grossRevenue} limit={m.ytd.revenueLimit.limit} warn={limitWarning} />
+              </div>
+            }
           />
           <Stat
             tone="accent"
