@@ -39,7 +39,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
   if (profile.error) throw new Error(`Supabase (fiscale): ${profile.error.message}`);
   if (!profile.data) return demoDataset;
 
-  const [clients, invoices, payments, inps, taxes, expenses, dismissals] = await Promise.all([
+  const [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions] = await Promise.all([
     db.from("clients").select("*").is("archived_at", null).order("company_name"),
     db
       .from("invoices")
@@ -50,8 +50,10 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("tax_payments").select("*").order("paid_at"),
     db.from("expenses").select("*").order("spent_at"),
     db.from("obligation_dismissals").select("obligation_key"),
+    db.from("reminders").select("*").is("archived_at", null).order("first_due"),
+    db.from("task_completions").select("task_key, completed_at, document_id, note"),
   ]);
-  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals].find((r) => r.error);
+  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions].find((r) => r.error);
   if (failed?.error) throw new Error(`Supabase (fiscale): ${failed.error.message}`);
 
   const collections = (payments.data ?? []).map((p: Row) => ({
@@ -129,5 +131,20 @@ export async function loadDataset(): Promise<FiscalDataset> {
       description: str(r.description),
     })),
     dismissedKeys: (dismissals.data ?? []).map((d: Row) => String(d.obligation_key)),
+    reminders: (reminders.data ?? []).map((r: Row) => ({
+      id: String(r.id),
+      title: String(r.title),
+      scope: r.scope === "business" ? "business" : "personal",
+      firstDue: String(r.first_due),
+      recurrence: (["once", "monthly", "yearly"].includes(String(r.recurrence)) ? r.recurrence : "yearly") as "once" | "monthly" | "yearly",
+      amount: r.amount == null ? null : toCents(r.amount as string),
+      notes: str(r.notes),
+    })),
+    completedTasks: (completions.data ?? []).map((c: Row) => ({
+      key: String(c.task_key),
+      completedAt: String(c.completed_at),
+      documentId: str(c.document_id),
+      note: str(c.note),
+    })),
   };
 }

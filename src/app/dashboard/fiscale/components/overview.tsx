@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, CalendarClock, CircleCheck, FilePen, Receipt, Send, TriangleAlert } from "lucide-react";
+import { ArrowRight, CalendarCheck, CalendarClock, CircleCheck, FilePen, Receipt, Send, TriangleAlert } from "lucide-react";
 import { buildDashboard } from "@/lib/fiscale/data/dashboard";
 import type { FiscalDataset } from "@/lib/fiscale/data/types";
 import { DeadlineList, RevenueChart, SplitBar, ThresholdMeter } from "./charts";
@@ -48,6 +48,35 @@ export function Overview({
       href: "/dashboard/fiscale/scadenze#registra",
       action: "Registra",
     });
+  if (m.overdueTasks.length > 0)
+    todos.push({
+      key: "tasks-overdue",
+      icon: TriangleAlert,
+      urgent: true,
+      text: (
+        <>
+          {m.overdueTasks.length === 1
+            ? `Scaduto: ${m.overdueTasks[0].title}`
+            : `${m.overdueTasks.length} dichiarazioni o promemoria scaduti`}
+        </>
+      ),
+      href: "/dashboard/fiscale/scadenze#adempimenti",
+      action: "Vedi",
+    });
+  for (const t of m.tasks.filter((t) => !m.doneTasks.has(t.key) && t.dueDate >= asOf && daysBetween(asOf, t.dueDate) <= 30)) {
+    todos.push({
+      key: `task-${t.key}`,
+      icon: CalendarCheck,
+      text: (
+        <>
+          Entro il {shortDate(t.dueDate)}: {t.title}
+          {t.amount ? <span className="fi-num text-[var(--fi-ink-2)]"> · {eur(t.amount)}</span> : null}
+        </>
+      ),
+      href: "/dashboard/fiscale/scadenze#adempimenti",
+      action: "Come fare",
+    });
+  }
   if (next)
     todos.push({
       key: "next",

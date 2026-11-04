@@ -9,7 +9,7 @@ const TABS = [
   { href: "/dashboard/fiscale/clienti", label: "Clienti", match: ["/dashboard/fiscale/clienti"] },
   {
     href: "/dashboard/fiscale/scadenze",
-    label: "Tasse",
+    label: "Scadenze",
     match: ["/dashboard/fiscale/scadenze", "/dashboard/fiscale/inps-spese", "/dashboard/fiscale/export"],
   },
   { href: "/dashboard/fiscale/documenti", label: "Documenti", match: ["/dashboard/fiscale/documenti"] },

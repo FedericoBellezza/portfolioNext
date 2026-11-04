@@ -10,6 +10,7 @@ import {
   type TaxYearResult,
 } from "../tax-calculator";
 import { settledKeys } from "../obligations";
+import { buildTasks, type TaskItem } from "../tasks";
 import type { FiscalDataset } from "./types";
 
 function stampDutyByQuarter(data: FiscalDataset) {
@@ -43,6 +44,12 @@ export interface DashboardModel {
   dismissed: Set<string>;
   /** Past deadlines with something to pay and nothing recorded yet. */
   overdue: F24Item[];
+  /** Filings and reminders from 1 January of this year to the end of next year. */
+  tasks: TaskItem[];
+  /** Task key → completion. */
+  doneTasks: Map<string, { completedAt: string; documentId: string | null; note: string | null }>;
+  /** Not done and already past due. */
+  overdueTasks: TaskItem[];
 }
 
 export function buildDashboard(data: FiscalDataset, asOf: string): DashboardModel {
@@ -94,6 +101,17 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
   ];
   const reserve = computeSavingsReserve({ asOf, items: schedule, paidKeys: paid });
 
+  const tasks = buildTasks({
+    from: `${C}-01-01`,
+    to: `${C + 1}-12-31`,
+    profile,
+    reminders: data.reminders,
+    inail: true, // same rule as the INAIL premium in the F24 calendar
+  });
+  const doneTasks = new Map(
+    data.completedTasks.map((c) => [c.key, { completedAt: c.completedAt, documentId: c.documentId, note: c.note }]),
+  );
+
   const monthlyRevenue = Array.from({ length: 12 }, (_, m) =>
     sumCents(
       data.collections
@@ -118,6 +136,9 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     paid,
     dismissed,
     overdue: schedule.filter((i) => i.dueDate < asOf && (i.amount > 0 || i.unknownAmount) && !paid.has(i.key)),
+    tasks,
+    doneTasks,
+    overdueTasks: tasks.filter((t) => t.dueDate < asOf && !doneTasks.has(t.key)),
   };
 }
 

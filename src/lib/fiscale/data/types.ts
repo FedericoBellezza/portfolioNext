@@ -1,5 +1,6 @@
 import type { Cents } from "../money";
 import type { Collection, InpsPayment } from "../tax-calculator";
+import type { Reminder } from "../tasks";
 import type { FiscalProfile } from "../tax-config";
 
 export type InvoiceStatus = "draft" | "issued" | "cancelled";
@@ -83,4 +84,8 @@ export interface FiscalDataset {
   expenses: ExpenseRow[];
   /** Calendar keys the owner marked as not due (fiscale.obligation_dismissals). */
   dismissedKeys: string[];
+  /** Owner's personal or business reminders (fiscale.reminders). */
+  reminders: Reminder[];
+  /** Filings and reminders marked as done (fiscale.task_completions). */
+  completedTasks: { key: string; completedAt: string; documentId: string | null; note: string | null }[];
 }

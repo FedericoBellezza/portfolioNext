@@ -10,8 +10,10 @@ import { DeadlineList } from "../components/charts";
 import { date, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
 import { btn, DemoNotice, Disclosure, PageTitle, Section } from "../components/ui";
+import { archiveReminderAction, undoTaskAction } from "./task-actions";
+import { OpenTasks, ReminderForm } from "./tasks-ui";
 
-export const metadata = { title: "Tasse | Fiscale" };
+export const metadata = { title: "Scadenze | Fiscale" };
 
 const KIND_LABEL: Record<string, string> = {
   fixed_q1: "INPS fissi 1ª rata",
@@ -92,11 +94,16 @@ export default async function TassePage() {
   const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
   const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
 
+  // Filings and reminders: everything not done up to 12 months ahead, done ones of this year apart.
+  const horizon = `${m.year + 1}${asOf.slice(4)}`;
+  const openTasks = m.tasks.filter((t) => !m.doneTasks.has(t.key) && t.dueDate <= horizon);
+  const doneTasks = m.tasks.filter((t) => m.doneTasks.has(t.key));
+
   return (
     <>
       <PageTitle
-        title="Tasse"
-        description="Contributi INPS, imposta sostitutiva, bollo, diritto camerale e INAIL: cosa pagare, quando e cosa hai già pagato."
+        title="Scadenze"
+        description="Tutto quello che c'è da pagare, inviare o ricordare: tasse e contributi dell'attività, dichiarazioni e promemoria personali."
         action={
           <Link href="/dashboard/fiscale/export" className={btn.outline}>
             Esporta per il commercialista
@@ -130,11 +137,65 @@ export default async function TassePage() {
           )}
         </div>
 
-        <Section title="Prossime scadenze">
+        <Section title="Dichiarazioni e promemoria" id="adempimenti">
+          <OpenTasks tasks={openTasks} asOf={asOf} demo={demo} />
+          <div className="mt-4 space-y-3">
+            {doneTasks.length > 0 && (
+              <Disclosure summary={`Già fatti (${doneTasks.length})`}>
+                <ul className="max-w-2xl divide-y divide-[var(--fi-rule)] text-sm">
+                  {doneTasks.map((t) => {
+                    const done = m.doneTasks.get(t.key)!;
+                    return (
+                      <li key={t.key} className="flex items-baseline gap-4 py-2">
+                        <span className="min-w-0 flex-1 truncate">{t.title}</span>
+                        <span className="shrink-0 text-xs text-[var(--fi-ink-2)]">
+                          fatto il {date(done.completedAt)}
+                          {done.documentId ? " · ricevuta in Documenti" : ""}
+                        </span>
+                        <form action={undoTaskAction}>
+                          <input type="hidden" name="key" value={t.key} />
+                          <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
+                            Annulla
+                          </button>
+                        </form>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Disclosure>
+            )}
+            <Disclosure summary="Aggiungi un promemoria (IMU, bollo auto, altre scadenze personali…)">
+              <ReminderForm demo={demo} />
+              {data.reminders.length > 0 && (
+                <ul className="mt-6 max-w-3xl divide-y divide-[var(--fi-rule)] text-sm">
+                  {data.reminders.map((r) => (
+                    <li key={r.id} className="flex items-baseline gap-4 py-2">
+                      <span className="min-w-0 flex-1 truncate">
+                        {r.title}
+                        <span className="ml-2 text-xs text-[var(--fi-muted)]">
+                          {r.recurrence === "yearly" ? "ogni anno" : r.recurrence === "monthly" ? "ogni mese" : "una volta"} dal{" "}
+                          {date(r.firstDue)} · {r.scope === "business" ? "attività" : "personale"}
+                        </span>
+                      </span>
+                      <form action={archiveReminderAction}>
+                        <input type="hidden" name="id" value={r.id} />
+                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
+                          Elimina
+                        </button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Disclosure>
+          </div>
+        </Section>
+
+        <Section title="Prossimi pagamenti">
           <Calendar items={upcoming} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
           {past.length > 0 && (
             <div className="mt-6">
-              <Disclosure summary={`Scadenze passate (${past.length})`}>
+              <Disclosure summary={`Pagamenti passati (${past.length})`}>
                 <Calendar items={past} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
               </Disclosure>
             </div>

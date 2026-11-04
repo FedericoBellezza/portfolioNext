@@ -90,4 +90,6 @@ export const demoDataset: FiscalDataset = {
     { id: "e5", spentAt: "2026-09-20", amount: toCents(320), category: "training", vendor: "Conferenza", description: "Biglietto + viaggio" },
   ],
   dismissedKeys: [],
+  reminders: [],
+  completedTasks: [],
 };
