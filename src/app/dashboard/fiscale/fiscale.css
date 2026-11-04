@@ -40,11 +40,18 @@
 }
 
 .fi .fi-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--fi-muted);
+}
+
+.fi ::selection {
+  background: color-mix(in srgb, var(--fi-action) 22%, transparent);
+}
+
+.fi summary:focus-visible {
+  outline: 2px solid var(--fi-action);
+  outline-offset: 2px;
 }
 
 .fi input:not([type="checkbox"]):not([type="radio"]),

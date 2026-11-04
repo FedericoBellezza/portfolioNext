@@ -50,7 +50,7 @@ export function OverdueBanner({
       <div className="flex items-start gap-3">
         {warning && <TriangleAlert aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[var(--fi-warning-text)]" />}
         <div className="min-w-0 flex-1">
-          <h2 id="overdue-title" className="fi-display text-[19px] font-semibold">
+          <h2 id="overdue-title" className="text-[15px] font-semibold">
             {title ?? (items.length === 1 ? "1 adempimento da registrare" : `${items.length} adempimenti da registrare`)}
           </h2>
           <p className="mt-0.5 text-sm text-[var(--fi-ink-2)]">

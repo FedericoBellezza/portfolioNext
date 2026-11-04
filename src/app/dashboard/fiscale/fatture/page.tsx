@@ -1,99 +1,149 @@
 import { connection } from "next/server";
 import Link from "next/link";
+import { todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadDataset } from "@/lib/fiscale/data/load";
-import type { InvoiceRow, SdiStatus } from "@/lib/fiscale/data/types";
+import type { InvoiceRow } from "@/lib/fiscale/data/types";
 import { date, eur } from "../components/format";
-import { Badge, btn, DemoNotice, PageTitle, Panel } from "../components/ui";
+import { Badge, btn, cx, DemoNotice, PageTitle } from "../components/ui";
 
 export const metadata = { title: "Fatture | Fiscale" };
 
-type Tone = "neutral" | "outline" | "critical" | "good";
-const SDI: Record<SdiStatus, { label: string; tone: Tone }> = {
-  not_sent: { label: "Da inviare", tone: "outline" },
-  queued: { label: "In coda", tone: "outline" },
-  sent: { label: "Inviata", tone: "neutral" },
-  delivered: { label: "Consegnata", tone: "good" },
-  not_delivered: { label: "Mancata consegna", tone: "neutral" },
-  rejected: { label: "Scartata", tone: "critical" },
-  accepted: { label: "Accettata", tone: "good" },
-  refused: { label: "Rifiutata", tone: "critical" },
-  expired: { label: "Decorrenza termini", tone: "neutral" },
-};
+type Filter = "tutte" | "da-incassare" | "bozze" | "da-inviare";
 
-function Payment({ invoice }: { invoice: InvoiceRow }) {
-  if (invoice.status === "draft") return <span className="text-[var(--fi-muted)]">—</span>;
-  if (invoice.collected >= invoice.total)
-    return <span className="text-[var(--fi-good-text)]">Incassata {date(invoice.lastCollectedAt)}</span>;
-  if (invoice.collected > 0)
-    return <span className="text-[var(--fi-warning-text)]">Parziale {eur(invoice.collected)}</span>;
-  return <span className="text-[var(--fi-ink-2)]">Scade {date(invoice.dueDate)}</span>;
+const FILTERS: { id: Filter; label: string; test: (i: InvoiceRow) => boolean }[] = [
+  { id: "tutte", label: "Tutte", test: () => true },
+  { id: "da-incassare", label: "Da incassare", test: (i) => i.status === "issued" && i.collected < i.total },
+  { id: "da-inviare", label: "Da inviare", test: (i) => i.status === "issued" && i.sdiStatus === "not_sent" },
+  { id: "bozze", label: "Bozze", test: (i) => i.status === "draft" },
+];
+
+type Tone = "neutral" | "outline" | "critical" | "good" | "warning";
+
+/** One status per invoice, in the order that needs attention first. */
+function statusOf(i: InvoiceRow, today: string): { label: string; tone: Tone } {
+  if (i.status === "draft") return { label: "Bozza", tone: "outline" };
+  if (i.status === "cancelled") return { label: "Annullata", tone: "neutral" };
+  if (i.sdiStatus === "rejected" || i.sdiStatus === "refused") return { label: "Scartata dallo SdI", tone: "critical" };
+  if (i.sdiStatus === "not_sent") return { label: "Da inviare", tone: "warning" };
+  if (i.collected >= i.total) return { label: `Incassata ${date(i.lastCollectedAt)}`, tone: "good" };
+  if (i.collected > 0) return { label: `Incassati ${eur(i.collected)}`, tone: "warning" };
+  if (i.dueDate && i.dueDate < today) return { label: `Scaduta il ${date(i.dueDate)}`, tone: "critical" };
+  return { label: i.dueDate ? `Da incassare entro ${date(i.dueDate)}` : "Da incassare", tone: "neutral" };
 }
 
-const th = "px-3 py-2.5 text-left font-medium text-[var(--fi-muted)] text-xs";
-const td = "px-3 py-3 align-middle";
-
-export default async function FatturePage() {
+export default async function FatturePage({ searchParams }: { searchParams: Promise<{ stato?: string }> }) {
   await connection();
+  const { stato } = await searchParams;
+  const filter: Filter = FILTERS.some((f) => f.id === stato) ? (stato as Filter) : "tutte";
+  const today = todayInRome();
   const data = await loadDataset();
+  const demo = data.source === "demo";
+  const counts = Object.fromEntries(FILTERS.map((f) => [f.id, data.invoices.filter(f.test).length])) as Record<Filter, number>;
+  const rows = data.invoices.filter(FILTERS.find((f) => f.id === filter)!.test);
+  const unpaid = counts["da-incassare"];
+
   return (
     <>
       <PageTitle
         title="Fatture"
-        description="FatturaPA · RF19 · Natura N2.2 · bollo virtuale oltre 77,47 €"
         action={
-          <div className="flex gap-2">
+          <>
             <Link href="/dashboard/fiscale/fatture/importa" className={btn.outline}>
               Importa fatture passate
             </Link>
             <Link href="/dashboard/fiscale/fatture/nuova" className={btn.primary}>
               Nuova fattura
             </Link>
-          </div>
+          </>
         }
       />
-      <DemoNotice show={data.source === "demo"} />
-      <Panel title={`${data.invoices.length} documenti`} description={`${data.clients.length} clienti in anagrafica`}>
-        {data.invoices.length === 0 ? (
-          <p className="py-6 text-sm text-[var(--fi-ink-2)]">Nessuna fattura.</p>
-        ) : (
-          <div className="-mx-5 overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="border-b border-[var(--fi-rule)]">
-                <tr>
-                  <th className={`${th} pl-5`}>Numero</th>
-                  <th className={th}>Data</th>
-                  <th className={th}>Cliente</th>
-                  <th className={`${th} text-right`}>Imponibile</th>
-                  <th className={`${th} text-right`}>Totale</th>
-                  <th className={th}>SdI</th>
-                  <th className={`${th} pr-5`}>Incasso</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--fi-rule)]">
-                {data.invoices.map((i) => (
-                  <tr key={i.id} className="hover:bg-white">
-                    <td className={`${td} fi-num pl-5 font-medium`}>
-                      <Link href={`/dashboard/fiscale/fatture/${i.id}`} className="hover:text-[var(--fi-action)] hover:underline">
-                        {i.status === "draft" ? <Badge tone="outline">Bozza</Badge> : `${i.number}/${i.fiscalYear}`}
-                      </Link>
-                    </td>
-                    <td className={`${td} fi-num`}>{date(i.issueDate)}</td>
-                    <td className={td}>{i.clientName}</td>
-                    <td className={`${td} fi-num text-right`}>{eur(i.taxableAmount)}</td>
-                    <td className={`${td} fi-num text-right`}>{eur(i.total)}</td>
-                    <td className={td}>
-                      <Badge tone={SDI[i.sdiStatus].tone}>{SDI[i.sdiStatus].label}</Badge>
-                    </td>
-                    <td className={`${td} pr-5`}>
-                      <Payment invoice={i} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <DemoNotice show={demo} />
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label="Filtra fatture" className="flex flex-wrap gap-1">
+          {FILTERS.map((f) => {
+            const active = f.id === filter;
+            if (f.id !== "tutte" && counts[f.id] === 0 && !active) return null;
+            return (
+              <Link
+                key={f.id}
+                href={f.id === "tutte" ? "/dashboard/fiscale/fatture" : `/dashboard/fiscale/fatture?stato=${f.id}`}
+                aria-current={active ? "page" : undefined}
+                className={cx(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-[var(--fi-action)]",
+                  active
+                    ? "bg-[var(--fi-ink)] text-white"
+                    : "text-[var(--fi-ink-2)] hover:bg-[var(--fi-fill)] hover:text-[var(--fi-ink)]",
+                )}
+              >
+                {f.label}
+                <span className={cx("fi-num text-xs", active ? "text-white/70" : "text-[var(--fi-muted)]")}>
+                  {counts[f.id]}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+        {unpaid > 0 && (
+          <Link href="/dashboard/fiscale/incassi" className={btn.outline}>
+            Registra incassi
+          </Link>
         )}
-      </Panel>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[var(--fi-rule)] px-6 py-12 text-center">
+          <p className="text-sm text-[var(--fi-ink-2)]">
+            {filter === "tutte" ? "Non hai ancora fatture." : "Nessuna fattura in questo stato."}
+          </p>
+          {filter === "tutte" && (
+            <div className="mt-4 flex justify-center gap-2">
+              <Link href="/dashboard/fiscale/fatture/importa" className={btn.outline}>
+                Importa le fatture passate
+              </Link>
+              <Link href="/dashboard/fiscale/fatture/nuova" className={btn.primary}>
+                Crea la prima
+              </Link>
+            </div>
+          )}
+        </div>
+      ) : (
+        <ul className="divide-y divide-[var(--fi-rule)] rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)]">
+          {rows.map((i) => {
+            const s = statusOf(i, today);
+            const clickable = !demo;
+            const content = (
+              <>
+                <span className="fi-num w-20 shrink-0 text-sm font-medium">
+                  {i.status === "draft" ? "—" : `${i.number}/${i.fiscalYear}`}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm">{i.clientName}</span>
+                  <span className="block text-xs text-[var(--fi-muted)]">{i.issueDate ? date(i.issueDate) : "Non emessa"}</span>
+                </span>
+                <span className="hidden sm:block">
+                  <Badge tone={s.tone}>{s.label}</Badge>
+                </span>
+                <span className="fi-num w-28 shrink-0 text-right text-sm font-medium">{eur(i.total)}</span>
+              </>
+            );
+            return (
+              <li key={i.id}>
+                {clickable ? (
+                  <Link
+                    href={`/dashboard/fiscale/fatture/${i.id}`}
+                    className="flex items-center gap-4 px-4 py-3 transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-white focus-visible:outline-2 focus-visible:outline-[var(--fi-action)]"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-4 px-4 py-3">{content}</div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }

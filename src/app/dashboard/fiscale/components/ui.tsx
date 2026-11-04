@@ -3,13 +3,15 @@ import Link from "next/link";
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 export { cx };
 
+const focus =
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fi-action)]";
+
 export const btn = {
-  primary:
-    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-[var(--fi-action)] px-3.5 text-sm font-medium text-white transition-colors hover:bg-[var(--fi-action-hover)] disabled:cursor-not-allowed disabled:opacity-50",
-  outline:
-    "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--fi-rule)] bg-white px-3.5 text-sm font-medium text-[var(--fi-ink)] transition-colors hover:border-[var(--fi-action)] hover:text-[var(--fi-action)]",
+  primary: `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md bg-[var(--fi-action)] px-3.5 text-sm font-medium text-white transition-colors hover:bg-[var(--fi-action-hover)] disabled:cursor-not-allowed disabled:opacity-50 ${focus}`,
+  outline: `inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-[var(--fi-rule)] bg-white px-3.5 text-sm font-medium text-[var(--fi-ink)] transition-colors hover:border-[var(--fi-action)] hover:text-[var(--fi-action)] disabled:cursor-not-allowed disabled:opacity-50 ${focus}`,
 };
 
+/** Page heading: the only place the dashboard serif appears. */
 export function PageTitle({
   title,
   description,
@@ -20,16 +22,17 @@ export function PageTitle({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="fi-display text-[26px] font-semibold leading-tight tracking-tight">{title}</h1>
-        {description && <p className="mt-1 text-sm text-[var(--fi-ink-2)]">{description}</p>}
+        <h1 className="fi-display text-[28px] font-semibold leading-tight tracking-[-0.02em]">{title}</h1>
+        {description && <p className="mt-1 max-w-[65ch] text-sm text-[var(--fi-ink-2)]">{description}</p>}
       </div>
-      {action}
+      {action && <div className="flex flex-wrap gap-2">{action}</div>}
     </header>
   );
 }
 
+/** Contained block (forms, detail panes). */
 export function Panel({
   title,
   description,
@@ -47,7 +50,7 @@ export function Panel({
     <section className={cx("rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)] p-5", className)}>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="fi-display text-[19px] font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-[15px] font-semibold">{title}</h2>
           {description && <p className="mt-0.5 text-xs text-[var(--fi-ink-2)]">{description}</p>}
         </div>
         {action}
@@ -57,47 +60,40 @@ export function Panel({
   );
 }
 
-export function Kpi({
-  label,
-  value,
-  hint,
-  tone = "default",
+/** Uncontained block: heading + content, separated by space rather than borders. */
+export function Section({
+  title,
+  action,
+  children,
+  className,
+  id,
 }: {
-  label: string;
-  value: string;
-  hint?: React.ReactNode;
-  tone?: "default" | "reserve" | "good";
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
 }) {
   return (
-    <div
-      className={cx(
-        "rounded-xl border bg-[var(--fi-surface)] p-5",
-        tone === "reserve" ? "border-[var(--fi-reserve)]/40 bg-[var(--fi-reserve-soft)]" : "border-[var(--fi-rule)]",
-      )}
-    >
-      <p className="fi-label">{label}</p>
-      <p
-        className={cx(
-          "fi-display fi-num mt-2 text-[28px] font-semibold leading-none tracking-tight",
-          tone === "reserve" && "text-[var(--fi-reserve)]",
-          tone === "good" && "text-[var(--fi-good-text)]",
-        )}
-      >
-        {value}
-      </p>
-      {hint && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{hint}</p>}
-    </div>
+    <section id={id} className={cx("scroll-mt-24", className)}>
+      <div className="mb-3 flex items-baseline justify-between gap-4">
+        <h2 className="text-[15px] font-semibold">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
-type BadgeTone = "neutral" | "solid" | "outline" | "critical" | "good";
+type BadgeTone = "neutral" | "solid" | "outline" | "critical" | "good" | "warning";
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: React.ReactNode }) {
   const tones: Record<BadgeTone, string> = {
     neutral: "bg-[var(--fi-fill)] text-[var(--fi-ink-2)]",
     solid: "bg-[var(--fi-ink)] text-white",
     outline: "border border-[var(--fi-rule)] text-[var(--fi-ink-2)]",
-    critical: "bg-[var(--fi-critical)] text-white",
-    good: "bg-[#e3f3e3] text-[var(--fi-good-text)]",
+    critical: "bg-[#fbeceb] text-[var(--fi-critical)]",
+    good: "bg-[#e6f2e6] text-[var(--fi-good-text)]",
+    warning: "bg-[var(--fi-warning-soft)] text-[var(--fi-warning-text)]",
   };
   return (
     <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", tones[tone])}>
@@ -109,17 +105,33 @@ export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; childr
 export function DemoNotice({ show }: { show: boolean }) {
   if (!show) return null;
   return (
-    <p className="mb-6 rounded-lg border border-dashed border-[var(--fi-rule)] bg-[var(--fi-surface)] px-4 py-3 text-sm text-[var(--fi-ink-2)]">
-      <b className="text-[var(--fi-ink)]">Dati dimostrativi.</b> Non c&apos;è ancora un profilo in{" "}
-      <code>fiscale.fiscal_profiles</code>: appena lo crei, la dashboard usa i tuoi dati.
+    <p className="mb-6 rounded-lg border border-dashed border-[var(--fi-rule)] px-4 py-3 text-sm text-[var(--fi-ink-2)]">
+      <b className="font-medium text-[var(--fi-ink)]">Dati dimostrativi.</b> Appena crei il tuo profilo fiscale, qui
+      vedi i tuoi dati.
     </p>
   );
 }
 
 export function TextLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-xs text-[var(--fi-ink-2)] hover:text-[var(--fi-action)]">
+    <Link
+      href={href}
+      className={`text-sm text-[var(--fi-action)] underline-offset-4 hover:underline ${focus} rounded-sm`}
+    >
       {children}
     </Link>
+  );
+}
+
+/** Progressive disclosure for secondary detail. */
+export function Disclosure({ summary, children }: { summary: string; children: React.ReactNode }) {
+  return (
+    <details className="group">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-sm text-sm text-[var(--fi-ink-2)] hover:text-[var(--fi-ink)] [&::-webkit-details-marker]:hidden">
+        <span aria-hidden className="inline-block transition-transform duration-200 group-open:rotate-90">›</span>
+        {summary}
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
   );
 }

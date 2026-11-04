@@ -1,98 +1,196 @@
 import { connection } from "next/server";
+import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
 import { loadDataset } from "@/lib/fiscale/data/load";
-import { sumCents } from "@/lib/fiscale/money";
-import type { F24Item } from "@/lib/fiscale/tax-calculator";
+import { sumCents, type Cents } from "@/lib/fiscale/money";
+import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
+import { createClient } from "@/lib/supabase/server";
 import { DeadlineList } from "../components/charts";
+import { date, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
-import { eur, MONTHS } from "../components/format";
-import { DemoNotice, PageTitle, Panel } from "../components/ui";
+import { btn, DemoNotice, Disclosure, PageTitle, Section } from "../components/ui";
 
-export const metadata = { title: "Scadenze F24 | Fiscale" };
+export const metadata = { title: "Tasse | Fiscale" };
 
-function groupByMonth(items: F24Item[]) {
+const KIND_LABEL: Record<string, string> = {
+  fixed_q1: "INPS fissi 1ª rata",
+  fixed_q2: "INPS fissi 2ª rata",
+  fixed_q3: "INPS fissi 3ª rata",
+  fixed_q4: "INPS fissi 4ª rata",
+  excess_balance: "INPS eccedenza saldo",
+  excess_advance_1: "INPS eccedenza 1° acconto",
+  excess_advance_2: "INPS eccedenza 2° acconto",
+  substitute_tax_balance: "Imposta sostitutiva saldo",
+  substitute_tax_advance_1: "Imposta sostitutiva 1° acconto",
+  substitute_tax_advance_2: "Imposta sostitutiva 2° acconto",
+  stamp_duty_q1: "Bollo 1° trimestre",
+  stamp_duty_q2: "Bollo 2° trimestre",
+  stamp_duty_q3: "Bollo 3° trimestre",
+  stamp_duty_q4: "Bollo 4° trimestre",
+  chamber_fee: "Diritto camerale",
+  inail_premium: "Premio INAIL",
+  other: "Altro",
+};
+
+function byMonth(items: F24Item[]) {
   const groups = new Map<string, F24Item[]>();
-  for (const i of items) {
-    const k = i.dueDate.slice(0, 7);
-    groups.set(k, [...(groups.get(k) ?? []), i]);
-  }
+  for (const i of items) groups.set(i.dueDate.slice(0, 7), [...(groups.get(i.dueDate.slice(0, 7)) ?? []), i]);
   return [...groups.entries()];
 }
 
-export default async function ScadenzePage() {
+/** Short-lived links to the private F24 receipts. */
+async function receiptLinks(paths: string[]): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+  const supabase = await createClient();
+  const { data } = await supabase.storage.from("fiscale-f24").createSignedUrls(paths, 600);
+  return new Map((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path!, d.signedUrl]));
+}
+
+function Calendar({ items, asOf, paid, dismissed }: { items: F24Item[]; asOf: string; paid: Set<string>; dismissed: Set<string> }) {
+  return (
+    <div className="space-y-6">
+      {byMonth(items).map(([month, group]) => {
+        const [y, mm] = month.split("-").map(Number);
+        return (
+          <div key={month}>
+            <div className="flex items-baseline justify-between border-b border-[var(--fi-rule)] pb-1.5">
+              <h3 className="text-sm font-medium">
+                {MONTHS[mm - 1]} {y}
+              </h3>
+              <span className="fi-num text-xs text-[var(--fi-muted)]">{eur(sumCents(group.map((i) => i.amount)))}</span>
+            </div>
+            <DeadlineList items={group} asOf={asOf} paid={paid} dismissed={dismissed} showCategory />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export default async function TassePage() {
   await connection();
   const asOf = todayInRome();
   const data = await loadDataset();
+  const demo = data.source === "demo";
   const m = buildDashboard(data, asOf);
-  const media = data.source === "demo" ? {} : await loadGuideMedia();
+  const media = demo ? {} : await loadGuideMedia();
+
+  const toHandle = m.schedule.filter(
+    (i) => (i.amount > 0 || i.unknownAmount) && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`,
+  );
+  const upcoming = m.schedule.filter((i) => i.dueDate >= asOf && (i.amount > 0 || i.unknownAmount));
+  const past = m.schedule.filter((i) => i.dueDate < asOf && (i.amount > 0 || m.paid.has(i.key)));
+
+  type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null };
+  const payments: Payment[] = [
+    ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath })),
+    ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath })),
+  ]
+    .filter((p) => yearOf(p.date) === m.year)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
+  const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
 
   return (
     <>
       <PageTitle
-        title="Scadenze F24"
-        description="Calendario simulato con metodo storico. Gli importi dell'anno in corso sono stime sugli incassi a oggi."
+        title="Tasse"
+        description="Contributi INPS, imposta sostitutiva, bollo, diritto camerale e INAIL: cosa pagare, quando e cosa hai già pagato."
+        action={
+          <Link href="/dashboard/fiscale/export" className={btn.outline}>
+            Esporta per il commercialista
+          </Link>
+        }
       />
-      <DemoNotice show={data.source === "demo"} />
-      <OverdueBanner
-        items={m.schedule.filter(
-          (i) => (i.amount > 0 || i.unknownAmount) && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`,
-        )}
-        demo={data.source === "demo"}
-        media={media}
-        tone={m.overdue.length > 0 ? "warning" : "neutral"}
-        title="Registra i pagamenti"
-        intro="Tutte le scadenze di quest'anno non ancora registrate, anche quelle future già pagate in anticipo. Se una stima non era dovuta (es. importo zero), segnala come non dovuta."
-      />
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
-          {groupByMonth(m.schedule).map(([month, items]) => {
-            const [y, mm] = month.split("-").map(Number);
-            return (
-              <Panel
-                key={month}
-                title={`${MONTHS[mm - 1]} ${y}`}
-                action={<span className="fi-num text-sm font-medium">{eur(sumCents(items.map((i) => i.amount)))}</span>}
-              >
-                <DeadlineList items={items} asOf={asOf} paid={m.paid} dismissed={m.dismissed} showCategory />
-              </Panel>
-            );
-          })}
+      <DemoNotice show={demo} />
+
+      <p className="mb-10 text-sm text-[var(--fi-ink-2)]">
+        Da tenere da parte adesso <b className="fi-num text-base font-semibold text-[var(--fi-ink)]">{eur(m.reserve.matured)}</b>
+        <span className="mx-2 text-[var(--fi-rule)]">|</span>
+        Uscite previste fino al 30 giugno {m.year + 1}{" "}
+        <b className="fi-num font-medium text-[var(--fi-ink)]">{eur(m.reserve.cashOutUntilHorizon)}</b>
+      </p>
+
+      <div className="space-y-12">
+        <div id="registra" className="scroll-mt-24">
+          {toHandle.length === 0 ? (
+            <Section title="Da pagare o registrare">
+              <p className="text-sm text-[var(--fi-ink-2)]">Tutte le scadenze di quest&apos;anno sono registrate.</p>
+            </Section>
+          ) : (
+            <OverdueBanner
+              items={toHandle}
+              demo={demo}
+              media={media}
+              tone={m.overdue.length > 0 ? "warning" : "neutral"}
+              title="Da pagare o registrare"
+              intro="Apri una voce per vedere come pagarla e registrare l'importo. Vale anche per quelle già pagate in anticipo; se una stima non ti riguarda, segnala come non dovuta."
+            />
+          )}
         </div>
-        <div className="space-y-6">
-          <Panel title="Totali" description={`Fino al 30/6/${m.year + 1}`}>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-[var(--fi-ink-2)]">Maturato da accantonare</dt>
-                <dd className="fi-num font-semibold text-[var(--fi-reserve)]">{eur(m.reserve.matured)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-[var(--fi-ink-2)]">Uscite totali</dt>
-                <dd className="fi-num">{eur(m.reserve.cashOutUntilHorizon)}</dd>
-              </div>
-            </dl>
-          </Panel>
-          <Panel title="Regole applicate">
-            <ul className="space-y-2.5 text-sm text-[var(--fi-ink-2)]">
-              <li>
-                <b className="text-[var(--fi-ink)]">INPS fissi</b>: 4 rate (16/5, 20/8, 16/11, 16/2), sul minimale e
-                riproporzionate ai mesi di attività.
-              </li>
-              <li>
-                <b className="text-[var(--fi-ink)]">Saldo e 1° acconto</b> il 30/6 (o 31/7 +0,40%),{" "}
-                <b className="text-[var(--fi-ink)]">2° acconto</b> il 30/11. Acconti 50% + 50% per i forfettari.
-              </li>
-              <li>
-                Nessun acconto nel primo anno; nessuno se l&apos;imposta dell&apos;anno prima è ≤ 51,65 €; rata unica a
-                novembre se ≤ 257,52 €.
-              </li>
-              <li>
-                <b className="text-[var(--fi-ink)]">Bollo</b>: trimestrale, rinviabile al 30/9 o al 30/11 finché il
-                cumulato resta sotto 5.000 €.
-              </li>
+
+        <Section title="Prossime scadenze">
+          <Calendar items={upcoming} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
+          {past.length > 0 && (
+            <div className="mt-6">
+              <Disclosure summary={`Scadenze passate (${past.length})`}>
+                <Calendar items={past} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
+              </Disclosure>
+            </div>
+          )}
+        </Section>
+
+        <Section
+          title={`Pagamenti registrati nel ${m.year}`}
+          action={<span className="fi-num text-sm text-[var(--fi-ink-2)]">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
+        >
+          {payments.length === 0 ? (
+            <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessun F24 registrato.</p>
+          ) : (
+            <ul className="divide-y divide-[var(--fi-rule)] text-sm">
+              {payments.map((p) => {
+                const href = p.receipt ? links.get(p.receipt) : undefined;
+                return (
+                  <li key={p.id} className="flex items-baseline gap-4 py-2.5">
+                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
+                    <span className="min-w-0 flex-1 truncate">{p.label}</span>
+                    {href && (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--fi-action)] underline-offset-4 hover:underline">
+                        Ricevuta
+                      </a>
+                    )}
+                    <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Section>
+
+        <div className="space-y-3 border-t border-[var(--fi-rule)] pt-6">
+          {expenses.length > 0 && (
+            <Disclosure summary={`Spese operative ${m.year} · ${eur(m.expensesYtd)} (non deducibili, solo per tua analisi)`}>
+              <ul className="max-w-2xl divide-y divide-[var(--fi-rule)] text-sm">
+                {expenses.map((e) => (
+                  <li key={e.id} className="flex items-baseline gap-4 py-2">
+                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(e.spentAt)}</span>
+                    <span className="min-w-0 flex-1 truncate">{e.description ?? e.category}</span>
+                    <span className="fi-num">{eur(e.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Disclosure>
+          )}
+          <Disclosure summary="Come calcoliamo le scadenze">
+            <ul className="max-w-2xl space-y-2 text-sm text-[var(--fi-ink-2)]">
+              <li>INPS fissi: 4 rate (16/5, 20/8, 16/11, 16/2) sul minimale, in proporzione ai mesi di attività e con le tue riduzioni.</li>
+              <li>Saldo e 1° acconto di imposta e INPS eccedenza il 30/6 (proroghe dell&apos;anno incluse), 2° acconto il 30/11. Acconti 50% + 50%.</li>
+              <li>Nessun acconto nel primo anno; nessuno se l&apos;imposta dell&apos;anno prima è fino a 51,65 €; rata unica a novembre fino a 257,52 €.</li>
+              <li>Bollo trimestrale, rinviabile finché il totale resta sotto 5.000 €. INAIL il 16/2, stimato sull&apos;ultimo premio.</li>
               <li>Scadenze nel weekend o festive spostate al primo giorno lavorativo.</li>
             </ul>
-          </Panel>
+          </Disclosure>
         </div>
       </div>
     </>

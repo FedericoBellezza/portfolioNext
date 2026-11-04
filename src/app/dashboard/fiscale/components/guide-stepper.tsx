@@ -138,13 +138,13 @@ export function GuideStepper({
 
       {last ? (
         <div>
-          <h3 className="fi-display mb-2 text-[17px] font-semibold">Registra il pagamento</h3>
+          <h3 className="mb-2 text-[15px] font-semibold">Registra il pagamento</h3>
           {children}
         </div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className={cx(!step.media && "lg:col-span-2")}>
-            <h3 className="fi-display mb-2 text-[17px] font-semibold">{step.title}</h3>
+            <h3 className="mb-2 text-[15px] font-semibold">{step.title}</h3>
             <Paragraphs body={step.body} />
             {step.link && (
               <a

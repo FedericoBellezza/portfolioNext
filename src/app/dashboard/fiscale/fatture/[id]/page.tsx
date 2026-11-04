@@ -100,7 +100,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
               )}
               <div className="flex justify-between font-semibold">
                 <dt>Totale documento</dt>
-                <dd className="fi-num fi-display text-base">{eur(toCents(invoice.total_amount as string))}</dd>
+                <dd className="fi-num text-base">{eur(toCents(invoice.total_amount as string))}</dd>
               </div>
               {invoice.due_date ? (
                 <div className="flex justify-between text-xs text-[var(--fi-muted)]">

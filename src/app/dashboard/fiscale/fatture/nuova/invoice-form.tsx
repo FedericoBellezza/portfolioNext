@@ -81,7 +81,7 @@ export function InvoiceForm({
 
       <div className="space-y-6 xl:col-span-3">
         <section className={card}>
-          <h2 className="fi-display mb-4 text-[19px] font-semibold">Cliente e date</h2>
+          <h2 className="mb-4 text-[15px] font-semibold">Cliente e date</h2>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="sm:col-span-3">
               <label htmlFor="client" className={label}>
@@ -131,7 +131,7 @@ export function InvoiceForm({
 
         <section className={card}>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="fi-display text-[19px] font-semibold">Righe</h2>
+            <h2 className="text-[15px] font-semibold">Righe</h2>
             <button
               type="button"
               className={btn.outline}
@@ -197,7 +197,7 @@ export function InvoiceForm({
 
       <aside className="xl:col-span-2">
         <section className={cx(card, "xl:sticky xl:top-24")}>
-          <h2 className="fi-display mb-4 text-[19px] font-semibold">Anteprima</h2>
+          <h2 className="mb-4 text-[15px] font-semibold">Anteprima</h2>
           <dl className="divide-y divide-[var(--fi-rule)] text-sm">
             <Row label="Imponibile (N2.2, senza IVA)" value={eur(totals.taxableAmount)} />
             <Row
