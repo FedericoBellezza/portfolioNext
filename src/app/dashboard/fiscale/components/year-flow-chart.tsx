@@ -106,7 +106,9 @@ export function YearFlowChart({
         ))}
       </div>
 
-      <table className="sr-only">
+      {/* Hidden through a wrapper: a table ignores the 1px height of sr-only and would stretch the page. */}
+      <div className="sr-only">
+      <table>
         <caption>Incassi e F24 per mese nel {year}</caption>
         <thead>
           <tr>
@@ -127,6 +129,7 @@ export function YearFlowChart({
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }
