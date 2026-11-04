@@ -3,6 +3,7 @@ import { TriangleAlert } from "lucide-react";
 import { buildDashboard } from "@/lib/fiscale/data/dashboard";
 import type { FiscalDataset } from "@/lib/fiscale/data/types";
 import { DeadlineList, RevenueChart, RevenueLimit, TaxWaterfall } from "./charts";
+import { OverdueBanner } from "./overdue-banner";
 import { date, eur, pct } from "./format";
 import { btn, DemoNotice, Kpi, PageTitle, Panel, TextLink } from "./ui";
 
@@ -33,6 +34,7 @@ export function Overview({ data, asOf, newInvoiceHref = "/dashboard/fiscale/fatt
         }
       />
       <DemoNotice show={data.source === "demo"} />
+      <OverdueBanner items={m.overdue} demo={data.source === "demo"} />
 
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -107,7 +109,7 @@ export function Overview({ data, asOf, newInvoiceHref = "/dashboard/fiscale/fatt
             <RevenueChart monthly={m.monthlyRevenue} currentMonth={Number(asOf.slice(5, 7)) - 1} />
           </Panel>
           <Panel title="Prossimi F24" action={<TextLink href="/dashboard/fiscale/scadenze">Tutte →</TextLink>}>
-            <DeadlineList items={m.reserve.upcoming.slice(0, 6)} asOf={asOf} paid={m.paid} />
+            <DeadlineList items={m.reserve.upcoming.slice(0, 6)} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
           </Panel>
         </div>
       </div>

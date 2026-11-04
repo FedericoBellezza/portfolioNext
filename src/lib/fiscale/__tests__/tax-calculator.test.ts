@@ -69,12 +69,13 @@ describe("computeTaxYear", () => {
 });
 
 describe("computeInpsDue (Artigiani)", () => {
-  it("full year without reductions: 4.460,64 € fixed + 24% excess", () => {
+  it("full year 2026 without reductions: 4.521,36 € fixed + 24% excess (circ. INPS 14/2026)", () => {
     const r = computeInpsDue(2026, toCents(33_500));
     expect(r.activeMonths).toBe(12);
-    expect(r.fixedQuarterly).toEqual([111_516, 111_516, 111_516, 111_516]);
-    expect(r.fixedTotal).toBe(toCents(4_460.64));
-    expect(r.excess).toBe(toCents(3_586.8)); // (33.500 − 18.555) × 24%
+    expect(r.params.verified).toBe(true);
+    expect(r.fixedQuarterly).toEqual([113_034, 113_034, 113_034, 113_034]);
+    expect(r.fixedTotal).toBe(toCents(4_521.36));
+    expect(r.excess).toBe(toCents(3_526.08)); // (33.500 − 18.808) × 24%
   });
 
   it("pro-rates the start year (November start = 2 months, all in Q4)", () => {
@@ -87,20 +88,20 @@ describe("computeInpsDue (Artigiani)", () => {
 
   it("applies the 25% rate above the first bracket", () => {
     const r = computeInpsDue(2026, toCents(56_950)); // 85k × 67%
-    const expected = (55_448 - 18_555) * 0.24 + (56_950 - 55_448) * 0.25;
+    const expected = (56_224 - 18_808) * 0.24 + (56_950 - 56_224) * 0.25;
     expect(r.excess).toBe(toCents(expected));
   });
 
   it("35% forfettari reduction: maternity is not reduced", () => {
-    const r = computeInpsDue(2026, toCents(18_555), profile({ inpsReduction35Active: true }));
-    // 3 months × 371,10 × 0,65 + 3 × 0,62 = 725,505 per quarter
-    expect(r.fixedQuarterly[0]).toBe(toCents(725.51));
+    const r = computeInpsDue(2026, toCents(18_808), profile({ inpsReduction35Active: true }));
+    // 3 months × 376,16 × 0,65 + 3 × 0,62 = 735,372 per quarter
+    expect(r.fixedQuarterly[0]).toBe(toCents(735.37));
     expect(r.excess).toBe(0);
   });
 
   it("50% new-enrollment reduction lasts 36 months, then falls back to 35% if active", () => {
     const p = profile({ inpsReduction50NewEnrollmentActive: true, inpsReduction35Active: true });
-    expect(computeInpsDue(2026, 0, p).fixedTotal).toBe(toCents(2_234.04)); // 4.453,20 / 2 + 7,44
+    expect(computeInpsDue(2026, 0, p).fixedTotal).toBe(toCents(2_264.4)); // 4.513,92 / 2 + 7,44
     const r2028 = computeInpsDue(2028, 0, p);
     expect(r2028.reductionByMonth.slice(0, 10).every((x) => x === 0.5)).toBe(true); // Jan–Oct 2028
     expect(r2028.reductionByMonth[10]).toBe(0.35); // Nov 2028 = month 37
@@ -129,6 +130,14 @@ describe("advances (acconti, metodo storico)", () => {
 });
 
 describe("deadlines", () => {
+  it("keeps 30 June in years without a decree", () => {
+    const items = buildF24Schedule({
+      calendarYear: 2027,
+      figures: { 2026: { grossRevenue: toCents(10_000), inpsDeducted: 0 } },
+    });
+    expect(items.find((i) => i.key === "tax:balance:2026")?.dueDate).toBe("2027-06-30");
+  });
+
   it("moves weekend and holiday deadlines to the next working day", () => {
     expect(shiftToBusinessDay("2026-05-16")).toBe("2026-05-18"); // Saturday
     expect(shiftToBusinessDay("2026-04-06")).toBe("2026-04-07"); // Easter Monday
@@ -140,7 +149,7 @@ describe("deadlines", () => {
       calendarYear: 2026,
       figures: {
         2025: { grossRevenue: toCents(6_000), inpsDeducted: 0 },
-        2026: { grossRevenue: toCents(50_000), inpsDeducted: toCents(743.44 + 3 * 1_115.16) },
+        2026: { grossRevenue: toCents(50_000), inpsDeducted: toCents(743.44 + 3 * 1_130.34) },
       },
       stampDutyByQuarter: { 2025: [0, 0, 0, 400], 2026: [1_000, 1_200, 1_000, 800] },
     });
@@ -148,10 +157,12 @@ describe("deadlines", () => {
 
     expect(byKey["inps:fixed_q4:2025"]).toMatchObject({ dueDate: "2026-02-16", amount: toCents(743.44) });
     expect(byKey["stamp:q4:2025"]).toMatchObject({ dueDate: "2026-03-02", amount: 400 }); // 28/2 is Saturday
-    expect(byKey["inps:fixed_q1:2026"]).toMatchObject({ dueDate: "2026-05-18", amount: 111_516 });
-    // 2025 tax: 6.000 × 67% × 5% = 201 €, no advances paid in the start year
-    expect(byKey["tax:balance:2025"]).toMatchObject({ dueDate: "2026-06-30", amount: toCents(201), code: "1792" });
-    expect(byKey["inps:excess_balance:2025"]).toMatchObject({ amount: toCents(222.6) });
+    expect(byKey["inps:fixed_q1:2026"]).toMatchObject({ dueDate: "2026-05-18", amount: 113_034 });
+    // 2025 tax: 6.000 × 67% × 5% = 201 €, no advances paid in the start year.
+    // 2026: saldo moved from 30/6 to 20/7 by D.L. 89/2026.
+    expect(byKey["tax:balance:2025"]).toMatchObject({ dueDate: "2026-07-20", amount: toCents(201), code: "1792" });
+    expect(byKey["chamber:2026"]).toMatchObject({ dueDate: "2026-07-20" });
+    expect(byKey["inps:excess_balance:2025"]).toMatchObject({ dueDate: "2026-07-20", amount: toCents(222.6) });
     // 201 € ≤ 257,52 → single advance in November, nothing in June
     expect(byKey["tax:advance_1:2026"]).toBeUndefined();
     expect(byKey["tax:advance_2:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: toCents(201), code: "1791" });

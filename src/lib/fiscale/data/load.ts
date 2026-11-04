@@ -39,7 +39,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
   if (profile.error) throw new Error(`Supabase (fiscale): ${profile.error.message}`);
   if (!profile.data) return demoDataset;
 
-  const [clients, invoices, payments, inps, taxes, expenses] = await Promise.all([
+  const [clients, invoices, payments, inps, taxes, expenses, dismissals] = await Promise.all([
     db.from("clients").select("*").is("archived_at", null).order("company_name"),
     db
       .from("invoices")
@@ -49,8 +49,9 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("inps_payments").select("*").order("paid_at"),
     db.from("tax_payments").select("*").order("paid_at"),
     db.from("expenses").select("*").order("spent_at"),
+    db.from("obligation_dismissals").select("obligation_key"),
   ]);
-  const failed = [clients, invoices, payments, inps, taxes, expenses].find((r) => r.error);
+  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals].find((r) => r.error);
   if (failed?.error) throw new Error(`Supabase (fiscale): ${failed.error.message}`);
 
   const collections = (payments.data ?? []).map((p: Row) => ({
@@ -106,6 +107,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       kind: r.kind as FiscalDataset["inpsPayments"][number]["kind"],
       amount: toCents(r.amount as string),
       reference: str(r.f24_reference),
+      receiptPath: str(r.receipt_path),
     })),
     taxPayments: (taxes.data ?? []).map((r: Row) => ({
       id: String(r.id),
@@ -114,6 +116,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       kind: r.kind as FiscalDataset["taxPayments"][number]["kind"],
       tributeCode: str(r.tribute_code),
       amount: toCents(r.amount as string),
+      receiptPath: str(r.receipt_path),
     })),
     expenses: (expenses.data ?? []).map((r: Row) => ({
       id: String(r.id),
@@ -123,5 +126,6 @@ export async function loadDataset(): Promise<FiscalDataset> {
       vendor: str(r.vendor),
       description: str(r.description),
     })),
+    dismissedKeys: (dismissals.data ?? []).map((d: Row) => String(d.obligation_key)),
   };
 }

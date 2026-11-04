@@ -10,6 +10,8 @@ const nextConfig = {
   // above-the-fold nav and hero end up waiting behind.
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
+    // Ricevute F24 caricate dalla dashboard fiscale (max 5 MB + campi del form).
+    serverActions: { bodySizeLimit: "6mb" },
   },
 
   async redirects() {

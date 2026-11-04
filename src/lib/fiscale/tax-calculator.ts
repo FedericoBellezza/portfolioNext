@@ -19,6 +19,7 @@ import {
   DEFAULT_PROFILE,
   FORFETTARIO,
   getInpsParams,
+  INCOME_TAX_DEADLINE_OVERRIDES,
   STAMP_DUTY,
   type FiscalProfile,
   type InpsArtigianiParams,
@@ -498,21 +499,24 @@ export function buildF24Schedule(input: F24ScheduleInput): F24Item[] {
   }
 
   // --- 30 June: balances for C−1 and first advances for C ---------------
+  const override = INCOME_TAX_DEADLINE_OVERRIDES[C];
+  const june = override?.date ?? iso(C, 6, 30);
+  const juneNote = override?.note ?? "Prorogabile al 31/7 con maggiorazione 0,40%";
   if (prev) {
     const taxAdvPrev = computeTaxAdvances(C - 1, taxOf(C - 2), profile);
     const balance = prev.substituteTax - taxAdvPrev.total;
     push({
-      key: `tax:balance:${C - 1}`, date: iso(C, 6, 30), category: "substitute_tax",
+      key: `tax:balance:${C - 1}`, date: june, category: "substitute_tax",
       label: `Imposta sostitutiva saldo ${C - 1}`, code: "1792", competenceYear: C - 1,
       amount: Math.max(0, balance), credit: balance < 0 ? -balance : undefined,
-      estimate: isEstimate(C - 1), note: "Prorogabile al 31/7 con maggiorazione 0,40%",
+      estimate: isEstimate(C - 1), note: juneNote,
     });
 
     const inpsAdvPrev = computeInpsExcessAdvances(C - 1, taxableOf(C - 2), profile);
     const inpsBalance = prev.inpsDue.excess - inpsAdvPrev.total;
     if (prev.inpsDue.excess > 0 || inpsAdvPrev.total > 0) {
       push({
-        key: `inps:excess_balance:${C - 1}`, date: iso(C, 6, 30), category: "inps_excess",
+        key: `inps:excess_balance:${C - 1}`, date: june, category: "inps_excess",
         label: `INPS eccedenza saldo ${C - 1}`, code: "AP", competenceYear: C - 1,
         amount: Math.max(0, inpsBalance), credit: inpsBalance < 0 ? -inpsBalance : undefined,
         estimate: isEstimate(C - 1),
@@ -525,17 +529,17 @@ export function buildF24Schedule(input: F24ScheduleInput): F24Item[] {
     const inpsAdv = computeInpsExcessAdvances(C, taxableOf(C - 1), profile);
     const advEstimate = isEstimate(C - 1);
     if (taxAdv.first > 0) push({
-      key: `tax:advance_1:${C}`, date: iso(C, 6, 30), category: "substitute_tax",
+      key: `tax:advance_1:${C}`, date: june, category: "substitute_tax",
       label: `Imposta sostitutiva 1° acconto ${C}`, code: "1790", competenceYear: C,
       amount: taxAdv.first, estimate: advEstimate,
     });
     if (inpsAdv.first > 0) push({
-      key: `inps:excess_advance_1:${C}`, date: iso(C, 6, 30), category: "inps_excess",
+      key: `inps:excess_advance_1:${C}`, date: june, category: "inps_excess",
       label: `INPS eccedenza 1° acconto ${C}`, code: "AP", competenceYear: C,
       amount: inpsAdv.first, estimate: advEstimate,
     });
     if (C > startYear) push({
-      key: `chamber:${C}`, date: iso(C, 6, 30), category: "chamber_fee",
+      key: `chamber:${C}`, date: june, category: "chamber_fee",
       label: `Diritto camerale ${C}`, code: "3850", competenceYear: C,
       amount: CHAMBER_OF_COMMERCE_FEE, estimate: true, note: "Importo indicativo, varia per provincia",
     });

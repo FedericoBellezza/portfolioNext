@@ -9,28 +9,8 @@ import {
   type SavingsReserve,
   type TaxYearResult,
 } from "../tax-calculator";
-import type { FiscalDataset, TaxPaymentKind } from "./types";
-
-/** Maps recorded F24 payments to schedule keys, to mark deadlines as paid. */
-function paidKeys(data: FiscalDataset): Set<string> {
-  const keys = new Set<string>();
-  for (const p of data.inpsPayments) keys.add(`inps:${p.kind}:${p.competenceYear}`);
-  const taxKey: Partial<Record<TaxPaymentKind, string>> = {
-    substitute_tax_balance: "tax:balance",
-    substitute_tax_advance_1: "tax:advance_1",
-    substitute_tax_advance_2: "tax:advance_2",
-    stamp_duty_q1: "stamp:q1",
-    stamp_duty_q2: "stamp:q2",
-    stamp_duty_q3: "stamp:q3",
-    stamp_duty_q4: "stamp:q4",
-    chamber_fee: "chamber",
-  };
-  for (const p of data.taxPayments) {
-    const k = taxKey[p.kind];
-    if (k) keys.add(`${k}:${p.competenceYear}`);
-  }
-  return keys;
-}
+import { settledKeys } from "../obligations";
+import type { FiscalDataset } from "./types";
 
 function stampDutyByQuarter(data: FiscalDataset) {
   const out: Record<number, [Cents, Cents, Cents, Cents]> = {};
@@ -58,13 +38,18 @@ export interface DashboardModel {
   monthlyRevenue: Cents[];
   outstanding: Cents;
   expensesYtd: Cents;
+  /** Calendar keys settled: paid or marked as not due. */
   paid: Set<string>;
+  dismissed: Set<string>;
+  /** Past deadlines with something to pay and nothing recorded yet. */
+  overdue: F24Item[];
 }
 
 export function buildDashboard(data: FiscalDataset, asOf: string): DashboardModel {
   const profile = data.profile;
   const C = yearOf(asOf);
-  const paid = paidKeys(data);
+  const { paid: recorded, dismissed } = settledKeys(data);
+  const paid = new Set([...recorded, ...dismissed]);
   const stamps = stampDutyByQuarter(data);
 
   const revenueOf = (y: number) =>
@@ -126,6 +111,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     ),
     expensesYtd: sumCents(data.expenses.filter((e) => yearOf(e.spentAt) === C).map((e) => e.amount)),
     paid,
+    dismissed,
+    overdue: schedule.filter((i) => i.dueDate < asOf && i.amount > 0 && !paid.has(i.key)),
   };
 }
 

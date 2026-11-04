@@ -47,6 +47,7 @@ export interface CollectionRow extends Collection {
 export interface InpsPaymentRow extends InpsPayment {
   id: string;
   reference: string | null;
+  receiptPath: string | null;
 }
 
 export interface TaxPaymentRow {
@@ -56,6 +57,7 @@ export interface TaxPaymentRow {
   kind: TaxPaymentKind;
   tributeCode: string | null;
   amount: Cents;
+  receiptPath: string | null;
 }
 
 export interface ExpenseRow {
@@ -77,4 +79,6 @@ export interface FiscalDataset {
   inpsPayments: InpsPaymentRow[];
   taxPayments: TaxPaymentRow[];
   expenses: ExpenseRow[];
+  /** Calendar keys the owner marked as not due (fiscale.obligation_dismissals). */
+  dismissedKeys: string[];
 }

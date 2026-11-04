@@ -13,7 +13,7 @@ Sezione privata `/dashboard/fiscale` (solo `OWNER_EMAIL`, come Assistente e Trad
 | `src/lib/fiscale/data/` | Lettura dallo schema `fiscale`, dati demo, modello della dashboard |
 | `src/app/dashboard/fiscale/` | Pagine e componenti (stile sotto `.fi`, vedi `fiscale.css`) |
 | `src/app/api/fiscale/export` | Download registro (`protectedRoute`) |
-| `supabase/migrations/0006_fiscale.sql` | Schema `fiscale`, RLS per utente, fatture emesse immutabili, numerazione |
+| `supabase/migrations/0006_fiscale.sql`, `0007_…` | Schema `fiscale`, RLS per utente, fatture emesse immutabili, numerazione, ricevute F24 |
 
 Tutti i calcoli sono in centesimi interi. Test: `npm test`.
 
@@ -33,11 +33,18 @@ values
 
 Riduzioni INPS: colonne `inps_reduction_35_active` e `inps_reduction_50_new_enrollment_active` (non cumulabili).
 
+## Adempimenti da registrare
+
+In cima alla panoramica e alle scadenze compare un banner con gli F24 scaduti senza pagamento registrato. Per ognuno si inseriscono data, importo effettivo e ricevuta (PDF/JPG/PNG, max 5 MB, bucket privato `fiscale-f24`). Il pagamento va in `inps_payments` o `tax_payments` (un solo versamento per adempimento) e da lì entra nei calcoli: le deduzioni INPS usano l'importo reale e la scadenza risulta pagata. Se un adempimento stimato non era dovuto si segna come tale (`obligation_dismissals`). Le ricevute si aprono da "INPS e spese" con link temporanei.
+
+Il legame tra scadenze del calendario e righe del DB è in `src/lib/fiscale/obligations.ts` (testato).
+
 ## Da aggiornare ogni anno
 
-- Parametri INPS in `tax-config.ts`: il 2026 usa i valori 2025 (`verified: false`, la dashboard mostra un avviso) finché non si inserisce la circolare INPS 2026.
+- Parametri INPS in `tax-config.ts` (`INPS_ARTIGIANI`): 2026 da circolare INPS n. 14/2026. Gli anni mancanti usano l'ultimo noto con un avviso.
+- Proroghe del 30 giugno in `INCOME_TAX_DEADLINE_OVERRIDES`: 2026 → 20 luglio (D.L. 89/2026, +0,80% fino al 20 agosto).
 - Diritto camerale: importo indicativo.
 
 ## Prossimi passi
 
-Anagrafica clienti, registrazione incassi e F24, emissione e XML FatturaPA, invio via Invoicetronic, backup mensile dello schema via n8n.
+Anagrafica clienti, registrazione incassi, emissione e XML FatturaPA, invio via Invoicetronic, backup mensile dello schema via n8n.

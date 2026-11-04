@@ -147,11 +147,14 @@ export function DeadlineList({
   items,
   asOf,
   paid,
+  dismissed,
   showCategory = false,
 }: {
   items: F24Item[];
   asOf: string;
+  /** Settled keys: paid or marked as not due. */
   paid: ReadonlySet<string>;
+  dismissed?: ReadonlySet<string>;
   showCategory?: boolean;
 }) {
   if (items.length === 0) return <p className="py-6 text-sm text-[var(--fi-ink-2)]">Nessuna scadenza.</p>;
@@ -176,10 +179,12 @@ export function DeadlineList({
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
               <span className="fi-num text-sm font-medium">{eur(item.amount)}</span>
-              {isPaid ? (
+              {dismissed?.has(item.key) ? (
+                <Badge tone="outline">Non dovuto</Badge>
+              ) : isPaid ? (
                 <Badge>Pagato</Badge>
               ) : overdue ? (
-                <Badge tone="critical">Da verificare</Badge>
+                <Badge tone="critical">Da registrare</Badge>
               ) : days >= 0 && days <= 30 ? (
                 <Badge tone="solid">Tra {days} gg</Badge>
               ) : item.estimate ? (

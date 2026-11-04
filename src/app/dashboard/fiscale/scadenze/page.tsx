@@ -4,6 +4,7 @@ import { loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
 import type { F24Item } from "@/lib/fiscale/tax-calculator";
 import { DeadlineList } from "../components/charts";
+import { OverdueBanner } from "../components/overdue-banner";
 import { eur, MONTHS } from "../components/format";
 import { DemoNotice, PageTitle, Panel } from "../components/ui";
 
@@ -31,6 +32,7 @@ export default async function ScadenzePage() {
         description="Calendario simulato con metodo storico. Gli importi dell'anno in corso sono stime sugli incassi a oggi."
       />
       <DemoNotice show={data.source === "demo"} />
+      <OverdueBanner items={m.overdue} demo={data.source === "demo"} />
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
           {groupByMonth(m.schedule).map(([month, items]) => {
@@ -41,7 +43,7 @@ export default async function ScadenzePage() {
                 title={`${MONTHS[mm - 1]} ${y}`}
                 action={<span className="fi-num text-sm font-medium">{eur(sumCents(items.map((i) => i.amount)))}</span>}
               >
-                <DeadlineList items={items} asOf={asOf} paid={m.paid} showCategory />
+                <DeadlineList items={items} asOf={asOf} paid={m.paid} dismissed={m.dismissed} showCategory />
               </Panel>
             );
           })}

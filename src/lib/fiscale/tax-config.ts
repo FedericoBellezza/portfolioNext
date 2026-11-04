@@ -88,17 +88,15 @@ export const INPS_ARTIGIANI: Record<number, InpsArtigianiParams> = {
     source: "Circolare INPS 2025 (minimale 18.555 €, fisso annuo 4.460,64 €)",
   },
   2026: {
-    // TODO: replace with the 2026 INPS circular values. Until then the 2025
-    // numbers are used and the UI shows a warning.
     year: 2026,
-    minimumIncome: 1_855_500,
+    minimumIncome: 1_880_800,
     rate: 0.24,
-    bracketThreshold: 5_544_800,
+    bracketThreshold: 5_622_400,
     rateAboveBracket: 0.25,
-    maximumIncome: 12_060_700,
+    maximumIncome: 12_229_500,
     maternityMonthly: 62,
-    verified: false,
-    source: "Placeholder: valori 2025, da aggiornare con la circolare INPS 2026",
+    verified: true,
+    source: "Circolare INPS n. 14 del 9/2/2026 (minimale 18.808 €, fisso annuo 4.521,36 €)",
   },
 };
 
@@ -143,6 +141,14 @@ export const ADVANCE_THRESHOLDS = {
   /** Single advance in November if the prior-year tax is at or below this. */
   singleInstalment: 25_752,
 } as const;
+
+/**
+ * One-off moves of the 30 June deadline (saldo + 1° acconto, imposte e contributi
+ * da dichiarazione, diritto camerale) decided year by year for ISA and forfettari.
+ */
+export const INCOME_TAX_DEADLINE_OVERRIDES: Record<number, { date: string; note: string }> = {
+  2026: { date: "2026-07-20", note: "Prorogato dal D.L. 89/2026; entro il 20/8 con +0,80%" },
+};
 
 /** Diritto camerale (sezione speciale + typical 20% maggiorazione). Varies by province. */
 export const CHAMBER_OF_COMMERCE_FEE: Cents = 5_300;

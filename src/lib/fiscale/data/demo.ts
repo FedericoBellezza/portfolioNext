@@ -73,14 +73,14 @@ export const demoDataset: FiscalDataset = {
   invoices,
   collections,
   inpsPayments: [
-    { id: "n1", paidAt: "2026-02-16", competenceYear: 2025, kind: "fixed_q4", amount: toCents(743.44), reference: null },
-    { id: "n2", paidAt: "2026-05-18", competenceYear: 2026, kind: "fixed_q1", amount: toCents(1_115.16), reference: null },
-    { id: "n3", paidAt: "2026-08-20", competenceYear: 2026, kind: "fixed_q2", amount: toCents(1_115.16), reference: null },
+    { id: "n1", paidAt: "2026-02-16", competenceYear: 2025, kind: "fixed_q4", amount: toCents(743.44), reference: null, receiptPath: null },
+    { id: "n2", paidAt: "2026-05-18", competenceYear: 2026, kind: "fixed_q1", amount: toCents(1_130.34), reference: null, receiptPath: null },
+    { id: "n3", paidAt: "2026-08-20", competenceYear: 2026, kind: "fixed_q2", amount: toCents(1_130.34), reference: null, receiptPath: null },
   ],
   taxPayments: [
-    { id: "t1", paidAt: "2026-03-02", competenceYear: 2025, kind: "stamp_duty_q4", tributeCode: "2524", amount: 400 },
-    { id: "t2", paidAt: "2026-06-30", competenceYear: 2025, kind: "substitute_tax_balance", tributeCode: "1792", amount: toCents(80.47) },
-    { id: "t3", paidAt: "2026-06-30", competenceYear: 2026, kind: "chamber_fee", tributeCode: "3850", amount: toCents(53) },
+    { id: "t1", paidAt: "2026-03-02", competenceYear: 2025, kind: "stamp_duty_q4", tributeCode: "2524", amount: 400, receiptPath: null },
+    { id: "t2", paidAt: "2026-06-30", competenceYear: 2025, kind: "substitute_tax_balance", tributeCode: "1792", amount: toCents(80.47), receiptPath: null },
+    { id: "t3", paidAt: "2026-06-30", competenceYear: 2026, kind: "chamber_fee", tributeCode: "3850", amount: toCents(53), receiptPath: null },
   ],
   expenses: [
     { id: "e1", spentAt: "2026-01-10", amount: toCents(240), category: "software", vendor: "JetBrains", description: "All Products Pack" },
@@ -89,4 +89,5 @@ export const demoDataset: FiscalDataset = {
     { id: "e4", spentAt: "2026-06-15", amount: toCents(150), category: "accountant", vendor: "CAF", description: "Modello Redditi 2026" },
     { id: "e5", spentAt: "2026-09-20", amount: toCents(320), category: "training", vendor: "Conferenza", description: "Biglietto + viaggio" },
   ],
+  dismissedKeys: [],
 };
