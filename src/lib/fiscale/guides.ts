@@ -29,6 +29,7 @@ export interface Guide {
 const INPS_CASSETTO =
   "https://www.inps.it/it/it/dettaglio-scheda.it.schede-servizio-strumento.schede-aree-tematiche.cassetto-previdenziale-artigiani-e-commercianti-50241.cassetto-previdenziale-artigiani-e-commercianti.html";
 const ADE_AREA_RISERVATA = "https://www.agenziaentrate.gov.it/portale/";
+const INAIL_LOGIN = "https://www.inail.it/app/iaa/IAA/public/login?TARGET=https:%2F%2Fwww.inail.it%2Fcs%2FRedirectLogin";
 
 const day = (iso: string) =>
   new Intl.DateTimeFormat("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(
@@ -198,25 +199,51 @@ function chamberFee(item: F24Item): Guide {
 }
 
 function inail(item: F24Item): Guide {
+  const year = item.competenceYear;
   return {
     id: "inail",
     title: "Paga il premio INAIL (autoliquidazione)",
     steps: [
       {
-        title: "Recupera l'avviso di autoliquidazione",
+        title: "Accedi ai servizi online INAIL",
         body: [
-          "Nei servizi online INAIL (accesso con SPID o CIE) trovi l'avviso con il premio da pagare e i dati per l'F24.",
-          item.unknownAmount
-            ? "Non hai ancora registrato premi INAIL: l'importo lo trovi sull'avviso."
-            : `Stima basata sull'ultimo premio pagato: ${euro(item.amount)}.`,
+          "Entra con SPID o CIE.",
+          "• Quando ti chiede il profilo, scegli \"Legale rappresentante\" (per la tua ditta individuale sei tu)",
         ],
+        link: { label: "Accedi a MyINAIL", href: INAIL_LOGIN },
+        media: "inail-1",
       },
       {
-        title: "Compila l'F24 (sezione Altri enti previdenziali e assicurativi)",
+        title: "Apri l'autoliquidazione",
         body: [
-          "Copia dall'avviso: codice sede, codice ditta, codice di controllo, numero di riferimento e causale.",
-          `Paga entro il ${day(item.dueDate)}, poi registra l'importo qui.`,
+          "• In \"Servizi per te\" trova il riquadro \"Autoliquidazione\" e premi \"Vai al servizio\"",
+          "• Scegli \"Alpi online\"",
         ],
+        media: "inail-2",
+      },
+      {
+        title: "Calcola il premio e scarica l'F24",
+        body: [
+          "Nel menu a sinistra apri \"Calcola il premio e invia le retribuzioni\". Se l'F24 non è ancora stato generato:",
+          "• Premi \"Calcola premio\", poi \"Continua\"",
+          "• Conferma di avere i requisiti richiesti",
+          "• Scegli se pagare in un'unica soluzione o a rate",
+          "• Premi \"Continua\": viene generato l'F24, scaricalo",
+          item.unknownAmount
+            ? "L'importo da pagare è quello indicato sull'F24."
+            : `Stima basata sull'ultimo premio pagato: ${euro(item.amount)}. Fa fede l'importo dell'F24.`,
+        ],
+        media: "inail-3",
+      },
+      {
+        title: "Trasmetti la dichiarazione e paga",
+        body: [
+          "• Dopo aver scaricato l'F24, scorri in fondo e premi \"Trasmetti\": così invii la dichiarazione delle retribuzioni",
+          `• Paga l'F24 dall'home banking entro il ${day(item.dueDate)}`,
+          `Se ti accorgi di un errore nei dati inviati, puoi rifare l'invio entro il 28 febbraio ${year}; la scadenza del pagamento però resta la stessa.`,
+          "Poi torna qui e registra l'importo pagato.",
+        ],
+        media: "inail-4",
       },
     ],
   };
@@ -241,7 +268,11 @@ export function guideFor(item: F24Item): Guide {
 }
 
 /** All media slots used by the guides (for the upload page and storage lookups). */
-export const GUIDE_MEDIA_SLOTS = ["inps-1", "inps-2", "inps-3", "bollo-1", "bollo-2", "bollo-3"] as const;
+export const GUIDE_MEDIA_SLOTS = [
+  "inps-1", "inps-2", "inps-3",
+  "bollo-1", "bollo-2", "bollo-3",
+  "inail-1", "inail-2", "inail-3", "inail-4",
+] as const;
 export type GuideMediaSlot = (typeof GUIDE_MEDIA_SLOTS)[number];
 
 export type GuideMedia = Partial<Record<string, { url: string; kind: "image" | "video" }>>;

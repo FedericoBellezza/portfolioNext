@@ -27,6 +27,9 @@ describe("payment guides", () => {
     const stamp = items.find((i) => i.key === "stamp:q3:2026")!;
     expect(text(stamp)).toContain("3° trimestre");
     expect(text(items.find((i) => i.category === "chamber_fee")!)).toContain("3850");
+    const inail2027 = items.find((i) => i.key === "inail:2027")!;
+    expect(text(inail2027)).toContain("16 febbraio 2027");
+    expect(text(inail2027)).toContain("28 febbraio 2027");
   });
 
   it("only uses known media slots (INPS and bollo have the owner's images/videos)", () => {
@@ -34,5 +37,6 @@ describe("payment guides", () => {
     for (const slot of used) expect(GUIDE_MEDIA_SLOTS).toContain(slot);
     expect(guideFor(items.find((i) => i.category === "inps_fixed")!).steps.map((s) => s.media)).toEqual(["inps-1", "inps-2", "inps-3"]);
     expect(guideFor(items.find((i) => i.category === "stamp_duty")!).steps.map((s) => s.media)).toEqual(["bollo-1", "bollo-2", "bollo-3"]);
+    expect(guideFor(items.find((i) => i.category === "inail")!).steps.map((s) => s.media)).toEqual(["inail-1", "inail-2", "inail-3", "inail-4"]);
   });
 });
