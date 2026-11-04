@@ -72,6 +72,19 @@ export interface ExpenseRow {
   description: string | null;
 }
 
+export interface TaxCredit {
+  id: string;
+  kind: "irpef" | "substitute_tax" | "inps" | "other";
+  referenceYear: number;
+  amount: Cents;
+  destination: "compensation" | "refund";
+  source: string | null;
+  notes: string | null;
+  uses: { id: string; usedAt: string; amount: Cents; note: string | null }[];
+  used: Cents;
+  residual: Cents;
+}
+
 export interface FiscalDataset {
   source: "demo" | "supabase";
   owner: { name: string; vatNumber: string };
@@ -88,4 +101,6 @@ export interface FiscalDataset {
   reminders: Reminder[];
   /** Filings and reminders marked as done (fiscale.task_completions). */
   completedTasks: { key: string; completedAt: string; documentId: string | null; note: string | null }[];
+  /** Tax credits (e.g. IRPEF from the tax return) and their use in F24 compensation. */
+  credits: TaxCredit[];
 }

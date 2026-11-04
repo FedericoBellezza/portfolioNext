@@ -10,6 +10,8 @@ import { DeadlineList } from "../components/charts";
 import { date, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
 import { btn, DemoNotice, Disclosure, PageTitle, Section } from "../components/ui";
+import { deleteCreditAction } from "./credit-actions";
+import { CreditAmountEdit, CreditForm } from "./credits-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
 import { OpenTasks, ReminderForm } from "./tasks-ui";
 
@@ -94,6 +96,12 @@ export default async function TassePage() {
   const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
   const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
 
+  const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "imposta sostitutiva", inps: "INPS", other: "altro" };
+  const creditLabel = (c: (typeof data.credits)[number]) => `Credito ${CREDIT_KIND[c.kind]} ${c.referenceYear}`;
+  const usableCredits = data.credits
+    .filter((c) => c.destination === "compensation" && c.residual > 0)
+    .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
+
   // Filings and reminders: everything not done up to 12 months ahead, done ones of this year apart.
   const horizon = `${m.year + 1}${asOf.slice(4)}`;
   const openTasks = m.tasks.filter((t) => !m.doneTasks.has(t.key) && t.dueDate <= horizon);
@@ -113,7 +121,14 @@ export default async function TassePage() {
       <DemoNotice show={demo} />
 
       <p className="mb-10 text-sm text-[var(--fi-ink-2)]">
-        Da tenere da parte adesso <b className="fi-num text-base font-semibold text-[var(--fi-ink)]">{eur(m.reserve.matured)}</b>
+        Da tenere da parte adesso <b className="fi-num text-base font-semibold text-[var(--fi-ink)]">{eur(m.reserveAfterCredit)}</b>
+        {m.availableCredit > 0 && (
+          <span>
+            {" "}
+            (già scalati {eur(Math.min(m.availableCredit, m.reserve.matured))} di{" "}
+            <a href="#crediti" className="underline-offset-4 hover:underline">credito</a>)
+          </span>
+        )}
         <span className="mx-2 text-[var(--fi-rule)]">|</span>
         Uscite previste fino al 30 giugno {m.year + 1}{" "}
         <b className="fi-num font-medium text-[var(--fi-ink)]">{eur(m.reserve.cashOutUntilHorizon)}</b>
@@ -130,6 +145,7 @@ export default async function TassePage() {
               items={toHandle}
               demo={demo}
               media={media}
+              credits={usableCredits}
               tone={m.overdue.length > 0 ? "warning" : "neutral"}
               title="Da pagare o registrare"
               intro="Apri una voce per vedere come pagarla e registrare l'importo. Vale anche per quelle già pagate in anticipo; se una stima non ti riguarda, segnala come non dovuta."
@@ -189,6 +205,65 @@ export default async function TassePage() {
               )}
             </Disclosure>
           </div>
+        </Section>
+
+        <Section
+          title="Crediti d'imposta"
+          id="crediti"
+          action={
+            m.availableCredit > 0 ? (
+              <span className="fi-num text-sm text-[var(--fi-ink-2)]">Disponibile {eur(m.availableCredit)}</span>
+            ) : undefined
+          }
+        >
+          {data.credits.length === 0 ? (
+            <p className="mb-3 text-sm text-[var(--fi-ink-2)]">
+              Nessun credito. Se dalla dichiarazione risulta un credito (es. IRPEF), registralo: viene scalato da quanto
+              tenere da parte e lo usi quando paghi un F24 in compensazione.
+            </p>
+          ) : (
+            <ul className="mb-4 divide-y divide-[var(--fi-rule)] rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)]">
+              {data.credits.map((c) => (
+                <li key={c.id} className="px-4 py-3">
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">{creditLabel(c)}</span>
+                      <span className="block text-xs text-[var(--fi-muted)]">
+                        {c.destination === "refund" ? "Chiesto a rimborso" : "In compensazione"}
+                        {c.source ? ` · ${c.source}` : ""}
+                      </span>
+                    </span>
+                    <span className="fi-num text-sm">
+                      {eur(c.amount)} − usati {eur(c.used)} = <b className="font-semibold">{eur(c.residual)}</b>
+                    </span>
+                  </div>
+                  {c.notes && <p className="mt-1 text-xs text-[var(--fi-warning-text)]">{c.notes}</p>}
+                  {c.uses.length > 0 && (
+                    <ul className="mt-2 space-y-0.5 text-xs text-[var(--fi-ink-2)]">
+                      {c.uses.map((u) => (
+                        <li key={u.id} className="fi-num">
+                          {date(u.usedAt)} · {eur(u.amount)}
+                          {u.note ? ` · ${u.note}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-4">
+                    <CreditAmountEdit id={c.id} amount={c.amount} />
+                    <form action={deleteCreditAction}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
+                        Elimina
+                      </button>
+                    </form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Disclosure summary="Aggiungi un credito">
+            <CreditForm defaultYear={m.year - 1} demo={demo} />
+          </Disclosure>
         </Section>
 
         <Section title="Prossimi pagamenti">

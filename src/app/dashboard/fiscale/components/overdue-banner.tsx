@@ -23,9 +23,12 @@ export function OverdueBanner({
   intro,
   tone = "warning",
   media = {},
+  credits = [],
 }: {
   items: F24Item[];
   demo: boolean;
+  /** Credits with a residual, selectable when paying in compensation. */
+  credits?: { id: string; label: string; residual: number }[];
   /** Owner's guide images and videos (signed links), by slot. */
   media?: GuideMedia;
   title?: string;
@@ -85,7 +88,7 @@ export function OverdueBanner({
             </div>
             {open === item.key && (
               <GuideStepper guide={guideFor(item)} media={media} canUpload={!demo}>
-                <RegisterForm item={item} demo={demo} />
+                <RegisterForm item={item} demo={demo} credits={credits} />
               </GuideStepper>
             )}
           </li>
@@ -97,7 +100,16 @@ export function OverdueBanner({
 
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
 
-function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
+function RegisterForm({
+  item,
+  demo,
+  credits,
+}: {
+  item: F24Item;
+  demo: boolean;
+  credits: { id: string; label: string; residual: number }[];
+}) {
+  const [compensated, setCompensated] = useState(false);
   const [state, action, pending] = useActionState<ActionState, FormData>(registerF24, null);
   const [dismissState, dismissAction, dismissing] = useActionState<ActionState, FormData>(dismissObligation, null);
   const [showDismiss, setShowDismiss] = useState(false);
@@ -134,7 +146,13 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
           />
         </div>
         <label className="flex items-start gap-2 text-sm sm:col-span-4">
-          <input type="checkbox" name="compensated" className="mt-0.5" />
+          <input
+            type="checkbox"
+            name="compensated"
+            className="mt-0.5"
+            checked={compensated}
+            onChange={(e) => setCompensated(e.target.checked)}
+          />
           <span>
             Pagato in compensazione
             <span className="block text-xs text-[var(--fi-muted)]">
@@ -142,6 +160,25 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
             </span>
           </span>
         </label>
+        {compensated && credits.length > 0 && (
+          <>
+            <div className="sm:col-span-2">
+              <label htmlFor={`${id}-credit`} className={fieldLabel}>Credito usato</label>
+              <select id={`${id}-credit`} name="creditId" defaultValue={credits[0].id}>
+                {credits.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label} · residuo {eur(c.residual)}
+                  </option>
+                ))}
+                <option value="">Un credito non registrato qui</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor={`${id}-credit-amount`} className={fieldLabel}>Quanto credito (€)</label>
+              <input id={`${id}-credit-amount`} name="creditAmount" inputMode="decimal" placeholder="Tutto l'importo" />
+            </div>
+          </>
+        )}
         <div className="sm:col-span-3">
           <label htmlFor={`${id}-ref`} className={fieldLabel}>Protocollo o nota (facoltativo)</label>
           <input id={`${id}-ref`} name="reference" maxLength={100} />

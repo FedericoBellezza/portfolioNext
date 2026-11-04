@@ -50,6 +50,10 @@ export interface DashboardModel {
   doneTasks: Map<string, { completedAt: string; documentId: string | null; note: string | null }>;
   /** Not done and already past due. */
   overdueTasks: TaskItem[];
+  /** Residual of the credits meant for F24 compensation. */
+  availableCredit: Cents;
+  /** Cash to keep aside once the available credit is used: max(0, matured − credit). */
+  reserveAfterCredit: Cents;
 }
 
 export function buildDashboard(data: FiscalDataset, asOf: string): DashboardModel {
@@ -108,6 +112,9 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     reminders: data.reminders,
     inail: true, // same rule as the INAIL premium in the F24 calendar
   });
+  const availableCredit = sumCents(
+    data.credits.filter((c) => c.destination === "compensation").map((c) => Math.max(0, c.residual)),
+  );
   const doneTasks = new Map(
     data.completedTasks.map((c) => [c.key, { completedAt: c.completedAt, documentId: c.documentId, note: c.note }]),
   );
@@ -139,6 +146,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     tasks,
     doneTasks,
     overdueTasks: tasks.filter((t) => t.dueDate < asOf && !doneTasks.has(t.key)),
+    availableCredit,
+    reserveAfterCredit: Math.max(0, reserve.matured - availableCredit),
   };
 }
 

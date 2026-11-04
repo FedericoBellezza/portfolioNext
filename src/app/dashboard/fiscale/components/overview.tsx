@@ -90,6 +90,18 @@ export function Overview({
       href: "/dashboard/fiscale/scadenze#registra",
       action: "Come pagare",
     });
+  if (m.availableCredit > 0)
+    todos.push({
+      key: "credit",
+      icon: CircleCheck,
+      text: (
+        <>
+          Hai <span className="fi-num">{eur(m.availableCredit)}</span> di credito da usare in compensazione nei prossimi F24
+        </>
+      ),
+      href: "/dashboard/fiscale/scadenze#crediti",
+      action: "Vedi",
+    });
   if (unpaid.length > 0)
     todos.push({
       key: "unpaid",
@@ -198,8 +210,11 @@ export function Overview({
               <div className="mt-6 flex flex-col gap-3 border-t border-[var(--fi-rule)] pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm">
                   Da tenere da parte adesso:{" "}
-                  <b className="fi-num text-base font-semibold">{eur(m.reserve.matured)}</b>
-                  <span className="text-[var(--fi-ink-2)]"> per gli F24 fino al 30 giugno {m.year + 1}</span>
+                  <b className="fi-num text-base font-semibold">{eur(m.reserveAfterCredit)}</b>
+                  <span className="text-[var(--fi-ink-2)]">
+                    {" "}per gli F24 fino al 30 giugno {m.year + 1}
+                    {m.availableCredit > 0 && `, già scalati ${eur(Math.min(m.availableCredit, m.reserve.matured))} di credito`}
+                  </span>
                 </p>
                 <TextLink href="/dashboard/fiscale/scadenze">Vedi le scadenze</TextLink>
               </div>

@@ -92,4 +92,5 @@ export const demoDataset: FiscalDataset = {
   dismissedKeys: [],
   reminders: [],
   completedTasks: [],
+  credits: [],
 };

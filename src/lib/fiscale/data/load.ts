@@ -39,7 +39,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
   if (profile.error) throw new Error(`Supabase (fiscale): ${profile.error.message}`);
   if (!profile.data) return demoDataset;
 
-  const [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions] = await Promise.all([
+  const [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses] = await Promise.all([
     db.from("clients").select("*").is("archived_at", null).order("company_name"),
     db
       .from("invoices")
@@ -52,8 +52,10 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("obligation_dismissals").select("obligation_key"),
     db.from("reminders").select("*").is("archived_at", null).order("first_due"),
     db.from("task_completions").select("task_key, completed_at, document_id, note"),
+    db.from("tax_credits").select("*").order("reference_year", { ascending: false }),
+    db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note").order("used_at"),
   ]);
-  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions].find((r) => r.error);
+  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses].find((r) => r.error);
   if (failed?.error) throw new Error(`Supabase (fiscale): ${failed.error.message}`);
 
   const collections = (payments.data ?? []).map((p: Row) => ({
@@ -140,6 +142,25 @@ export async function loadDataset(): Promise<FiscalDataset> {
       amount: r.amount == null ? null : toCents(r.amount as string),
       notes: str(r.notes),
     })),
+    credits: (credits.data ?? []).map((c: Row) => {
+      const uses = (creditUses.data ?? [])
+        .filter((u: Row) => u.credit_id === c.id)
+        .map((u: Row) => ({ id: String(u.id), usedAt: String(u.used_at), amount: toCents(u.amount as string), note: str(u.note) }));
+      const amount = toCents(c.amount as string);
+      const used = uses.reduce((s, u) => s + u.amount, 0);
+      return {
+        id: String(c.id),
+        kind: (["irpef", "substitute_tax", "inps", "other"].includes(String(c.kind)) ? c.kind : "other") as "irpef" | "substitute_tax" | "inps" | "other",
+        referenceYear: Number(c.reference_year),
+        amount,
+        destination: c.destination === "refund" ? "refund" : "compensation",
+        source: str(c.source),
+        notes: str(c.notes),
+        uses,
+        used,
+        residual: amount - used,
+      };
+    }),
     completedTasks: (completions.data ?? []).map((c: Row) => ({
       key: String(c.task_key),
       completedAt: String(c.completed_at),

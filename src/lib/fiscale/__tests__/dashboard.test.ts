@@ -47,6 +47,19 @@ describe("dashboard model", () => {
     expect(byKey["inail:2026"]).toMatchObject({ unknownAmount: true });
   });
 
+  it("scales the available compensation credit from what to keep aside", () => {
+    const credit = {
+      id: "c1", kind: "irpef" as const, referenceYear: 2025, amount: 99_900, destination: "compensation" as const,
+      source: null, notes: null, uses: [], used: 15_600, residual: 84_300,
+    };
+    const withCredit = buildDashboard({ ...data, credits: [credit] }, "2026-11-04");
+    expect(withCredit.availableCredit).toBe(84_300);
+    expect(withCredit.reserveAfterCredit).toBe(Math.max(0, withCredit.reserve.matured - 84_300));
+    const refund = buildDashboard({ ...data, credits: [{ ...credit, destination: "refund" as const }] }, "2026-11-04");
+    expect(refund.availableCredit).toBe(0);
+    expect(refund.reserveAfterCredit).toBe(refund.reserve.matured);
+  });
+
   it("estimates next INAIL with the last premium paid", () => {
     const withInail = buildDashboard(
       {

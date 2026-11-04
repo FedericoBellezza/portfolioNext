@@ -98,7 +98,7 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
           f24_reference: reference ?? null,
           receipt_path: path,
           notes,
-        })
+        }).select("id").single()
       : ctx.db.from("tax_payments").insert({
           paid_at: paidAt,
           competence_year: target.competenceYear,
@@ -108,13 +108,37 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
           f24_reference: reference ?? null,
           receipt_path: path,
           notes,
-        });
-  const { error } = await insert;
+        }).select("id").single();
+  const { data: inserted, error } = await insert;
   if (error) {
     if (path) await ctx.supabase.storage.from(BUCKET).remove([path]);
     if (error.code === "23505") return { ok: false, message: "Questo adempimento risulta già registrato." };
     console.error("[fiscale] insert F24:", error.message);
     return { ok: false, message: "Salvataggio non riuscito." };
+  }
+
+  // Compensation with a recorded credit: the residual of that credit goes down.
+  const creditId = String(formData.get("creditId") ?? "");
+  if (notes && /^[0-9a-f-]{36}$/.test(creditId) && inserted) {
+    const raw = String(formData.get("creditAmount") ?? "").trim();
+    const used = raw ? Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw) : amount;
+    if (Number.isFinite(used) && used > 0) {
+      const { error: useError } = await ctx.db.from("tax_credit_uses").insert({
+        credit_id: creditId,
+        used_at: paidAt,
+        amount: toEuro(toCents(used)),
+        [target.table === "inps_payments" ? "inps_payment_id" : "tax_payment_id"]: inserted.id,
+      });
+      if (useError) {
+        revalidatePath("/dashboard/fiscale", "layout");
+        return {
+          ok: false,
+          message: useError.message.includes("exceeded")
+            ? "Pagamento registrato, ma il credito scelto non basta: controlla il residuo in Crediti."
+            : "Pagamento registrato, ma l'uso del credito non è stato salvato.",
+        };
+      }
+    }
   }
 
   revalidatePath("/dashboard/fiscale", "layout");
