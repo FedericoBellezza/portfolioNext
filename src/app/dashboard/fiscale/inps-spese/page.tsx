@@ -5,6 +5,7 @@ import { sumCents, type Cents } from "@/lib/fiscale/money";
 import { yearOf } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
 import { date, eur } from "../components/format";
+import { InailForm } from "../components/inail-form";
 import { DemoNotice, Kpi, PageTitle, Panel } from "../components/ui";
 
 export const metadata = { title: "INPS e spese | Fiscale" };
@@ -29,6 +30,7 @@ const TAX_KIND: Record<string, string> = {
   stamp_duty_q3: "Bollo 3° trimestre",
   stamp_duty_q4: "Bollo 4° trimestre",
   chamber_fee: "Diritto camerale",
+  inail_premium: "Premio INAIL",
   other: "Altro",
 };
 
@@ -131,6 +133,13 @@ export default async function InpsSpesePage() {
               }))}
               total={sumCents(taxes.map((p) => p.amount))}
             />
+          </Panel>
+          <Panel
+            title="Premio INAIL"
+            description="Autoliquidazione di febbraio. Non è un contributo previdenziale: non riduce il reddito imponibile."
+            className="xl:col-span-2"
+          >
+            <InailForm year={m.year} today={asOf} demo={data.source === "demo"} />
           </Panel>
           <Panel title="Spese" description="Solo per analisi di redditività" className="xl:col-span-2">
             <Movements

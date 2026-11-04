@@ -10,7 +10,7 @@ export type SdiStatus =
 export type TaxPaymentKind =
   | "substitute_tax_balance" | "substitute_tax_advance_1" | "substitute_tax_advance_2"
   | "stamp_duty_q1" | "stamp_duty_q2" | "stamp_duty_q3" | "stamp_duty_q4"
-  | "chamber_fee" | "other";
+  | "chamber_fee" | "inail_premium" | "other";
 
 export interface ClientRow {
   id: string;

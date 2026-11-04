@@ -31,7 +31,7 @@ const TAX_KIND: Record<string, string> = {
   substitute_tax_balance: "Imposta sostitutiva saldo", substitute_tax_advance_1: "Imposta sostitutiva 1° acconto",
   substitute_tax_advance_2: "Imposta sostitutiva 2° acconto", stamp_duty_q1: "Bollo fatture 1° trim.",
   stamp_duty_q2: "Bollo fatture 2° trim.", stamp_duty_q3: "Bollo fatture 3° trim.", stamp_duty_q4: "Bollo fatture 4° trim.",
-  chamber_fee: "Diritto camerale", other: "Altro",
+  chamber_fee: "Diritto camerale", inail_premium: "Premio INAIL", other: "Altro",
 };
 
 export function buildLedger(data: FiscalDataset, year: number): LedgerRow[] {

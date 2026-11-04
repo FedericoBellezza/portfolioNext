@@ -32,7 +32,13 @@ export default async function ScadenzePage() {
         description="Calendario simulato con metodo storico. Gli importi dell'anno in corso sono stime sugli incassi a oggi."
       />
       <DemoNotice show={data.source === "demo"} />
-      <OverdueBanner items={m.overdue} demo={data.source === "demo"} />
+      <OverdueBanner
+        items={m.schedule.filter((i) => i.amount > 0 && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`)}
+        demo={data.source === "demo"}
+        tone={m.overdue.length > 0 ? "warning" : "neutral"}
+        title="Registra i pagamenti"
+        intro="Tutte le scadenze di quest'anno non ancora registrate, anche quelle future già pagate in anticipo. Se una stima non era dovuta (es. importo zero), segnala come non dovuta."
+      />
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
           {groupByMonth(m.schedule).map(([month, items]) => {

@@ -14,25 +14,43 @@ const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
  * Past F24 deadlines with nothing recorded: the owner uploads the receipt and the
  * amount actually paid, and every figure is recalculated with the real payment.
  */
-export function OverdueBanner({ items, demo }: { items: F24Item[]; demo: boolean }) {
+export function OverdueBanner({
+  items,
+  demo,
+  title,
+  intro,
+  tone = "warning",
+}: {
+  items: F24Item[];
+  demo: boolean;
+  title?: string;
+  intro?: string;
+  tone?: "warning" | "neutral";
+}) {
   const [open, setOpen] = useState<string | null>(null);
   if (items.length === 0) return null;
   const total = items.reduce((s, i) => s + i.amount, 0);
+  const warning = tone === "warning";
 
   return (
     <section
       aria-labelledby="overdue-title"
-      className="mb-6 rounded-xl border border-[var(--fi-warning)]/60 bg-[var(--fi-warning-soft)] p-5"
+      className={cx(
+        "mb-6 rounded-xl border p-5",
+        warning
+          ? "border-[var(--fi-warning)]/60 bg-[var(--fi-warning-soft)]"
+          : "border-[var(--fi-rule)] bg-[var(--fi-surface)]",
+      )}
     >
       <div className="flex items-start gap-3">
-        <TriangleAlert aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[var(--fi-warning-text)]" />
+        {warning && <TriangleAlert aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-[var(--fi-warning-text)]" />}
         <div className="min-w-0 flex-1">
           <h2 id="overdue-title" className="fi-display text-[19px] font-semibold">
-            {items.length === 1 ? "1 adempimento da registrare" : `${items.length} adempimenti da registrare`}
+            {title ?? (items.length === 1 ? "1 adempimento da registrare" : `${items.length} adempimenti da registrare`)}
           </h2>
           <p className="mt-0.5 text-sm text-[var(--fi-ink-2)]">
-            Scadenze passate senza un F24 registrato ({eur(total)} stimati). Carica la ricevuta e l&apos;importo
-            pagato: i calcoli si aggiornano con i dati reali.
+            {intro ??
+              `Scadenze passate senza un F24 registrato (${eur(total)} stimati). Inserisci l'importo pagato e, se ce l'hai, la ricevuta: i calcoli si aggiornano con i dati reali.`}
           </p>
         </div>
       </div>
@@ -66,6 +84,8 @@ export function OverdueBanner({ items, demo }: { items: F24Item[]; demo: boolean
   );
 }
 
+const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
+
 function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(registerF24, null);
   const [dismissState, dismissAction, dismissing] = useActionState<ActionState, FormData>(dismissObligation, null);
@@ -86,19 +106,18 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
         <input type="hidden" name="key" value={item.key} />
         <div>
           <label htmlFor={`${id}-date`} className={fieldLabel}>Pagato il</label>
-          <input id={`${id}-date`} name="paidAt" type="date" required defaultValue={item.dueDate} />
+          <input id={`${id}-date`} name="paidAt" type="date" required defaultValue={item.dueDate > today ? today : item.dueDate} max={today} />
         </div>
         <div>
           <label htmlFor={`${id}-amount`} className={fieldLabel}>Importo pagato (€)</label>
           <input id={`${id}-amount`} name="amount" inputMode="decimal" required defaultValue={toInput(item.amount)} />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor={`${id}-file`} className={fieldLabel}>Ricevuta F24 (PDF, JPG o PNG, max 5 MB)</label>
+          <label htmlFor={`${id}-file`} className={fieldLabel}>Ricevuta F24 (facoltativa: PDF, JPG o PNG, max 5 MB)</label>
           <input
             id={`${id}-file`}
             name="receipt"
             type="file"
-            required
             accept="application/pdf,image/jpeg,image/png"
             className="file:mr-3 file:rounded-md file:border-0 file:bg-[var(--fi-fill)] file:px-3 file:py-1 file:text-sm"
           />

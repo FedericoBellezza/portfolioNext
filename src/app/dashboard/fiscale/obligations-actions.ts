@@ -32,7 +32,28 @@ async function ownerContext() {
   return { user, supabase, db, hasProfile: Boolean(profile) };
 }
 
-/** Records the F24 paid for a calendar item: amount, date and the receipt file. */
+type OwnerContext = Awaited<ReturnType<typeof ownerContext>>;
+
+/** Optional F24 receipt: validated and stored in the private bucket, under the owner's folder. */
+async function storeReceipt(
+  ctx: OwnerContext,
+  file: FormDataEntryValue | null,
+  name: string,
+): Promise<{ path: string | null } | { error: string }> {
+  if (!(file instanceof File) || file.size === 0) return { path: null };
+  const ext = EXT[file.type];
+  if (!ext) return { error: "La ricevuta deve essere un PDF, JPG o PNG." };
+  if (file.size > MAX_BYTES) return { error: "La ricevuta supera i 5 MB." };
+  const path = `${ctx.user.id}/${name}-${Date.now()}.${ext}`;
+  const upload = await ctx.supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
+  if (upload.error) {
+    console.error("[fiscale] upload F24:", upload.error.message);
+    return { error: "Caricamento della ricevuta non riuscito." };
+  }
+  return { path };
+}
+
+/** Records the F24 paid for a calendar item: amount, date and (optionally) the receipt. */
 export async function registerF24(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let ctx;
   try {
@@ -57,18 +78,9 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
   if (paidAt > today) return { ok: false, message: "La data di pagamento non può essere futura." };
 
-  const file = formData.get("receipt");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Carica la ricevuta dell'F24." };
-  const ext = EXT[file.type];
-  if (!ext) return { ok: false, message: "La ricevuta deve essere un PDF, JPG o PNG." };
-  if (file.size > MAX_BYTES) return { ok: false, message: "La ricevuta supera i 5 MB." };
-
-  const path = `${ctx.user.id}/${target.competenceYear}/${key.replace(/:/g, "_")}-${Date.now()}.${ext}`;
-  const upload = await ctx.supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
-  if (upload.error) {
-    console.error("[fiscale] upload F24:", upload.error.message);
-    return { ok: false, message: "Caricamento della ricevuta non riuscito." };
-  }
+  const stored = await storeReceipt(ctx, formData.get("receipt"), `${target.competenceYear}/${key.replace(/:/g, "_")}`);
+  if ("error" in stored) return { ok: false, message: stored.error };
+  const path = stored.path;
 
   const euro = toEuro(toCents(amount));
   const insert =
@@ -93,7 +105,7 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
         });
   const { error } = await insert;
   if (error) {
-    await ctx.supabase.storage.from(BUCKET).remove([path]);
+    if (path) await ctx.supabase.storage.from(BUCKET).remove([path]);
     if (error.code === "23505") return { ok: false, message: "Questo adempimento risulta già registrato." };
     console.error("[fiscale] insert F24:", error.message);
     return { ok: false, message: "Salvataggio non riuscito." };
@@ -124,4 +136,42 @@ export async function dismissObligation(_prev: ActionState, formData: FormData):
   }
   revalidatePath("/dashboard/fiscale", "layout");
   return { ok: true, message: "Segnato come non dovuto." };
+}
+
+/** INAIL premium (autoliquidazione): not in the simulated calendar, one payment per year. */
+export async function registerInailAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let ctx;
+  try {
+    ctx = await ownerContext();
+  } catch {
+    return { ok: false, message: "Non autorizzato." };
+  }
+  if (!ctx.hasProfile) return { ok: false, message: "Modalità demo: crea prima il profilo fiscale." };
+
+  const paidAt = String(formData.get("paidAt") ?? "");
+  const raw = String(formData.get("amount") ?? "").trim();
+  const amount = Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw);
+  const year = Number(formData.get("competenceYear"));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidAt)) return { ok: false, message: "Data non valida." };
+  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, message: "Importo non valido." };
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) return { ok: false, message: "Anno non valido." };
+
+  const stored = await storeReceipt(ctx, formData.get("receipt"), `${year}/inail`);
+  if ("error" in stored) return { ok: false, message: stored.error };
+
+  const { error } = await ctx.db.from("tax_payments").insert({
+    paid_at: paidAt,
+    competence_year: year,
+    kind: "inail_premium",
+    amount: toEuro(toCents(amount)),
+    receipt_path: stored.path,
+  });
+  if (error) {
+    if (stored.path) await ctx.supabase.storage.from(BUCKET).remove([stored.path]);
+    if (error.code === "23505") return { ok: false, message: `Premio INAIL ${year} già registrato.` };
+    console.error("[fiscale] insert INAIL:", error.message);
+    return { ok: false, message: "Salvataggio non riuscito." };
+  }
+  revalidatePath("/dashboard/fiscale", "layout");
+  return { ok: true, message: "Premio INAIL registrato." };
 }
