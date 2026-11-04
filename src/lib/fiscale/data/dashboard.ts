@@ -65,14 +65,13 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
   const ytdRevenue = revenueOf(C);
   const ytd = computeTaxYear({ year: C, grossRevenue: ytdRevenue, inpsDeducted: inpsPaidIn(C), profile });
 
-  // INPS still to pay this calendar year is deductible this year too.
+  // INPS of this calendar year not recorded yet is assumed paid within the year (and so
+  // deductible): future instalments, and past ones still waiting for their F24 receipt.
   const scheduleC = buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile });
-  const inpsStillDueThisYear = sumCents(
-    scheduleC
-      .filter((i) => i.category.startsWith("inps") && i.dueDate >= asOf && !paid.has(i.key))
-      .map((i) => i.amount),
+  const inpsNotRecorded = sumCents(
+    scheduleC.filter((i) => i.category.startsWith("inps") && !paid.has(i.key)).map((i) => i.amount),
   );
-  const inpsDeductedYearEnd = ytd.inpsDeducted + inpsStillDueThisYear;
+  const inpsDeductedYearEnd = ytd.inpsDeducted + inpsNotRecorded;
 
   figures[C] = { grossRevenue: ytdRevenue, inpsDeducted: inpsDeductedYearEnd };
   const yearEndOnCurrentRevenue = computeTaxYear({ year: C, ...figures[C], profile });
