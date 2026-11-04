@@ -48,7 +48,7 @@ export function buildFilings(year: number, profile: FiscalProfile, opts: { inail
   items.push({
     key: `filing:redditi:${year}`,
     dueDate: shiftToBusinessDay(`${year}-10-31`),
-    title: `Dichiarazione dei redditi ${year - 1} (Modello Redditi PF)`,
+    title: `Dichiarazione dei redditi per il ${year - 1} (Modello Redditi PF)`,
     scope: "business",
     source: "system",
     guide: "redditi",
@@ -58,7 +58,7 @@ export function buildFilings(year: number, profile: FiscalProfile, opts: { inail
     items.push({
       key: `filing:inail:${year}`,
       dueDate: shiftToBusinessDay(onDay(year, 2, 28)),
-      title: `Dichiarazione retribuzioni INAIL ${year - 1}`,
+      title: `Dichiarazione retribuzioni INAIL per il ${year - 1}`,
       scope: "business",
       source: "system",
       guide: "inail-filing",

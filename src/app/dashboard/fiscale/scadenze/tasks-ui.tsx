@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import { DOCUMENT_ACCEPT, DOCUMENT_BUCKET, DOCUMENT_MAX_BYTES, documentMime } from "@/lib/fiscale/documents";
 import { taskGuide, type TaskItem } from "@/lib/fiscale/tasks";
 import { createClient } from "@/lib/supabase/client";
-import { daysBetween, eur, shortDate } from "../components/format";
+import { dayDate, daysBetween, eur } from "../components/format";
 import { Badge, btn, cx } from "../components/ui";
 import { completeTaskAction, createReminderAction, type TaskState } from "./task-actions";
 
@@ -118,11 +118,12 @@ export function OpenTasks({ tasks, asOf, demo }: { tasks: TaskItem[]; asOf: stri
         return (
           <li key={t.key} className="px-4 py-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="fi-num w-14 shrink-0 text-sm">{shortDate(t.dueDate)}</span>
+              <span className="fi-num w-24 shrink-0 text-sm">{dayDate(t.dueDate, Number(asOf.slice(0, 4)))}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">{t.title}</span>
                 <span className="block text-xs text-[var(--fi-muted)]">
                   {t.scope === "business" ? "Attività" : "Personale"}
+                  {days < 0 ? " · era da fare: se l'hai già fatto, segnalo" : ""}
                   {t.amount ? ` · ${eur(t.amount)}` : ""}
                   {t.source === "custom" ? " · promemoria" : ""}
                 </span>

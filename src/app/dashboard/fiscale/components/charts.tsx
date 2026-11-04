@@ -1,6 +1,6 @@
 import type { Cents } from "@/lib/fiscale/money";
 import type { F24Category, F24Item } from "@/lib/fiscale/tax-calculator";
-import { daysBetween, eur, MONTHS, pct, shortDate } from "./format";
+import { dayDate, daysBetween, eur, MONTHS, pct } from "./format";
 import { Badge, cx } from "./ui";
 
 // --- How the collected money splits ------------------------------------------
@@ -133,7 +133,7 @@ export function DeadlineList({
         const overdue = !isPaid && days < 0 && (item.amount > 0 || item.unknownAmount);
         return (
           <li key={item.key} className={cx("flex items-center gap-4 py-3", isPaid && "text-[var(--fi-ink-2)]")}>
-            <span className="fi-num w-14 shrink-0 text-sm">{shortDate(item.dueDate)}</span>
+            <span className="fi-num w-24 shrink-0 text-sm">{dayDate(item.dueDate, Number(asOf.slice(0, 4)))}</span>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm">{item.label}</p>
               {showCategory && <p className="truncate text-xs text-[var(--fi-muted)]">{CATEGORY[item.category]}</p>}
