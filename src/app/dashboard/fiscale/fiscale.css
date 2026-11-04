@@ -1,0 +1,67 @@
+/* ============================================================
+   Dashboard Fiscale — stessi toni di .dashboard-theme e del Trader
+   (carta calda, inchiostro, terracotta per le azioni).
+   Il blu evidenzia i soldi da accantonare. Tutto vive sotto .fi.
+   ============================================================ */
+
+.fi {
+  --fi-surface: #fffdf9;
+  --fi-ink: var(--dashboard-text, #2d2d2d);
+  --fi-ink-2: var(--dashboard-text-secondary, #6b6b6b);
+  --fi-muted: #73695f;
+  --fi-rule: var(--dashboard-border, #e0d6cc);
+  --fi-fill: #ece4db;
+  --fi-bar: #5f564d;
+  --fi-reserve: #2a78d6;
+  --fi-reserve-soft: #eaf2fc;
+  --fi-good: #0ca30c;
+  --fi-good-text: #006300;
+  --fi-critical: #b3392f;
+  --fi-warning: #fab219;
+  --fi-warning-text: #7a5200;
+  --fi-warning-soft: #fff6e0;
+  --fi-action: var(--dashboard-accent, #c4735b);
+  --fi-action-hover: var(--dashboard-accent-hover, #b56549);
+  color: var(--fi-ink);
+}
+
+.fi ::selection {
+  background: color-mix(in srgb, var(--fi-action) 28%, transparent);
+  color: var(--fi-ink);
+}
+
+.fi .fi-display {
+  font-family: var(--font-dashboard-display), Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.fi .fi-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.fi .fi-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fi-muted);
+}
+
+.fi input,
+.fi select,
+.fi textarea {
+  width: 100%;
+  border: 1px solid var(--fi-rule);
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: var(--fi-ink);
+}
+
+.fi input:focus-visible,
+.fi select:focus-visible,
+.fi textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--fi-action) 55%, transparent);
+  outline-offset: 1px;
+}
