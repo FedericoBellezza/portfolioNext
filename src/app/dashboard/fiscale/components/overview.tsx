@@ -46,7 +46,19 @@ export function Overview({ data, asOf, newInvoiceHref = "/dashboard/fiscale/fatt
             tone="reserve"
             hint={`F24 maturati fino al 30 giu ${m.year + 1}`}
           />
-          <Kpi label="Da incassare" value={eur(m.outstanding)} hint={openLabel(openCount)} />
+          <Kpi
+            label="Da incassare"
+            value={eur(m.outstanding)}
+            hint={
+              openCount > 0 ? (
+                <Link href="/dashboard/fiscale/incassi" className="text-[var(--fi-action)] underline">
+                  {openLabel(openCount)}: registra gli incassi
+                </Link>
+              ) : (
+                openLabel(openCount)
+              )
+            }
+          />
         </div>
 
         {warnings.length > 0 && (

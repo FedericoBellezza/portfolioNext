@@ -47,7 +47,7 @@
   color: var(--fi-muted);
 }
 
-.fi input,
+.fi input:not([type="checkbox"]):not([type="radio"]),
 .fi select,
 .fi textarea {
   width: 100%;
@@ -57,6 +57,16 @@
   padding: 6px 10px;
   font-size: 14px;
   color: var(--fi-ink);
+}
+
+.fi input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--fi-action);
+}
+
+.fi input:disabled {
+  opacity: 0.45;
 }
 
 .fi input:focus-visible,

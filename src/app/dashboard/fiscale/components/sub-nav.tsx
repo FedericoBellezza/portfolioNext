@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/dashboard/fiscale", label: "Panoramica" },
   { href: "/dashboard/fiscale/fatture", label: "Fatture" },
+  { href: "/dashboard/fiscale/incassi", label: "Incassi" },
   { href: "/dashboard/fiscale/clienti", label: "Clienti" },
   { href: "/dashboard/fiscale/inps-spese", label: "INPS e spese" },
   { href: "/dashboard/fiscale/scadenze", label: "Scadenze F24" },
