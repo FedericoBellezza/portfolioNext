@@ -63,10 +63,12 @@ export function OverdueBanner({
               <span className="min-w-0 flex-1 text-sm">
                 {item.label}
                 <span className="ml-2 text-xs text-[var(--fi-muted)]">
-                  {item.category.startsWith("inps") ? "Causale" : "Tributo"} {item.code}
+                  {item.category === "inail"
+                    ? "Sezione INAIL"
+                    : `${item.category.startsWith("inps") ? "Causale" : "Tributo"} ${item.code}`}
                 </span>
               </span>
-              <span className="fi-num text-sm font-medium">{eur(item.amount)}</span>
+              <span className="fi-num text-sm font-medium">{item.unknownAmount ? "da verificare" : eur(item.amount)}</span>
               <button
                 type="button"
                 className={btn.outline}
@@ -110,7 +112,7 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
         </div>
         <div>
           <label htmlFor={`${id}-amount`} className={fieldLabel}>Importo pagato (€)</label>
-          <input id={`${id}-amount`} name="amount" inputMode="decimal" required defaultValue={toInput(item.amount)} />
+          <input id={`${id}-amount`} name="amount" inputMode="decimal" required defaultValue={item.unknownAmount ? "" : toInput(item.amount)} />
         </div>
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-file`} className={fieldLabel}>Ricevuta F24 (facoltativa: PDF, JPG o PNG, max 5 MB)</label>

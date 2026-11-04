@@ -141,6 +141,7 @@ const CATEGORY: Record<F24Category, { label: string; dot: string }> = {
   substitute_tax: { label: "Imposta sostitutiva", dot: "bg-[var(--fi-ink)]" },
   stamp_duty: { label: "Bollo", dot: "bg-[var(--fi-muted)]" },
   chamber_fee: { label: "Diritto camerale", dot: "bg-[var(--fi-muted)]/50" },
+  inail: { label: "INAIL", dot: "bg-[var(--fi-action)]" },
 };
 
 export function DeadlineList({
@@ -163,7 +164,7 @@ export function DeadlineList({
       {items.map((item) => {
         const isPaid = paid.has(item.key);
         const days = daysBetween(asOf, item.dueDate);
-        const overdue = !isPaid && days < 0 && item.amount > 0;
+        const overdue = !isPaid && days < 0 && (item.amount > 0 || item.unknownAmount);
         return (
           <li key={item.key} className={cx("flex items-center gap-3 py-3", isPaid && "opacity-60")}>
             <div className="fi-num w-14 shrink-0 text-xs font-medium">{shortDate(item.dueDate)}</div>
@@ -172,13 +173,13 @@ export function DeadlineList({
               <p className="truncate text-sm">{item.label}</p>
               <p className="truncate text-xs text-[var(--fi-muted)]">
                 {showCategory && `${CATEGORY[item.category].label} · `}
-                {item.category.startsWith("inps") ? "Causale" : "Tributo"} {item.code}
+                {item.category === "inail" ? "Sezione INAIL" : `${item.category.startsWith("inps") ? "Causale" : "Tributo"} ${item.code}`}
                 {item.credit ? ` · credito ${eur(item.credit)}` : ""}
                 {item.note ? ` · ${item.note}` : ""}
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <span className="fi-num text-sm font-medium">{eur(item.amount)}</span>
+              <span className="fi-num text-sm font-medium">{item.unknownAmount ? "da verificare" : eur(item.amount)}</span>
               {dismissed?.has(item.key) ? (
                 <Badge tone="outline">Non dovuto</Badge>
               ) : isPaid ? (

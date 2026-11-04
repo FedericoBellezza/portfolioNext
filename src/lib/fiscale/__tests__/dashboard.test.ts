@@ -40,9 +40,25 @@ describe("dashboard model", () => {
     expect(byKey["inps:fixed_q1:2027"]).toMatchObject({ dueDate: "2027-05-17", amount: 56_610 }); // 16/5/2027 is a Sunday
   });
 
-  it("still asks to register the past instalments", () => {
+  it("still asks to register the past instalments, INAIL included", () => {
     expect(m.overdue.map((i) => i.key)).toEqual(
-      expect.arrayContaining(["inps:fixed_q4:2025", "inps:fixed_q1:2026", "inps:fixed_q2:2026"]),
+      expect.arrayContaining(["inps:fixed_q4:2025", "inps:fixed_q1:2026", "inps:fixed_q2:2026", "inail:2026"]),
     );
+    expect(byKey["inail:2026"]).toMatchObject({ unknownAmount: true });
+  });
+
+  it("estimates next INAIL with the last premium paid", () => {
+    const withInail = buildDashboard(
+      {
+        ...data,
+        taxPayments: [
+          { id: "i", paidAt: "2026-02-16", competenceYear: 2026, kind: "inail_premium", tributeCode: null, amount: 9_726, receiptPath: null },
+        ],
+      },
+      "2026-11-04",
+    );
+    expect(withInail.overdue.some((i) => i.key === "inail:2026")).toBe(false);
+    expect(withInail.schedule.find((i) => i.key === "inail:2027")).toMatchObject({ amount: 9_726, dueDate: "2027-02-16" });
+    expect(withInail.reserve.upcoming.some((i) => i.key === "inail:2027")).toBe(true);
   });
 });

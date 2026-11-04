@@ -376,7 +376,7 @@ export function computeInpsExcessAdvances(
 // F24 schedule simulator
 // ---------------------------------------------------------------------------
 
-export type F24Category = "inps_fixed" | "inps_excess" | "substitute_tax" | "stamp_duty" | "chamber_fee";
+export type F24Category = "inps_fixed" | "inps_excess" | "substitute_tax" | "stamp_duty" | "chamber_fee" | "inail";
 
 export interface F24Item {
   /** Stable id, e.g. "tax:balance:2025". Used to match recorded payments. */
@@ -392,6 +392,8 @@ export interface F24Item {
   credit?: Cents;
   /** True when it depends on a year that is not closed yet. */
   estimate: boolean;
+  /** Amount cannot be estimated yet (e.g. first INAIL premium): to be checked by the owner. */
+  unknownAmount?: boolean;
   note?: string;
 }
 
@@ -408,6 +410,12 @@ export interface F24ScheduleInput {
   stampDutyByQuarter?: Record<number, [Cents, Cents, Cents, Cents]>;
   /** Years whose figures are still provisional (default: calendarYear and later). */
   provisionalFrom?: number;
+  /**
+   * INAIL autoliquidazione (16 February, from the year after the start). The premium
+   * depends on the INAIL risk class, so it is estimated with the last one paid
+   * (null = none paid yet). Omit to leave INAIL out of the calendar.
+   */
+  inail?: { lastPremium: Cents | null };
   profile?: FiscalProfile;
 }
 
@@ -552,6 +560,17 @@ export function buildF24Schedule(input: F24ScheduleInput): F24Item[] {
       key: `inps:excess_advance_2:${C}`, date: iso(C, 11, 30), category: "inps_excess",
       label: `INPS eccedenza 2° acconto ${C}`, code: "AP", competenceYear: C,
       amount: inpsAdv.second, estimate: advEstimate,
+    });
+  }
+
+  // --- INAIL autoliquidazione -----------------------------------------------
+  if (input.inail && C > startYear) {
+    const known = input.inail.lastPremium !== null;
+    push({
+      key: `inail:${C}`, date: iso(C, 2, 16), category: "inail",
+      label: `Premio INAIL ${C} (autoliquidazione)`, code: "INAIL", competenceYear: C,
+      amount: input.inail.lastPremium ?? 0, estimate: true, unknownAmount: !known,
+      note: known ? "Stima: ultimo premio pagato" : "Importo da verificare sull'avviso INAIL",
     });
   }
 

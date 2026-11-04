@@ -22,6 +22,9 @@ describe("obligations", () => {
     });
     expect(obligationTarget("stamp:q3:2026")).toMatchObject({ kind: "stamp_duty_q3", tributeCode: "2523" });
     expect(obligationTarget("chamber:2026")).toMatchObject({ kind: "chamber_fee", tributeCode: "3850" });
+    expect(obligationTarget("inail:2027")).toEqual({
+      table: "tax_payments", kind: "inail_premium", competenceYear: 2027, tributeCode: null,
+    });
     expect(obligationTarget("inps:hacked:2026")).toBeNull();
     expect(obligationTarget("tax:balance")).toBeNull();
   });
@@ -35,6 +38,7 @@ describe("obligations", () => {
           2026: { grossRevenue: 4_000_000, inpsDeducted: 300_000 },
         },
         stampDutyByQuarter: { 2025: [0, 0, 0, 400], 2026: [600_000, 0, 200, 200] },
+        inail: { lastPremium: 9_726 },
       }),
     );
     expect(items.length).toBeGreaterThan(10);

@@ -8,14 +8,14 @@ import type { InpsPaymentKind } from "./tax-calculator";
 
 export type ObligationTarget =
   | { table: "inps_payments"; kind: InpsPaymentKind; competenceYear: number; causale: "AF" | "AP" }
-  | { table: "tax_payments"; kind: TaxPaymentKind; competenceYear: number; tributeCode: string };
+  | { table: "tax_payments"; kind: TaxPaymentKind; competenceYear: number; tributeCode: string | null };
 
 const INPS_KINDS: readonly InpsPaymentKind[] = [
   "fixed_q1", "fixed_q2", "fixed_q3", "fixed_q4",
   "excess_balance", "excess_advance_1", "excess_advance_2",
 ];
 
-const TAX_BY_KEY: Record<string, { kind: TaxPaymentKind; code: string }> = {
+const TAX_BY_KEY: Record<string, { kind: TaxPaymentKind; code: string | null }> = {
   "tax:balance": { kind: "substitute_tax_balance", code: "1792" },
   "tax:advance_1": { kind: "substitute_tax_advance_1", code: "1790" },
   "tax:advance_2": { kind: "substitute_tax_advance_2", code: "1791" },
@@ -24,6 +24,7 @@ const TAX_BY_KEY: Record<string, { kind: TaxPaymentKind; code: string }> = {
   "stamp:q3": { kind: "stamp_duty_q3", code: "2523" },
   "stamp:q4": { kind: "stamp_duty_q4", code: "2524" },
   chamber: { kind: "chamber_fee", code: "3850" },
+  inail: { kind: "inail_premium", code: null }, // sezione INAIL dell'F24, senza codice tributo
 };
 
 /** Which row to write when the owner registers the F24 for a calendar item. */

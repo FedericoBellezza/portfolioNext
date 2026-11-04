@@ -39,6 +39,8 @@ In cima alla panoramica e alle scadenze compare un banner con gli F24 scaduti se
 
 Il legame tra scadenze del calendario e righe del DB è in `src/lib/fiscale/obligations.ts` (testato).
 
+Dalla pagina Scadenze si registrano anche le scadenze future già pagate. La ricevuta è facoltativa. L'**INAIL** (autoliquidazione del 16 febbraio, dall'anno dopo l'avvio) è nel calendario come le altre voci: importo stimato con l'ultimo premio pagato, "da verificare" finché non ce n'è uno. Non è dedotto dal reddito.
+
 ## Fatture: emissione e invio (portale gratuito AdE)
 
 1. **Nuova fattura** salva una bozza (totali ricalcolati sul server).

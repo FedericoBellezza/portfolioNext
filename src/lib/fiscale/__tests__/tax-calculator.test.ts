@@ -130,6 +130,16 @@ describe("advances (acconti, metodo storico)", () => {
 });
 
 describe("deadlines", () => {
+  it("adds INAIL on 16 February from the year after the start", () => {
+    const figures = { 2025: { grossRevenue: 0, inpsDeducted: 0 } };
+    expect(buildF24Schedule({ calendarYear: 2025, figures, inail: { lastPremium: null } }).find((i) => i.category === "inail")).toBeUndefined();
+    const first = buildF24Schedule({ calendarYear: 2026, figures, inail: { lastPremium: null } }).find((i) => i.key === "inail:2026");
+    expect(first).toMatchObject({ dueDate: "2026-02-16", amount: 0, unknownAmount: true });
+    const next = buildF24Schedule({ calendarYear: 2027, figures, inail: { lastPremium: 9_726 } }).find((i) => i.key === "inail:2027");
+    expect(next).toMatchObject({ dueDate: "2027-02-16", amount: 9_726, unknownAmount: false, estimate: true });
+    expect(buildF24Schedule({ calendarYear: 2027, figures }).some((i) => i.category === "inail")).toBe(false);
+  });
+
   it("keeps 30 June in years without a decree", () => {
     const items = buildF24Schedule({
       calendarYear: 2027,

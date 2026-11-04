@@ -98,7 +98,7 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
           paid_at: paidAt,
           competence_year: target.competenceYear,
           kind: target.kind,
-          tribute_code: target.tributeCode,
+          tribute_code: target.tributeCode ?? null,
           amount: euro,
           f24_reference: reference ?? null,
           receipt_path: path,
@@ -138,40 +138,3 @@ export async function dismissObligation(_prev: ActionState, formData: FormData):
   return { ok: true, message: "Segnato come non dovuto." };
 }
 
-/** INAIL premium (autoliquidazione): not in the simulated calendar, one payment per year. */
-export async function registerInailAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
-  let ctx;
-  try {
-    ctx = await ownerContext();
-  } catch {
-    return { ok: false, message: "Non autorizzato." };
-  }
-  if (!ctx.hasProfile) return { ok: false, message: "Modalità demo: crea prima il profilo fiscale." };
-
-  const paidAt = String(formData.get("paidAt") ?? "");
-  const raw = String(formData.get("amount") ?? "").trim();
-  const amount = Number(raw.includes(",") ? raw.replace(/\./g, "").replace(",", ".") : raw);
-  const year = Number(formData.get("competenceYear"));
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(paidAt)) return { ok: false, message: "Data non valida." };
-  if (!Number.isFinite(amount) || amount <= 0) return { ok: false, message: "Importo non valido." };
-  if (!Number.isInteger(year) || year < 2020 || year > 2100) return { ok: false, message: "Anno non valido." };
-
-  const stored = await storeReceipt(ctx, formData.get("receipt"), `${year}/inail`);
-  if ("error" in stored) return { ok: false, message: stored.error };
-
-  const { error } = await ctx.db.from("tax_payments").insert({
-    paid_at: paidAt,
-    competence_year: year,
-    kind: "inail_premium",
-    amount: toEuro(toCents(amount)),
-    receipt_path: stored.path,
-  });
-  if (error) {
-    if (stored.path) await ctx.supabase.storage.from(BUCKET).remove([stored.path]);
-    if (error.code === "23505") return { ok: false, message: `Premio INAIL ${year} già registrato.` };
-    console.error("[fiscale] insert INAIL:", error.message);
-    return { ok: false, message: "Salvataggio non riuscito." };
-  }
-  revalidatePath("/dashboard/fiscale", "layout");
-  return { ok: true, message: "Premio INAIL registrato." };
-}

@@ -62,6 +62,12 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     [C - 1]: { grossRevenue: revenueOf(C - 1), inpsDeducted: inpsPaidIn(C - 1) },
   };
 
+  const lastInail = [...data.taxPayments]
+    .filter((p) => p.kind === "inail_premium")
+    .sort((a, b) => a.competenceYear - b.competenceYear || a.paidAt.localeCompare(b.paidAt))
+    .at(-1);
+  const inail = { lastPremium: lastInail?.amount ?? null };
+
   const ytdRevenue = revenueOf(C);
   const ytd = computeTaxYear({ year: C, grossRevenue: ytdRevenue, inpsDeducted: inpsPaidIn(C), profile });
 
@@ -83,8 +89,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
   });
 
   const schedule = [
-    ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile }),
-    ...buildF24Schedule({ calendarYear: C + 1, figures, stampDutyByQuarter: stamps, profile, provisionalFrom: C }),
+    ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile, inail }),
+    ...buildF24Schedule({ calendarYear: C + 1, figures, stampDutyByQuarter: stamps, profile, inail, provisionalFrom: C }),
   ];
   const reserve = computeSavingsReserve({ asOf, items: schedule, paidKeys: paid });
 
@@ -111,7 +117,7 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     expensesYtd: sumCents(data.expenses.filter((e) => yearOf(e.spentAt) === C).map((e) => e.amount)),
     paid,
     dismissed,
-    overdue: schedule.filter((i) => i.dueDate < asOf && i.amount > 0 && !paid.has(i.key)),
+    overdue: schedule.filter((i) => i.dueDate < asOf && (i.amount > 0 || i.unknownAmount) && !paid.has(i.key)),
   };
 }
 

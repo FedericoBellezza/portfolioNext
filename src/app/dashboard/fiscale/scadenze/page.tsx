@@ -33,7 +33,9 @@ export default async function ScadenzePage() {
       />
       <DemoNotice show={data.source === "demo"} />
       <OverdueBanner
-        items={m.schedule.filter((i) => i.amount > 0 && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`)}
+        items={m.schedule.filter(
+          (i) => (i.amount > 0 || i.unknownAmount) && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`,
+        )}
         demo={data.source === "demo"}
         tone={m.overdue.length > 0 ? "warning" : "neutral"}
         title="Registra i pagamenti"
