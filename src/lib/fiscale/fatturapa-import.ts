@@ -36,6 +36,9 @@ export interface ParsedInvoice {
   customer: XmlCustomer;
 }
 
+/** TD01 fattura, TD06 parcella: for a forfettario they are the same kind of document. */
+export const IMPORTABLE_TYPES = ["TD01", "TD06"] as const;
+
 const ARRAYS = new Set(["DettaglioLinee", "DatiRiepilogo", "Causale", "FatturaElettronicaBody", "DettaglioPagamento"]);
 
 const parser = new XMLParser({
@@ -147,8 +150,10 @@ export function parseFatturaPa(xml: string): ParsedInvoice {
   const body = bodies[0];
   const doc0 = obj(obj(body.DatiGenerali).DatiGeneraliDocumento);
   const documentType = str(doc0.TipoDocumento) ?? "";
-  if (documentType !== "TD01") {
-    throw new ImportError(`Tipo documento ${documentType || "?"} non supportato (solo fatture TD01).`);
+  if (!(IMPORTABLE_TYPES as readonly string[]).includes(documentType)) {
+    throw new ImportError(
+      `Tipo documento ${documentType || "?"} non supportato: si importano fatture (TD01) e parcelle (TD06).`,
+    );
   }
   const issueDate = str(doc0.Data);
   if (!issueDate || !/^\d{4}-\d{2}-\d{2}$/.test(issueDate)) throw new ImportError("Data fattura mancante.");

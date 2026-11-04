@@ -59,6 +59,12 @@ describe("FatturaPA import", () => {
     expect(p.customer).toMatchObject({ kind: "individual", firstName: "Mario", lastName: "Rossi", taxCode: "RSSMRA80A01L219X", vatNumber: null });
   });
 
+  it("accepts parcelle (TD06) and keeps the type", () => {
+    const p = parseFatturaPa(xml.replace("<TipoDocumento>TD01</TipoDocumento>", "<TipoDocumento>TD06</TipoDocumento>"));
+    expect(p.documentType).toBe("TD06");
+    expect(p.number).toBe(7);
+  });
+
   it("rejects credit notes and non-FatturaPA files for now", () => {
     expect(() => parseFatturaPa(xml.replace("<TipoDocumento>TD01</TipoDocumento>", "<TipoDocumento>TD04</TipoDocumento>"))).toThrow(/TD04/);
     expect(() => parseFatturaPa("<foo/>")).toThrow(ImportError);
