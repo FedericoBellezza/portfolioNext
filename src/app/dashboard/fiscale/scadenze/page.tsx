@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
+import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
 import { loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
 import type { F24Item } from "@/lib/fiscale/tax-calculator";
@@ -24,6 +25,7 @@ export default async function ScadenzePage() {
   const asOf = todayInRome();
   const data = await loadDataset();
   const m = buildDashboard(data, asOf);
+  const media = data.source === "demo" ? {} : await loadGuideMedia();
 
   return (
     <>
@@ -37,6 +39,7 @@ export default async function ScadenzePage() {
           (i) => (i.amount > 0 || i.unknownAmount) && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`,
         )}
         demo={data.source === "demo"}
+        media={media}
         tone={m.overdue.length > 0 ? "warning" : "neutral"}
         title="Registra i pagamenti"
         intro="Tutte le scadenze di quest'anno non ancora registrate, anche quelle future già pagate in anticipo. Se una stima non era dovuta (es. importo zero), segnala come non dovuta."

@@ -3,6 +3,7 @@ import { TriangleAlert } from "lucide-react";
 import { buildDashboard } from "@/lib/fiscale/data/dashboard";
 import type { FiscalDataset } from "@/lib/fiscale/data/types";
 import { DeadlineList, RevenueChart, RevenueLimit, TaxWaterfall } from "./charts";
+import type { GuideMedia } from "@/lib/fiscale/guides";
 import { OverdueBanner } from "./overdue-banner";
 import { date, eur, pct } from "./format";
 import { btn, DemoNotice, Kpi, PageTitle, Panel, TextLink } from "./ui";
@@ -10,7 +11,8 @@ import { btn, DemoNotice, Kpi, PageTitle, Panel, TextLink } from "./ui";
 const openLabel = (n: number) => (n === 1 ? "1 fattura aperta" : `${n} fatture aperte`);
 
 /** Panoramica, pura funzione dei dati: usata dalla dashboard (e riusabile per una demo pubblica). */
-export function Overview({ data, asOf, newInvoiceHref = "/dashboard/fiscale/fatture/nuova" }: {
+export function Overview({ data, asOf, media = {}, newInvoiceHref = "/dashboard/fiscale/fatture/nuova" }: {
+  media?: GuideMedia;
   data: FiscalDataset;
   asOf: string;
   newInvoiceHref?: string | null;
@@ -34,7 +36,7 @@ export function Overview({ data, asOf, newInvoiceHref = "/dashboard/fiscale/fatt
         }
       />
       <DemoNotice show={data.source === "demo"} />
-      <OverdueBanner items={m.overdue} demo={data.source === "demo"} />
+      <OverdueBanner items={m.overdue} demo={data.source === "demo"} media={media} />
 
       <div className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

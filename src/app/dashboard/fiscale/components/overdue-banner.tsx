@@ -2,9 +2,11 @@
 
 import { startTransition, useActionState, useState } from "react";
 import { FileUp, TriangleAlert } from "lucide-react";
+import { guideFor, type GuideMedia } from "@/lib/fiscale/guides";
 import type { F24Item } from "@/lib/fiscale/tax-calculator";
 import { dismissObligation, registerF24, type ActionState } from "../obligations-actions";
 import { date, eur } from "./format";
+import { GuideStepper } from "./guide-stepper";
 import { btn, cx } from "./ui";
 
 const toInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
@@ -20,9 +22,12 @@ export function OverdueBanner({
   title,
   intro,
   tone = "warning",
+  media = {},
 }: {
   items: F24Item[];
   demo: boolean;
+  /** Owner's guide images and videos (signed links), by slot. */
+  media?: GuideMedia;
   title?: string;
   intro?: string;
   tone?: "warning" | "neutral";
@@ -75,10 +80,14 @@ export function OverdueBanner({
                 aria-expanded={open === item.key}
                 onClick={() => setOpen(open === item.key ? null : item.key)}
               >
-                {open === item.key ? "Chiudi" : "Registra F24"}
+                {open === item.key ? "Chiudi" : "Come pagare e registra"}
               </button>
             </div>
-            {open === item.key && <RegisterForm item={item} demo={demo} />}
+            {open === item.key && (
+              <GuideStepper guide={guideFor(item)} media={media} canUpload={!demo}>
+                <RegisterForm item={item} demo={demo} />
+              </GuideStepper>
+            )}
           </li>
         ))}
       </ul>
@@ -95,7 +104,7 @@ function RegisterForm({ item, demo }: { item: F24Item; demo: boolean }) {
   const id = item.key.replace(/:/g, "-");
 
   return (
-    <div className="mt-3 rounded-lg bg-white/60 p-4">
+    <div>
       <form
         className="grid gap-3 sm:grid-cols-4"
         onSubmit={(e) => {
