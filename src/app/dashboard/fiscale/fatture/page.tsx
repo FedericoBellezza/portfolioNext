@@ -4,7 +4,7 @@ import { todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadDataset } from "@/lib/fiscale/data/load";
 import type { InvoiceRow } from "@/lib/fiscale/data/types";
 import { date, eur } from "../components/format";
-import { Badge, btn, cx, DemoNotice, PageTitle } from "../components/ui";
+import { Badge, btn, cx, DemoNotice, PageTitle, Tabs } from "../components/ui";
 
 export const metadata = { title: "Fatture | Fiscale" };
 
@@ -60,30 +60,17 @@ export default async function FatturePage({ searchParams }: { searchParams: Prom
       <DemoNotice show={demo} />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label="Filtra fatture" className="flex flex-wrap gap-1">
-          {FILTERS.map((f) => {
-            const active = f.id === filter;
-            if (f.id !== "tutte" && counts[f.id] === 0 && !active) return null;
-            return (
-              <Link
-                key={f.id}
-                href={f.id === "tutte" ? "/dashboard/fiscale/fatture" : `/dashboard/fiscale/fatture?stato=${f.id}`}
-                aria-current={active ? "page" : undefined}
-                className={cx(
-                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-[var(--fi-action)]",
-                  active
-                    ? "bg-[var(--fi-ink)] text-white"
-                    : "text-[var(--fi-ink-2)] hover:bg-[var(--fi-fill)] hover:text-[var(--fi-ink)]",
-                )}
-              >
-                {f.label}
-                <span className={cx("fi-num text-xs", active ? "text-white/70" : "text-[var(--fi-muted)]")}>
-                  {counts[f.id]}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+        <Tabs
+          label="Filtra fatture"
+          active={filter}
+          className="inline-flex"
+          items={FILTERS.filter((f) => f.id === "tutte" || f.id === filter || counts[f.id] > 0).map((f) => ({
+            id: f.id,
+            label: f.label,
+            count: counts[f.id],
+            href: f.id === "tutte" ? "/dashboard/fiscale/fatture" : `/dashboard/fiscale/fatture?stato=${f.id}`,
+          }))}
+        />
         {unpaid > 0 && (
           <Link href="/dashboard/fiscale/incassi" className={btn.outline}>
             Registra incassi

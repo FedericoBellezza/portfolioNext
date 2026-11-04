@@ -1,38 +1,66 @@
 /* ============================================================
-   Dashboard Fiscale — stessi toni di .dashboard-theme e del Trader
-   (carta calda, inchiostro, terracotta per le azioni).
-   Il blu evidenzia i soldi da accantonare. Tutto vive sotto .fi.
+   Dashboard Fiscale: app di lavoro, chiara e neutra.
+   Guscio con barra laterale blu inchiostro, contenuto su fondo
+   grigio-azzurro con card bianche, un solo accento indaco per le
+   azioni. Colori di stato solo dove portano un significato.
+   Serie dati validate (indaco / corallo / verde acqua).
+   Tutto vive sotto .fi.
    ============================================================ */
 
 .fi {
-  --fi-surface: #fffdf9;
-  --fi-ink: var(--dashboard-text, #2d2d2d);
-  --fi-ink-2: var(--dashboard-text-secondary, #6b6b6b);
-  --fi-muted: #73695f;
-  --fi-rule: var(--dashboard-border, #e0d6cc);
-  --fi-fill: #ece4db;
-  --fi-bar: #5f564d;
-  --fi-reserve: #2a78d6;
-  --fi-reserve-soft: #eaf2fc;
-  --fi-good: #0ca30c;
-  --fi-good-text: #006300;
-  --fi-critical: #b3392f;
-  --fi-warning: #fab219;
-  --fi-warning-text: #7a5200;
-  --fi-warning-soft: #fff6e0;
-  --fi-action: var(--dashboard-accent, #c4735b);
-  --fi-action-hover: var(--dashboard-accent-hover, #b56549);
+  /* shell */
+  --fi-rail: #1b2040;
+  --fi-rail-ink: #c9cde4;
+  --fi-rail-active: rgba(255, 255, 255, 0.1);
+  --fi-ground: #f4f5f9;
+
+  /* surfaces and ink */
+  --fi-surface: #ffffff;
+  --fi-ink: #12162b;
+  --fi-ink-2: #474d66;
+  --fi-muted: #656b84;
+  --fi-rule: #e3e6ef;
+  --fi-rule-strong: #c9cee0;
+  --fi-fill: #eceef5;
+
+  /* action */
+  --fi-action: #4b5bdc;
+  --fi-action-hover: #3a49c4;
+  --fi-action-soft: #eef0fd;
+
+  /* data series */
+  --fi-series-in: #4b5bdc;
+  --fi-series-out: #e8684a;
+  --fi-series-inps: #15968a;
+  --fi-bar: #b4bad6;
+
+  /* states */
+  --fi-good: #16a34a;
+  --fi-good-text: #15803d;
+  --fi-good-soft: #e9f7ee;
+  --fi-critical: #dc2626;
+  --fi-critical-text: #b91c1c;
+  --fi-critical-soft: #fdeeee;
+  --fi-warning: #f59e0b;
+  --fi-warning-text: #a35207;
+  --fi-warning-soft: #fff6e6;
+
+  /* legacy aliases used across components */
+  --fi-reserve: var(--fi-action);
+  --fi-reserve-soft: var(--fi-action-soft);
+
   color: var(--fi-ink);
+  font-family: var(--font-sans);
 }
 
 .fi ::selection {
-  background: color-mix(in srgb, var(--fi-action) 28%, transparent);
+  background: color-mix(in srgb, var(--fi-action) 22%, transparent);
   color: var(--fi-ink);
 }
 
+/* Headings stay in the sans: kept as a hook for existing markup. */
 .fi .fi-display {
-  font-family: var(--font-dashboard-display), Georgia, serif;
-  font-optical-sizing: auto;
+  font-family: inherit;
 }
 
 .fi .fi-num {
@@ -43,10 +71,6 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--fi-muted);
-}
-
-.fi ::selection {
-  background: color-mix(in srgb, var(--fi-action) 22%, transparent);
 }
 
 .fi summary:focus-visible {
@@ -61,9 +85,16 @@
   border: 1px solid var(--fi-rule);
   border-radius: 8px;
   background: #fff;
-  padding: 6px 10px;
+  padding: 7px 10px;
   font-size: 14px;
   color: var(--fi-ink);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.fi input:not([type="checkbox"]):not([type="radio"]):hover,
+.fi select:hover,
+.fi textarea:hover {
+  border-color: var(--fi-rule-strong);
 }
 
 .fi input[type="checkbox"] {
@@ -79,6 +110,7 @@
 .fi input:focus-visible,
 .fi select:focus-visible,
 .fi textarea:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--fi-action) 55%, transparent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--fi-action);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fi-action) 18%, transparent);
 }

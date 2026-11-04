@@ -117,22 +117,24 @@ export function OpenTasks({ tasks, asOf, demo }: { tasks: TaskItem[]; asOf: stri
         const expanded = open === t.key;
         return (
           <li key={t.key} className="px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="fi-num w-24 shrink-0 text-sm">{dayDate(t.dueDate, Number(asOf.slice(0, 4)))}</span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <span className="fi-num hidden w-24 shrink-0 text-sm sm:block">{dayDate(t.dueDate, Number(asOf.slice(0, 4)))}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm">{t.title}</span>
                 <span className="block text-xs text-[var(--fi-muted)]">
+                  <span className="fi-num sm:hidden">{dayDate(t.dueDate, Number(asOf.slice(0, 4)))} · </span>
                   {t.scope === "business" ? "Attività" : "Personale"}
                   {days < 0 ? " · era da fare: se l'hai già fatto, segnalo" : ""}
                   {t.amount ? ` · ${eur(t.amount)}` : ""}
                   {t.source === "custom" ? " · promemoria" : ""}
                 </span>
               </span>
+              <div className="flex items-center justify-between gap-4">
               {days < 0 ? (
                 <Badge tone="critical">Scaduto</Badge>
               ) : days <= 30 ? (
                 <Badge tone="warning">Tra {days} gg</Badge>
-              ) : null}
+              ) : <span />}
               <button
                 type="button"
                 className={btn.outline}
@@ -141,6 +143,7 @@ export function OpenTasks({ tasks, asOf, demo }: { tasks: TaskItem[]; asOf: stri
               >
                 {expanded ? "Chiudi" : "Come fare"}
               </button>
+              </div>
             </div>
             {expanded && <CompleteForm task={t} demo={demo} />}
           </li>

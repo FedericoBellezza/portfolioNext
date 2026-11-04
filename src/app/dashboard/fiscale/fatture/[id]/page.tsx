@@ -170,7 +170,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
                 </p>
               )}
               {sdi === "rejected" && (
-                <div className="mb-4 rounded-lg bg-[#fbeceb] p-3 text-sm text-[var(--fi-critical)]">
+                <div className="mb-4 rounded-lg bg-[var(--fi-critical-soft)] p-3 text-sm text-[var(--fi-critical-text)]">
                   <p>
                     Una fattura scartata si considera non emessa. Correggi i dati del cliente in anagrafica, poi rigenera
                     l&apos;XML e reinvialo entro 5 giorni dallo scarto, con lo stesso numero e la stessa data.

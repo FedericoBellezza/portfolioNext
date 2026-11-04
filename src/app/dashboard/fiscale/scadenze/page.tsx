@@ -4,12 +4,13 @@ import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
 import { loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents, type Cents } from "@/lib/fiscale/money";
+import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
 import { DeadlineList } from "../components/charts";
-import { date, eur, MONTHS } from "../components/format";
+import { date, dayDate, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
-import { btn, DemoNotice, Disclosure, PageTitle, Section } from "../components/ui";
+import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
 import { deleteCreditAction } from "./credit-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
@@ -37,11 +38,10 @@ const KIND_LABEL: Record<string, string> = {
   other: "Altro",
 };
 
-function byMonth(items: F24Item[]) {
-  const groups = new Map<string, F24Item[]>();
-  for (const i of items) groups.set(i.dueDate.slice(0, 7), [...(groups.get(i.dueDate.slice(0, 7)) ?? []), i]);
-  return [...groups.entries()];
-}
+const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "imposta sostitutiva", inps: "INPS", other: "altro" };
+
+type View = "da-fare" | "calendario" | "storico" | "crediti" | "promemoria";
+const VIEWS: View[] = ["da-fare", "calendario", "storico", "crediti", "promemoria"];
 
 /** Short-lived links to the private F24 receipts. */
 async function receiptLinks(paths: string[]): Promise<Map<string, string>> {
@@ -51,67 +51,93 @@ async function receiptLinks(paths: string[]): Promise<Map<string, string>> {
   return new Map((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path!, d.signedUrl]));
 }
 
-function Calendar({ items, asOf, paid, dismissed }: { items: F24Item[]; asOf: string; paid: Set<string>; dismissed: Set<string> }) {
+/** Payments and filings of the coming months, one card per month. */
+function MonthCalendar({
+  payments,
+  tasks,
+  asOf,
+  paid,
+  dismissed,
+  done,
+}: {
+  payments: F24Item[];
+  tasks: TaskItem[];
+  asOf: string;
+  paid: Set<string>;
+  dismissed: Set<string>;
+  done: Set<string>;
+}) {
+  const months = [...new Set([...payments, ...tasks].map((i) => i.dueDate.slice(0, 7)))].sort();
+  if (months.length === 0) return <p className="text-sm text-[var(--fi-ink-2)]">Nessuna scadenza.</p>;
+  const refYear = Number(asOf.slice(0, 4));
   return (
-    <div className="space-y-6">
-      {byMonth(items).map(([month, group]) => {
+    <div className="space-y-4">
+      {months.map((month) => {
         const [y, mm] = month.split("-").map(Number);
+        const pay = payments.filter((p) => p.dueDate.startsWith(month));
+        const tsk = tasks.filter((t) => t.dueDate.startsWith(month));
         return (
-          <div key={month}>
-            <div className="flex items-baseline justify-between border-b border-[var(--fi-rule)] pb-1.5">
-              <h3 className="text-sm font-medium">
+          <section key={month} className={cx(card, "px-5 pt-4 pb-1")}>
+            <div className="flex items-baseline justify-between">
+              <h3 className="text-sm font-semibold">
                 {MONTHS[mm - 1]} {y}
               </h3>
-              <span className="fi-num text-xs text-[var(--fi-muted)]">{eur(sumCents(group.map((i) => i.amount)))}</span>
+              {pay.length > 0 && <span className="fi-num text-xs text-[var(--fi-muted)]">{eur(sumCents(pay.map((i) => i.amount)))}</span>}
             </div>
-            <DeadlineList items={group} asOf={asOf} paid={paid} dismissed={dismissed} showCategory />
-          </div>
+            {pay.length > 0 && <DeadlineList items={pay} asOf={asOf} paid={paid} dismissed={dismissed} showCategory />}
+            {tsk.length > 0 && (
+              <ul className={cx("divide-y divide-[var(--fi-rule)]", pay.length > 0 && "border-t border-[var(--fi-rule)]")}>
+                {tsk.map((t) => (
+                  <li key={t.key} className="flex items-center gap-4 py-3">
+                    <span className="fi-num w-24 shrink-0 text-sm">{dayDate(t.dueDate, refYear)}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">{t.title}</span>
+                      <span className="block text-xs text-[var(--fi-muted)]">{t.scope === "business" ? "Dichiarazione · attività" : "Promemoria · personale"}</span>
+                    </span>
+                    {t.amount ? <span className="fi-num w-24 text-right text-sm font-medium">{eur(t.amount)}</span> : <span className="w-24" />}
+                    <span className="hidden w-24 text-right sm:block">{done.has(t.key) ? <Badge tone="good">Fatto</Badge> : <Badge tone="accent">Da fare</Badge>}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         );
       })}
     </div>
   );
 }
 
-export default async function TassePage() {
+export default async function ScadenzePage({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
   await connection();
+  const { vista } = await searchParams;
+  const view: View = VIEWS.includes(vista as View) ? (vista as View) : "da-fare";
   const asOf = todayInRome();
   const data = await loadDataset();
   const demo = data.source === "demo";
   const m = buildDashboard(data, asOf);
-  const media = demo ? {} : await loadGuideMedia();
 
   const toHandle = m.schedule.filter(
     (i) => (i.amount > 0 || i.unknownAmount) && !m.paid.has(i.key) && i.dueDate <= `${m.year}-12-31`,
   );
-  const upcoming = m.schedule.filter((i) => i.dueDate >= asOf && (i.amount > 0 || i.unknownAmount));
-  const past = m.schedule.filter((i) => i.dueDate < asOf && (i.amount > 0 || m.paid.has(i.key)));
-
-  type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null; compensated?: boolean };
-  const payments: Payment[] = [
-    ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
-    ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
-  ]
-    .filter((p) => yearOf(p.date) === m.year)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
-  const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
-
-  const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "imposta sostitutiva", inps: "INPS", other: "altro" };
-  const creditLabel = (c: (typeof data.credits)[number]) => `Credito ${CREDIT_KIND[c.kind]} ${c.referenceYear}`;
-  const usableCredits = data.credits
-    .filter((c) => c.destination === "compensation" && c.residual > 0)
-    .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
-
-  // Filings and reminders: everything not done up to 12 months ahead, done ones of this year apart.
   const horizon = `${m.year + 1}${asOf.slice(4)}`;
   const openTasks = m.tasks.filter((t) => !m.doneTasks.has(t.key) && t.dueDate <= horizon);
   const doneTasks = m.tasks.filter((t) => m.doneTasks.has(t.key));
+  const urgentTasks = openTasks.filter((t) => t.dueDate <= `${m.year}-12-31`);
+  const creditLabel = (c: (typeof data.credits)[number]) => `Credito ${CREDIT_KIND[c.kind]} ${c.referenceYear}`;
+
+  const tabs = [
+    { id: "da-fare", label: "Da fare", count: toHandle.length + urgentTasks.length },
+    { id: "calendario", label: "Calendario" },
+    { id: "storico", label: "Storico" },
+    { id: "crediti", label: "Crediti", count: data.credits.filter((c) => c.residual > 0).length },
+    { id: "promemoria", label: "Promemoria", count: data.reminders.length },
+  ].map((t) => ({ ...t, href: t.id === "da-fare" ? "/dashboard/fiscale/scadenze" : `/dashboard/fiscale/scadenze?vista=${t.id}` }));
 
   return (
     <>
       <PageTitle
         title="Scadenze"
-        description="Tutto quello che c'è da pagare, inviare o ricordare: tasse e contributi dell'attività, dichiarazioni e promemoria personali."
+        description="Cosa pagare, inviare o ricordare: tasse e contributi dell'attività, dichiarazioni e promemoria personali."
         action={
           <Link href="/dashboard/fiscale/export" className={btn.outline}>
             Esporta per il commercialista
@@ -119,208 +145,19 @@ export default async function TassePage() {
         }
       />
       <DemoNotice show={demo} />
+      <Tabs items={tabs} active={view} label="Viste delle scadenze" />
 
-      <p className="mb-10 text-sm text-[var(--fi-ink-2)]">
-        Da tenere da parte adesso <b className="fi-num text-base font-semibold text-[var(--fi-ink)]">{eur(m.reserveAfterCredit)}</b>
-        {m.availableCredit > 0 && (
-          <span>
-            {" "}
-            (già scalati {eur(Math.min(m.availableCredit, m.reserve.matured))} di{" "}
-            <a href="#crediti" className="underline-offset-4 hover:underline">credito</a>)
-          </span>
-        )}
-        <span className="mx-2 text-[var(--fi-rule)]">|</span>
-        Uscite previste fino al 30 giugno {m.year + 1}{" "}
-        <b className="fi-num font-medium text-[var(--fi-ink)]">{eur(m.reserve.cashOutUntilHorizon)}</b>
-      </p>
-
-      <div className="space-y-12">
-        <div id="registra" className="scroll-mt-24">
-          {toHandle.length === 0 ? (
-            <Section title="Da pagare o registrare">
-              <p className="text-sm text-[var(--fi-ink-2)]">Tutte le scadenze di quest&apos;anno sono registrate.</p>
-            </Section>
-          ) : (
-            <OverdueBanner
-              items={toHandle}
-              demo={demo}
-              media={media}
-              credits={usableCredits}
-              tone={m.overdue.length > 0 ? "warning" : "neutral"}
-              title="Da pagare o registrare"
-              intro="Apri una voce per vedere come pagarla e registrare l'importo. Vale anche per quelle già pagate in anticipo; se una stima non ti riguarda, segnala come non dovuta."
-            />
-          )}
-        </div>
-
-        <Section title="Dichiarazioni e promemoria" id="adempimenti">
-          <OpenTasks tasks={openTasks} asOf={asOf} demo={demo} />
-          <div className="mt-4 space-y-3">
-            {doneTasks.length > 0 && (
-              <Disclosure summary={`Già fatti (${doneTasks.length})`}>
-                <ul className="max-w-2xl divide-y divide-[var(--fi-rule)] text-sm">
-                  {doneTasks.map((t) => {
-                    const done = m.doneTasks.get(t.key)!;
-                    return (
-                      <li key={t.key} className="flex items-baseline gap-4 py-2">
-                        <span className="min-w-0 flex-1 truncate">{t.title}</span>
-                        <span className="shrink-0 text-xs text-[var(--fi-ink-2)]">
-                          fatto il {date(done.completedAt)}
-                          {done.documentId ? " · ricevuta in Documenti" : ""}
-                        </span>
-                        <form action={undoTaskAction}>
-                          <input type="hidden" name="key" value={t.key} />
-                          <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
-                            Annulla
-                          </button>
-                        </form>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </Disclosure>
-            )}
-            <Disclosure summary="Aggiungi un promemoria (IMU, bollo auto, altre scadenze personali…)">
-              <ReminderForm demo={demo} />
-              {data.reminders.length > 0 && (
-                <ul className="mt-6 max-w-3xl divide-y divide-[var(--fi-rule)] text-sm">
-                  {data.reminders.map((r) => (
-                    <li key={r.id} className="flex items-baseline gap-4 py-2">
-                      <span className="min-w-0 flex-1 truncate">
-                        {r.title}
-                        <span className="ml-2 text-xs text-[var(--fi-muted)]">
-                          {r.recurrence === "yearly" ? "ogni anno" : r.recurrence === "monthly" ? "ogni mese" : "una volta"} dal{" "}
-                          {date(r.firstDue)} · {r.scope === "business" ? "attività" : "personale"}
-                        </span>
-                      </span>
-                      <form action={archiveReminderAction}>
-                        <input type="hidden" name="id" value={r.id} />
-                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
-                          Elimina
-                        </button>
-                      </form>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Disclosure>
-          </div>
-        </Section>
-
-        <Section
-          title="Crediti d'imposta"
-          id="crediti"
-          action={
-            m.availableCredit > 0 ? (
-              <span className="fi-num text-sm text-[var(--fi-ink-2)]">Disponibile {eur(m.availableCredit)}</span>
-            ) : undefined
-          }
-        >
-          {data.credits.length === 0 ? (
-            <p className="mb-3 text-sm text-[var(--fi-ink-2)]">
-              Nessun credito. Se dalla dichiarazione risulta un credito (es. IRPEF), registralo: viene scalato da quanto
-              tenere da parte e lo usi quando paghi un F24 in compensazione.
-            </p>
-          ) : (
-            <ul className="mb-4 divide-y divide-[var(--fi-rule)] rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)]">
-              {data.credits.map((c) => (
-                <li key={c.id} className="px-4 py-3">
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{creditLabel(c)}</span>
-                      <span className="block text-xs text-[var(--fi-muted)]">
-                        {c.destination === "refund" ? "Chiesto a rimborso" : "In compensazione"}
-                        {c.source ? ` · ${c.source}` : ""}
-                      </span>
-                    </span>
-                    <span className="fi-num text-sm">
-                      {eur(c.amount)} − usati {eur(c.used)} = <b className="font-semibold">{eur(c.residual)}</b>
-                    </span>
-                  </div>
-                  {c.notes && <p className="mt-1 text-xs text-[var(--fi-warning-text)]">{c.notes}</p>}
-                  {c.uses.length > 0 && (
-                    <ul className="mt-2 space-y-0.5 text-xs text-[var(--fi-ink-2)]">
-                      {c.uses.map((u) => (
-                        <li key={u.id} className="fi-num">
-                          {date(u.usedAt)} · {eur(u.amount)}
-                          {u.note ? ` · ${u.note}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-4">
-                    <CreditAmountEdit id={c.id} amount={c.amount} />
-                    <form action={deleteCreditAction}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
-                        Elimina
-                      </button>
-                    </form>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Disclosure summary="Aggiungi un credito">
-            <CreditForm defaultYear={m.year - 1} demo={demo} />
-          </Disclosure>
-        </Section>
-
-        <Section title="Prossimi pagamenti">
-          <Calendar items={upcoming} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
-          {past.length > 0 && (
-            <div className="mt-6">
-              <Disclosure summary={`Pagamenti passati (${past.length})`}>
-                <Calendar items={past} asOf={asOf} paid={m.paid} dismissed={m.dismissed} />
-              </Disclosure>
-            </div>
-          )}
-        </Section>
-
-        <Section
-          title={`Pagamenti registrati nel ${m.year}`}
-          action={<span className="fi-num text-sm text-[var(--fi-ink-2)]">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
-        >
-          {payments.length === 0 ? (
-            <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessun F24 registrato.</p>
-          ) : (
-            <ul className="divide-y divide-[var(--fi-rule)] text-sm">
-              {payments.map((p) => {
-                const href = p.receipt ? links.get(p.receipt) : undefined;
-                return (
-                  <li key={p.id} className="flex items-baseline gap-4 py-2.5">
-                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
-                    <span className="min-w-0 flex-1 truncate">
-                      {p.label}
-                      {p.compensated && <span className="ml-2 text-xs text-[var(--fi-muted)]">in compensazione</span>}
-                    </span>
-                    {href && (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs text-[var(--fi-action)] underline-offset-4 hover:underline">
-                        Ricevuta
-                      </a>
-                    )}
-                    <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Section>
-
-        <div className="space-y-3 border-t border-[var(--fi-rule)] pt-6">
-          {expenses.length > 0 && (
-            <Disclosure summary={`Spese operative ${m.year} · ${eur(m.expensesYtd)} (non deducibili, solo per tua analisi)`}>
-              <ul className="max-w-2xl divide-y divide-[var(--fi-rule)] text-sm">
-                {expenses.map((e) => (
-                  <li key={e.id} className="flex items-baseline gap-4 py-2">
-                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(e.spentAt)}</span>
-                    <span className="min-w-0 flex-1 truncate">{e.description ?? e.category}</span>
-                    <span className="fi-num">{eur(e.amount)}</span>
-                  </li>
-                ))}
-              </ul>
-            </Disclosure>
-          )}
+      {view === "da-fare" && <DaFare />}
+      {view === "calendario" && (
+        <div className="space-y-6">
+          <MonthCalendar
+            payments={m.schedule.filter((i) => i.dueDate >= asOf && (i.amount > 0 || i.unknownAmount))}
+            tasks={m.tasks.filter((t) => t.dueDate >= asOf)}
+            asOf={asOf}
+            paid={m.paid}
+            dismissed={m.dismissed}
+            done={new Set(m.doneTasks.keys())}
+          />
           <Disclosure summary="Come calcoliamo le scadenze">
             <ul className="max-w-2xl space-y-2 text-sm text-[var(--fi-ink-2)]">
               <li>INPS fissi: 4 rate (16/5, 20/8, 16/11, 16/2) sul minimale, in proporzione ai mesi di attività e con le tue riduzioni.</li>
@@ -331,7 +168,253 @@ export default async function TassePage() {
             </ul>
           </Disclosure>
         </div>
-      </div>
+      )}
+      {view === "storico" && <Storico />}
+      {view === "crediti" && <Crediti />}
+      {view === "promemoria" && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          <Panel title="Nuovo promemoria" description="IMU, bollo auto, canoni, raccolta spese detraibili…" className="lg:col-span-3">
+            <ReminderForm demo={demo} />
+          </Panel>
+          <Panel title="I tuoi promemoria" className="lg:col-span-2">
+            {data.reminders.length === 0 ? (
+              <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessuno.</p>
+            ) : (
+              <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+                {data.reminders.map((r) => (
+                  <li key={r.id} className="flex items-baseline gap-3 py-2.5">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{r.title}</span>
+                      <span className="block text-xs text-[var(--fi-muted)]">
+                        {r.recurrence === "yearly" ? "Ogni anno" : r.recurrence === "monthly" ? "Ogni mese" : "Una volta"} dal{" "}
+                        {date(r.firstDue)} · {r.scope === "business" ? "attività" : "personale"}
+                        {r.amount ? ` · ${eur(r.amount)}` : ""}
+                      </span>
+                    </span>
+                    <form action={archiveReminderAction}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                        Elimina
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+      )}
     </>
   );
+
+  async function DaFare() {
+    const media = demo ? {} : await loadGuideMedia();
+    const usableCredits = data.credits
+      .filter((c) => c.destination === "compensation" && c.residual > 0)
+      .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+          <Stat
+            tone="accent"
+            label="Da tenere da parte"
+            value={eur(m.reserveAfterCredit)}
+            hint={m.availableCredit > 0 ? "Già scalato il credito disponibile" : `F24 maturati fino al 30/6/${m.year + 1}`}
+          />
+          <Stat label={`Uscite fino al 30/6/${m.year + 1}`} value={eur(m.reserve.cashOutUntilHorizon)} hint="Inclusi gli acconti dell'anno prossimo" />
+          <Stat
+            label="Credito disponibile"
+            value={eur(m.availableCredit)}
+            hint={
+              <Link href="/dashboard/fiscale/scadenze?vista=crediti" className="font-medium text-[var(--fi-action)] hover:underline">
+                Gestisci i crediti
+              </Link>
+            }
+          />
+        </div>
+
+        {toHandle.length === 0 ? (
+          <Panel title="Pagamenti">
+            <p className="text-sm text-[var(--fi-ink-2)]">Tutti i pagamenti di quest&apos;anno sono registrati.</p>
+          </Panel>
+        ) : (
+          <OverdueBanner
+            items={toHandle}
+            demo={demo}
+            media={media}
+            credits={usableCredits}
+            tone={m.overdue.length > 0 ? "warning" : "neutral"}
+            title="Pagamenti da fare o da registrare"
+            intro="Apri una voce per vedere come pagarla e registrare l'importo, anche se l'hai già pagata in anticipo. Se una stima non ti riguarda, segnala come non dovuta."
+          />
+        )}
+
+        <section aria-labelledby="tasks-title">
+          <h2 id="tasks-title" className="mb-3 text-[15px] font-semibold">
+            Dichiarazioni e promemoria
+          </h2>
+          <OpenTasks tasks={openTasks} asOf={asOf} demo={demo} />
+        </section>
+      </div>
+    );
+  }
+
+  async function Storico() {
+    type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null; compensated?: boolean };
+    const payments: Payment[] = [
+      ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
+      ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
+    ]
+      .filter((p) => yearOf(p.date) === m.year)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
+    const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
+
+    return (
+      <div className="grid gap-6 lg:grid-cols-5">
+        <Panel
+          title={`Pagamenti registrati nel ${m.year}`}
+          className="lg:col-span-3"
+          action={<span className="fi-num text-sm font-medium">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
+        >
+          {payments.length === 0 ? (
+            <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessun F24 registrato.</p>
+          ) : (
+            <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+              {payments.map((p) => {
+                const href = p.receipt ? links.get(p.receipt) : undefined;
+                return (
+                  <li key={p.id} className="flex items-baseline gap-3 py-2.5">
+                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {p.label}
+                      {p.compensated && <span className="ml-2"><Badge tone="accent">compensato</Badge></span>}
+                    </span>
+                    {href && (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--fi-action)] hover:underline">
+                        Ricevuta
+                      </a>
+                    )}
+                    <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+
+        <div className="space-y-6 lg:col-span-2">
+          <Panel title="Dichiarazioni fatte">
+            {doneTasks.length === 0 ? (
+              <p className="text-sm text-[var(--fi-ink-2)]">Nessuna ancora.</p>
+            ) : (
+              <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+                {doneTasks.map((t) => {
+                  const done = m.doneTasks.get(t.key)!;
+                  return (
+                    <li key={t.key} className="flex items-baseline gap-3 py-2.5">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{t.title}</span>
+                        <span className="block text-xs text-[var(--fi-muted)]">
+                          Fatto il {date(done.completedAt)}
+                          {done.documentId ? " · ricevuta in Documenti" : ""}
+                        </span>
+                      </span>
+                      <form action={undoTaskAction}>
+                        <input type="hidden" name="key" value={t.key} />
+                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                          Annulla
+                        </button>
+                      </form>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+          {expenses.length > 0 && (
+            <Panel title={`Spese operative ${m.year}`} description="Non deducibili nel forfettario: solo per tua analisi" action={<span className="fi-num text-sm">{eur(m.expensesYtd)}</span>}>
+              <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+                {expenses.map((e) => (
+                  <li key={e.id} className="flex items-baseline gap-3 py-2">
+                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(e.spentAt)}</span>
+                    <span className="min-w-0 flex-1 truncate">{e.description ?? e.category}</span>
+                    <span className="fi-num">{eur(e.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function Crediti() {
+    return (
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="space-y-4 lg:col-span-3">
+          {data.credits.length === 0 ? (
+            <Panel title="Crediti d'imposta">
+              <p className="text-sm text-[var(--fi-ink-2)]">
+                Nessun credito. Se dalla dichiarazione risulta un credito (es. IRPEF), registralo: viene scalato da quanto
+                tenere da parte e lo usi quando paghi un F24 in compensazione.
+              </p>
+            </Panel>
+          ) : (
+            data.credits.map((c) => {
+              const usedPct = c.amount > 0 ? Math.min(100, (c.used / c.amount) * 100) : 0;
+              return (
+                <section key={c.id} className={cx(card, "p-5")}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-[15px] font-semibold">{creditLabel(c)}</h2>
+                      <p className="mt-0.5 text-xs text-[var(--fi-muted)]">
+                        {c.destination === "refund" ? "Chiesto a rimborso" : "In compensazione negli F24"}
+                        {c.source ? ` · ${c.source}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-[var(--fi-ink-2)]">Residuo</p>
+                      <p className="fi-num text-[24px] font-semibold leading-none tracking-[-0.02em]">{eur(c.residual)}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--fi-fill)]" aria-hidden>
+                    <div className="h-full rounded-full bg-[var(--fi-action)]" style={{ width: `${usedPct}%` }} />
+                  </div>
+                  <p className="fi-num mt-1.5 text-xs text-[var(--fi-ink-2)]">
+                    Usati {eur(c.used)} di {eur(c.amount)}
+                  </p>
+                  {c.notes && <p className="mt-3 rounded-lg bg-[var(--fi-warning-soft)] px-3 py-2 text-xs text-[var(--fi-warning-text)]">{c.notes}</p>}
+                  {c.uses.length > 0 && (
+                    <ul className="mt-4 divide-y divide-[var(--fi-rule)] border-t border-[var(--fi-rule)] text-sm">
+                      {c.uses.map((u) => (
+                        <li key={u.id} className="flex items-baseline gap-3 py-2">
+                          <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(u.usedAt)}</span>
+                          <span className="min-w-0 flex-1 truncate">{u.note ?? "Compensazione"}</span>
+                          <span className="fi-num">−{eur(u.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-[var(--fi-rule)] pt-3">
+                    <CreditAmountEdit id={c.id} amount={c.amount} />
+                    <form action={deleteCreditAction}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                        Elimina
+                      </button>
+                    </form>
+                  </div>
+                </section>
+              );
+            })
+          )}
+        </div>
+        <Panel title="Aggiungi un credito" description="Dalla dichiarazione dei redditi, quadro RX" className="lg:col-span-2">
+          <CreditForm defaultYear={m.year - 1} demo={demo} />
+        </Panel>
+      </div>
+    );
+  }
 }

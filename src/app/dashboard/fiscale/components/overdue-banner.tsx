@@ -66,16 +66,18 @@ export function OverdueBanner({
       <ul className="mt-4 divide-y divide-[var(--fi-warning)]/30 rounded-lg border border-[var(--fi-warning)]/30 bg-[var(--fi-surface)]">
         {items.map((item) => (
           <li key={item.key} className="px-4 py-3">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="fi-num w-24 shrink-0 text-xs font-medium">{date(item.dueDate)}</span>
-              <span className="min-w-0 flex-1 text-sm">
-                {item.label}
-                <span className="ml-2 text-xs text-[var(--fi-muted)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <span className="fi-num hidden w-24 shrink-0 text-sm sm:block">{date(item.dueDate)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm">{item.label}</p>
+                <p className="text-xs text-[var(--fi-muted)]">
+                  <span className="fi-num sm:hidden">{date(item.dueDate)} · </span>
                   {item.category === "inail"
                     ? "Sezione INAIL"
                     : `${item.category.startsWith("inps") ? "Causale" : "Tributo"} ${item.code}`}
-                </span>
-              </span>
+                </p>
+              </div>
+              <div className="flex items-center justify-between gap-4">
               <span className="fi-num text-sm font-medium">{item.unknownAmount ? "da verificare" : eur(item.amount)}</span>
               <button
                 type="button"
@@ -85,6 +87,7 @@ export function OverdueBanner({
               >
                 {open === item.key ? "Chiudi" : "Come pagare e registra"}
               </button>
+              </div>
             </div>
             {open === item.key && (
               <GuideStepper guide={guideFor(item)} media={media} canUpload={!demo}>

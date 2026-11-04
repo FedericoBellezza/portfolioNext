@@ -28,8 +28,8 @@ export function CreditForm({ defaultYear, demo }: { defaultYear: number; demo: b
     if (state?.ok) ref.current?.reset();
   }, [state]);
   return (
-    <form ref={ref} onSubmit={submit(action)} className="grid max-w-3xl gap-3 sm:grid-cols-6">
-      <div className="sm:col-span-2">
+    <form ref={ref} onSubmit={submit(action)} className="grid gap-3 sm:grid-cols-2">
+      <div>
         <label htmlFor="cr-kind" className={fieldLabel}>Tipo</label>
         <select id="cr-kind" name="kind" defaultValue="irpef">
           <option value="irpef">IRPEF</option>
@@ -46,23 +46,23 @@ export function CreditForm({ defaultYear, demo }: { defaultYear: number; demo: b
         <label htmlFor="cr-amount" className={fieldLabel}>Importo (€)</label>
         <input id="cr-amount" name="amount" inputMode="decimal" required />
       </div>
-      <div className="sm:col-span-2">
+      <div>
         <label htmlFor="cr-dest" className={fieldLabel}>Come lo usi</label>
         <select id="cr-dest" name="destination" defaultValue="compensation">
           <option value="compensation">In compensazione negli F24</option>
           <option value="refund">Chiesto a rimborso</option>
         </select>
       </div>
-      <div className="sm:col-span-4">
+      <div className="sm:col-span-2">
         <label htmlFor="cr-source" className={fieldLabel}>Da dove viene (facoltativo)</label>
         <input id="cr-source" name="source" maxLength={200} placeholder="Es. Dichiarazione dei redditi 2027, quadro RX" />
       </div>
-      <div className="flex items-end gap-3 sm:col-span-2">
-        <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending || demo}>
+      <div className="sm:col-span-2">
+        <button type="submit" className={btn.primary} disabled={pending || demo}>
           {pending ? "Salvataggio…" : "Aggiungi credito"}
         </button>
       </div>
-      <div className="sm:col-span-6">
+      <div className="sm:col-span-2">
         <Feedback state={state} />
       </div>
     </form>
