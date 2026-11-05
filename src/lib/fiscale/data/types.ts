@@ -115,4 +115,21 @@ export interface PaymentDocument {
   provisional: boolean;
   inpsPaymentId: string | null;
   taxPaymentId: string | null;
+  /** Outcome of the Claude check; null or missing until checked. */
+  check?: FileCheck | null;
 }
+
+/** What Claude read in a payment file (see receipt-check.ts). */
+export type FileCheck =
+  | {
+      status: "ok";
+      kind: string;
+      final: boolean;
+      date: string | null;
+      amount: number | null;
+      /** False when the file looks like it belongs to another payment. */
+      matches: boolean | null;
+      note: string | null;
+      checkedAt: string;
+    }
+  | { status: "skipped"; reason: string; checkedAt: string };

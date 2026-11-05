@@ -1,11 +1,80 @@
 "use client";
 
-import { useId, useState } from "react";
-import { Upload } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CircleAlert, Loader2, Upload } from "lucide-react";
 import { DOCUMENT_ACCEPT, DOCUMENT_BUCKET, DOCUMENT_MAX_BYTES, documentMime } from "@/lib/fiscale/documents";
 import { createClient } from "@/lib/supabase/client";
 import { addPaymentFilesAction, type ActionState } from "../obligations-actions";
+import { checkPaymentFilesAction } from "../receipt-check-actions";
 import { cx } from "../components/ui";
+
+/**
+ * Has Claude Code (owner's server) read the payment files not yet checked, a
+ * few per call, as soon as the page shows some: after an upload, after an F24
+ * is registered with its files, or for older files. Runs once per count, so a
+ * file that cannot be saved does not loop.
+ */
+export function ReceiptAutoCheck({ pending }: { pending: number }) {
+  const router = useRouter();
+  const [state, setState] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  const [attempt, setAttempt] = useState(0);
+  const tried = useRef<string | null>(null);
+
+  useEffect(() => {
+    const key = `${pending}:${attempt}`;
+    if (pending === 0 || tried.current === key) return;
+    tried.current = key;
+    let alive = true;
+    setState({ running: true, error: null });
+    (async () => {
+      let error: string | null = null;
+      try {
+        for (let round = 0; round < 20; round++) {
+          const r = await checkPaymentFilesAction();
+          if (!r.ok) {
+            error = r.message;
+            break;
+          }
+          if (r.remaining === 0 || r.checked === 0) break;
+        }
+      } catch {
+        error = "Controllo dei file non riuscito.";
+      }
+      if (!alive) return;
+      setState({ running: false, error });
+      router.refresh();
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [pending, attempt, router]);
+
+  if (state.running) {
+    return (
+      <p role="status" className="mb-4 inline-flex items-center gap-2 rounded-md bg-[var(--fi-action-soft)] px-3 py-2 text-sm text-[var(--fi-action)]">
+        <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+        Claude sta leggendo {pending === 1 ? "1 file nuovo" : `${pending} file nuovi`} per capire se sono ricevute definitive…
+      </p>
+    );
+  }
+  if (state.error) {
+    return (
+      <p role="status" className="mb-4 inline-flex flex-wrap items-center gap-2 rounded-md bg-[var(--fi-warning-soft)] px-3 py-2 text-sm text-[var(--fi-warning-text)]">
+        <CircleAlert aria-hidden className="h-4 w-4" />
+        {state.error}
+        <button
+          type="button"
+          onClick={() => setAttempt((n) => n + 1)}
+          className="font-medium underline underline-offset-4"
+        >
+          Riprova
+        </button>
+      </p>
+    );
+  }
+  return null;
+}
 
 /**
  * Picks one or more files (F24, bank receipt, Agenzia receipt...) and attaches

@@ -69,9 +69,9 @@ describe("payment files", () => {
   });
 
   it("points to where the final receipt is", () => {
-    expect(finalReceiptHint({ kind: "stamp_duty_q2", amount: 400, creditUsed: 0, compensated: false })).toMatch(/attestazione di pagamento/);
-    expect(finalReceiptHint({ kind: "substitute_tax_advance_2", amount: 7_800, creditUsed: 7_800, compensated: true })).toMatch(/Nessun addebito/);
-    expect(finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false })).toMatch(/home banking/);
+    expect(finalReceiptHint({ kind: "stamp_duty_q2", amount: 400, creditUsed: 0, compensated: false }).text).toMatch(/attestazione di pagamento/);
+    expect(finalReceiptHint({ kind: "substitute_tax_advance_2", amount: 7_800, creditUsed: 7_800, compensated: true }).text).toMatch(/Nessun addebito/);
+    expect(finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false }).text).toMatch(/home banking/);
   });
 
   it("titles a file after its name", () => {

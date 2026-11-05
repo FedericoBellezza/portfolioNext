@@ -2,12 +2,15 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
-import { CheckCircle2, ChevronDown, CircleAlert, Clock3, FileText, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Clock3, ExternalLink, FileText, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
 import {
-  fileKind,
+  belongsElsewhere,
+  fileLabel,
   finalReceiptHint,
+  paymentLabel,
+  uncheckedFiles,
   missingReceipts,
   paymentEntries,
   proofStatus,
@@ -26,34 +29,14 @@ import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, T
 import { deleteCreditAction } from "./credit-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
 import { deleteDocumentAction, setDocumentProvisionalAction } from "../documenti/actions";
-import { PaymentFilesUpload } from "./receipt-ui";
+import { recheckFileAction } from "../receipt-check-actions";
+import { PaymentFilesUpload, ReceiptAutoCheck } from "./receipt-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
 import { OpenTasks, ReminderForm } from "./tasks-ui";
 
 export const metadata = { title: "Scadenze | Fiscale" };
-
-const KIND_LABEL: Record<string, string> = {
-  fixed_q1: "INPS fissi 1ª rata",
-  fixed_q2: "INPS fissi 2ª rata",
-  fixed_q3: "INPS fissi 3ª rata",
-  fixed_q4: "INPS fissi 4ª rata",
-  excess_balance: "INPS eccedenza saldo",
-  excess_advance_1: "INPS eccedenza 1° acconto",
-  excess_advance_2: "INPS eccedenza 2° acconto",
-  substitute_tax_balance: "Imposta sostitutiva saldo",
-  substitute_tax_advance_1: "Imposta sostitutiva 1° acconto",
-  substitute_tax_advance_2: "Imposta sostitutiva 2° acconto",
-  stamp_duty_q1: "Bollo 1° trimestre",
-  stamp_duty_q2: "Bollo 2° trimestre",
-  stamp_duty_q3: "Bollo 3° trimestre",
-  stamp_duty_q4: "Bollo 4° trimestre",
-  chamber_fee: "Diritto camerale",
-  inail_premium: "Premio INAIL",
-  other: "Altro",
-};
-
-const paymentLabel = (p: PaymentEntry) =>
-  `${p.kind === "other" ? (p.table === "inps" ? "Altri contributi INPS" : "Altro versamento") : KIND_LABEL[p.kind]} ${p.competenceYear}`;
+// The check of new receipts with Claude Code runs in this page's server actions.
+export const maxDuration = 300;
 
 const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "imposta sostitutiva", inps: "INPS", other: "altro" };
 
@@ -81,92 +64,169 @@ const PROOF: Record<ProofStatus, { icon: typeof CheckCircle2; text: string; colo
   scheduled: { icon: Clock3, text: "Programmato", color: "text-[var(--fi-muted)]" },
 };
 
+/** Where to download the final receipt: the pages to open, the steps in the tooltip. */
+function FinalReceiptLinks({ p }: { p: PaymentEntry }) {
+  const hint = finalReceiptHint(p);
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--fi-ink-2)]" title={hint.text}>
+      <span>Scarica la definitiva da</span>
+      {hint.links.map((l, i) => (
+        <span key={l.href} className="inline-flex items-center gap-2">
+          {i > 0 && <span aria-hidden className="text-[var(--fi-muted)]">o</span>}
+          <a href={l.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-[var(--fi-action)] underline-offset-4 hover:underline">
+            {l.label}
+            <ExternalLink aria-hidden className="h-3 w-3" />
+          </a>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /**
  * Proof of one payment: a single status line that opens the list of its files.
- * Each file shows what it is (quietanza, F24 form, booking...) and whether it
- * is final; the full file name stays in the tooltip and in Documenti.
+ * Each file shows what it is (as Claude read it, or guessed from its name) and
+ * whether it is final; the full file name stays in the tooltip and in Documenti.
+ * While the final receipt is missing, the pages to get it are always in sight.
  */
 function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string; links: Map<string, string>; demo: boolean }) {
   const status = proofStatus(p, asOf);
   const { icon: Icon, text, color } = PROOF[status];
+  const misplaced = p.files.filter(belongsElsewhere);
   const line = (
     <span className={cx("inline-flex items-center gap-1.5 text-xs font-medium", color)}>
       <Icon aria-hidden className="h-3.5 w-3.5 shrink-0" />
       {text}
     </span>
   );
+  const extra = (
+    <>
+      {(status === "waiting" || status === "missing") && (
+        <div className="mt-1">
+          <FinalReceiptLinks p={p} />
+        </div>
+      )}
+      {misplaced.length > 0 && (
+        <p className="mt-1 flex items-start gap-1.5 text-xs text-[var(--fi-critical-text)]">
+          <CircleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
+          {misplaced.length === 1
+            ? "Un file sembra di un altro pagamento: aprilo e controlla."
+            : `${misplaced.length} file sembrano di un altro pagamento: aprili e controlla.`}
+        </p>
+      )}
+    </>
+  );
 
   if (p.files.length === 0) {
     return (
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        {line}
-        <PaymentFilesUpload table={p.table} id={p.id} demo={demo} />
-      </div>
+      <>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {line}
+          <PaymentFilesUpload table={p.table} id={p.id} demo={demo} />
+        </div>
+        {extra}
+      </>
     );
   }
 
   return (
-    <details className="group mt-1.5">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-sm [&::-webkit-details-marker]:hidden">
-        {line}
-        <span className="inline-flex items-center gap-0.5 text-xs text-[var(--fi-muted)] group-hover:text-[var(--fi-ink-2)]">
-          {p.files.length === 1 ? "1 file" : `${p.files.length} file`}
-          <ChevronDown aria-hidden className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-        </span>
-      </summary>
-      <div className="mt-2 rounded-md bg-[var(--fi-ground)] p-2.5">
-        <ul className="space-y-1.5 text-xs">
-          {p.files.map((f) => {
-            const href = links.get(f.path);
-            const kind = fileKind(f.title).label;
-            return (
-              <li key={f.path} className="flex items-center gap-2">
-                <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
-                {href ? (
-                  <a href={href} target="_blank" rel="noopener noreferrer" title={f.title} className="min-w-0 flex-1 truncate font-medium text-[var(--fi-ink)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
-                    {kind}
-                  </a>
-                ) : (
-                  <span title={f.title} className="min-w-0 flex-1 truncate font-medium">
-                    {kind}
-                  </span>
-                )}
-                {f.id ? (
-                  <form action={setDocumentProvisionalAction} className="shrink-0">
-                    <input type="hidden" name="id" value={f.id} />
-                    <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
-                    <button
-                      type="submit"
-                      title={f.provisional ? "Segna come definitiva: attesta che il pagamento è avvenuto" : "Segna come provvisoria: il pagamento non è ancora confermato"}
-                      className={cx(
-                        "rounded-full px-2 py-0.5 text-[11px] font-medium hover:ring-1 hover:ring-current",
-                        f.provisional ? "bg-[var(--fi-warning-soft)] text-[var(--fi-warning-text)]" : "bg-[var(--fi-good-soft)] text-[var(--fi-good-text)]",
+    <>
+      <details className="group mt-1.5">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-sm [&::-webkit-details-marker]:hidden">
+          {line}
+          <span className="inline-flex items-center gap-0.5 text-xs text-[var(--fi-muted)] group-hover:text-[var(--fi-ink-2)]">
+            {p.files.length === 1 ? "1 file" : `${p.files.length} file`}
+            <ChevronDown aria-hidden className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+          </span>
+        </summary>
+        <div className="mt-2 rounded-md bg-[var(--fi-ground)] p-2.5">
+          <ul className="space-y-2 text-xs">
+            {p.files.map((f) => {
+              const href = links.get(f.path);
+              const kind = fileLabel(f);
+              const checked = f.check?.status === "ok";
+              return (
+                <li key={f.path}>
+                  <div className="flex items-center gap-2">
+                    <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      {href ? (
+                        <a href={href} target="_blank" rel="noopener noreferrer" title={f.title} className="min-w-0 truncate font-medium text-[var(--fi-ink)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
+                          {kind}
+                        </a>
+                      ) : (
+                        <span title={f.title} className="min-w-0 truncate font-medium">
+                          {kind}
+                        </span>
                       )}
-                    >
-                      {f.provisional ? "provvisoria" : "definitiva"}
-                    </button>
-                  </form>
-                ) : (
-                  <Badge tone="good">definitiva</Badge>
-                )}
-                {f.id && (
-                  <form action={deleteDocumentAction} className="shrink-0">
-                    <input type="hidden" name="id" value={f.id} />
-                    <button type="submit" aria-label={`Rimuovi ${kind}`} title="Rimuovi il file" className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-critical-soft)] hover:text-[var(--fi-critical-text)]">
-                      <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  </form>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {status !== "confirmed" && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{finalReceiptHint(p)}</p>}
-        <div className="mt-2 border-t border-[var(--fi-rule)] pt-2">
-          <PaymentFilesUpload table={p.table} id={p.id} hasFiles demo={demo} />
+                      {checked && (
+                        <span title="Letto e controllato da Claude" className="shrink-0 text-[var(--fi-action)]">
+                          <Sparkles aria-label="Controllato da Claude" className="h-3 w-3" />
+                        </span>
+                      )}
+                    </span>
+                    {f.id ? (
+                      <form action={setDocumentProvisionalAction} className="shrink-0">
+                        <input type="hidden" name="id" value={f.id} />
+                        <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
+                        <button
+                          type="submit"
+                          title={f.provisional ? "Segna come definitiva: attesta che il pagamento è avvenuto" : "Segna come provvisoria: il pagamento non è ancora confermato"}
+                          className={cx(
+                            "rounded-full px-2 py-0.5 text-[11px] font-medium hover:ring-1 hover:ring-current",
+                            f.provisional ? "bg-[var(--fi-warning-soft)] text-[var(--fi-warning-text)]" : "bg-[var(--fi-good-soft)] text-[var(--fi-good-text)]",
+                          )}
+                        >
+                          {f.provisional ? "provvisoria" : "definitiva"}
+                        </button>
+                      </form>
+                    ) : (
+                      <Badge tone="good">definitiva</Badge>
+                    )}
+                    {f.id && checked && (
+                      <form action={recheckFileAction} className="shrink-0">
+                        <input type="hidden" name="id" value={f.id} />
+                        <button
+                          type="submit"
+                          aria-label={`Fai ricontrollare ${kind} a Claude`}
+                          title="Fai ricontrollare a Claude"
+                          className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-action-soft)] hover:text-[var(--fi-action)]"
+                        >
+                          <RotateCcw aria-hidden className="h-3.5 w-3.5" />
+                        </button>
+                      </form>
+                    )}
+                    {f.id && (
+                      <form action={deleteDocumentAction} className="shrink-0">
+                        <input type="hidden" name="id" value={f.id} />
+                        <button
+                          type="submit"
+                          aria-label={`Rimuovi ${kind}`}
+                          title="Rimuovi il file"
+                          className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-critical-soft)] hover:text-[var(--fi-critical-text)]"
+                        >
+                          <Trash2 aria-hidden className="h-3.5 w-3.5" />
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                  {f.check?.status === "ok" && (f.check.note || f.check.matches === false) && (
+                    <p className={cx("mt-1 pl-[22px]", f.check.matches === false ? "text-[var(--fi-critical-text)]" : "text-[var(--fi-ink-2)]")}>
+                      {f.check.note ?? "Sembra di un altro pagamento: controlla di averlo collegato a quello giusto."}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {status !== "confirmed" && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{finalReceiptHint(p).text}</p>}
+          <div className="mt-2 border-t border-[var(--fi-rule)] pt-2">
+            <PaymentFilesUpload table={p.table} id={p.id} hasFiles demo={demo} />
+          </div>
         </div>
-      </div>
-    </details>
+      </details>
+      {extra}
+    </>
   );
 }
 
@@ -265,6 +325,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
         }
       />
       <DemoNotice show={demo} />
+      <ReceiptAutoCheck pending={demo ? 0 : uncheckedFiles(allPayments).length} />
       <Tabs items={tabs} active={view} label="Viste delle scadenze" />
 
       {view === "da-fare" && <DaFare />}
@@ -372,7 +433,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
         {noReceipt.length > 0 && (
           <Panel
             title="Ricevute da caricare"
-            description="Pagamenti senza la ricevuta che li attesta. Puoi caricare più file insieme (F24, quietanza, ricevuta dell'Agenzia), che finiscono anche in Documenti. Una prenotazione segnala come provvisoria in Storico: resta qui finché non carichi quella definitiva."
+            description="Pagamenti senza la ricevuta che li attesta. Carica uno o più file: Claude li legge, capisce se sono definitivi e controlla che siano del pagamento giusto."
           >
             <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
               {noReceipt.map((p) => (
@@ -380,9 +441,9 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                   <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{paymentLabel(p)}</span>
-                    <span className="block text-xs text-[var(--fi-ink-2)]">
-                      {p.files.length > 0 && <span className="text-[var(--fi-warning-text)]">Hai solo file provvisori. </span>}
-                      {finalReceiptHint(p)}
+                    {p.files.length > 0 && <span className="block text-xs text-[var(--fi-warning-text)]">Hai solo file provvisori.</span>}
+                    <span className="mt-0.5 block">
+                      <FinalReceiptLinks p={p} />
                     </span>
                   </span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
@@ -422,7 +483,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
       const db = await fiscaleDb();
       const { data: docs } = await db.from("documents").select("id, title, file_path").in("id", docIds);
       for (const d of docs ?? []) {
-        filingDocs.set(String(d.id), { id: null, title: String(d.title), path: String(d.file_path), bucket: "fiscale-docs", provisional: false });
+        filingDocs.set(String(d.id), { id: null, title: String(d.title), path: String(d.file_path), bucket: "fiscale-docs", provisional: false, check: null });
       }
     }
     const links = demo ? new Map<string, string>() : await fileLinks([...payments.flatMap((p) => p.files), ...filingDocs.values()]);

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { toCents } from "../money";
 import { DEFAULT_PROFILE, type FiscalProfile } from "../tax-config";
 import { demoDataset } from "./demo";
-import type { FiscalDataset, InvoiceRow } from "./types";
+import type { FileCheck, FiscalDataset, InvoiceRow } from "./types";
 
 type Row = Record<string, unknown>;
 const str = (v: unknown) => (v == null ? null : String(v));
@@ -56,7 +56,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note, inps_payment_id, tax_payment_id").order("used_at"),
     db
       .from("documents")
-      .select("id, title, file_path, provisional, inps_payment_id, tax_payment_id")
+      .select("id, title, file_path, provisional, inps_payment_id, tax_payment_id, ai_check")
       .or("inps_payment_id.not.is.null,tax_payment_id.not.is.null")
       .order("created_at"),
   ]);
@@ -186,6 +186,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       provisional: Boolean(d.provisional),
       inpsPaymentId: str(d.inps_payment_id),
       taxPaymentId: str(d.tax_payment_id),
+      check: d.ai_check && typeof d.ai_check === "object" ? (d.ai_check as FileCheck) : null,
     })),
   };
 }

@@ -1,5 +1,5 @@
 import type { Cents } from "./money";
-import type { FiscalDataset } from "./data/types";
+import type { FileCheck, FiscalDataset } from "./data/types";
 
 /** A file attached to a payment: an archive document, or the older single receipt. */
 export interface PaymentFile {
@@ -9,7 +9,33 @@ export interface PaymentFile {
   path: string;
   bucket: "fiscale-docs" | "fiscale-f24";
   provisional: boolean;
+  /** What Claude read in the file; null until checked. */
+  check: FileCheck | null;
 }
+
+const KIND_LABEL: Record<string, string> = {
+  fixed_q1: "INPS fissi 1ª rata",
+  fixed_q2: "INPS fissi 2ª rata",
+  fixed_q3: "INPS fissi 3ª rata",
+  fixed_q4: "INPS fissi 4ª rata",
+  excess_balance: "INPS eccedenza saldo",
+  excess_advance_1: "INPS eccedenza 1° acconto",
+  excess_advance_2: "INPS eccedenza 2° acconto",
+  substitute_tax_balance: "Imposta sostitutiva saldo",
+  substitute_tax_advance_1: "Imposta sostitutiva 1° acconto",
+  substitute_tax_advance_2: "Imposta sostitutiva 2° acconto",
+  stamp_duty_q1: "Bollo 1° trimestre",
+  stamp_duty_q2: "Bollo 2° trimestre",
+  stamp_duty_q3: "Bollo 3° trimestre",
+  stamp_duty_q4: "Bollo 4° trimestre",
+  chamber_fee: "Diritto camerale",
+  inail_premium: "Premio INAIL",
+  other: "Altro",
+};
+
+/** Name of a payment, e.g. "INPS fissi 3ª rata 2026". */
+export const paymentLabel = (p: Pick<PaymentEntry, "table" | "kind" | "competenceYear">) =>
+  `${p.kind === "other" ? (p.table === "inps" ? "Altri contributi INPS" : "Altro versamento") : (KIND_LABEL[p.kind] ?? p.kind)} ${p.competenceYear}`;
 
 /** One recorded payment (INPS or Erario/other), as shown in the history. */
 export interface PaymentEntry {
@@ -51,8 +77,8 @@ export function settlement(e: Pick<PaymentEntry, "amount" | "creditUsed" | "comp
 function filesOf(data: Source, table: "inps" | "tax", id: string, legacy: string | null): PaymentFile[] {
   const docs = data.paymentDocuments
     .filter((d) => (table === "inps" ? d.inpsPaymentId : d.taxPaymentId) === id)
-    .map((d) => ({ id: d.id, title: d.title, path: d.path, bucket: "fiscale-docs" as const, provisional: d.provisional }));
-  return legacy ? [{ id: null, title: "Ricevuta", path: legacy, bucket: "fiscale-f24" as const, provisional: false }, ...docs] : docs;
+    .map((d) => ({ id: d.id, title: d.title, path: d.path, bucket: "fiscale-docs" as const, provisional: d.provisional, check: d.check ?? null }));
+  return legacy ? [{ id: null, title: "Ricevuta", path: legacy, bucket: "fiscale-f24" as const, provisional: false, check: null }, ...docs] : docs;
 }
 
 export function paymentEntries(data: Source): PaymentEntry[] {
@@ -83,7 +109,10 @@ export function paymentEntries(data: Source): PaymentEntry[] {
 }
 
 /** True when the payment has at least one file that is the final proof of payment. */
-export const hasFinalReceipt = (e: PaymentEntry) => e.files.some((f) => !f.provisional);
+export const hasFinalReceipt = (e: PaymentEntry) => e.files.some((f) => !f.provisional && !belongsElsewhere(f));
+
+/** Claude found that the file is about another payment. */
+export const belongsElsewhere = (f: Pick<PaymentFile, "check">) => f.check?.status === "ok" && f.check.matches === false;
 
 /**
  * Payments already made (date reached) with no final receipt: no file at all, or
@@ -129,15 +158,56 @@ export function proofStatus(e: PaymentEntry, asOf: string): ProofStatus {
   return e.date <= asOf ? "missing" : "scheduled";
 }
 
-/** Where to get the final receipt of a payment. */
-export function finalReceiptHint(e: Pick<PaymentEntry, "kind" | "amount" | "creditUsed" | "compensated">): string {
+/** Kinds Claude can tell apart in a payment file (see receipt-check.ts). */
+export const CHECK_KINDS: Record<string, { label: string; final: boolean }> = {
+  quietanza_banca: { label: "Quietanza della banca", final: true },
+  f24_versato: { label: "F24 versato", final: true },
+  attestazione_pagamento: { label: "Attestazione di pagamento", final: true },
+  prenotazione: { label: "Prenotazione", final: false },
+  ricevuta_invio: { label: "Ricevuta di invio", final: false },
+  modello_f24: { label: "Modello F24", final: false },
+  altro: { label: "Documento", final: false },
+};
+
+/** Short name of a file: what Claude read in it, otherwise a guess from its name. */
+export function fileLabel(f: Pick<PaymentFile, "title" | "check">): string {
+  if (f.check?.status === "ok") return CHECK_KINDS[f.check.kind]?.label ?? "Documento";
+  return fileKind(f.title).label;
+}
+
+/** PDF files of the archive not yet checked by Claude. */
+export function uncheckedFiles(entries: PaymentEntry[]): { entry: PaymentEntry; file: PaymentFile }[] {
+  return entries.flatMap((entry) =>
+    entry.files.filter((f) => f.id && !f.check && /\.pdf$/i.test(f.path)).map((file) => ({ entry, file })),
+  );
+}
+
+const ADE = "https://www.agenziaentrate.gov.it/portale/";
+const FATTURE_CORRISPETTIVI = "https://ivaservizi.agenziaentrate.gov.it/portale/";
+const BANK = "https://www.bancamediolanum.it/";
+
+/** Where to get the final receipt of a payment, with the page to open. */
+export function finalReceiptHint(e: Pick<PaymentEntry, "kind" | "amount" | "creditUsed" | "compensated">): {
+  text: string;
+  links: { label: string; href: string }[];
+} {
+  const cassetto = { label: "Cassetto fiscale", href: ADE };
   if (e.kind.startsWith("stamp_duty")) {
-    return "Dopo l'addebito scarica l'attestazione di pagamento da Fatture e Corrispettivi (Pagamento imposta di bollo).";
+    return {
+      text: "Dopo l'addebito scarica l'attestazione di pagamento: Fatture e Corrispettivi → Fatture elettroniche e altri dati IVA → Pagamento imposta di bollo.",
+      links: [{ label: "Fatture e Corrispettivi", href: FATTURE_CORRISPETTIVI }],
+    };
   }
   if (settlement(e).bank === 0 && (e.compensated || e.creditUsed > 0)) {
-    return "Nessun addebito in banca: dalla data del pagamento trovi la quietanza nel Cassetto fiscale, sezione Versamenti F24.";
+    return {
+      text: "Nessun addebito in banca: dalla data del pagamento scarichi l'F24 versato dall'area riservata dell'Agenzia → Cassetto fiscale → Versamenti → F24.",
+      links: [cassetto],
+    };
   }
-  return "Dopo l'addebito scarica la quietanza dall'home banking (sezione F24) o dal Cassetto fiscale, sezione Versamenti F24.";
+  return {
+    text: "Dopo l'addebito scarica la quietanza dall'home banking (sezione F24), oppure l'F24 versato dall'area riservata dell'Agenzia → Cassetto fiscale → Versamenti → F24.",
+    links: [{ label: "Home banking", href: BANK }, cassetto],
+  };
 }
 
 /** Title for an uploaded file: its name without extension, tidied up. */
