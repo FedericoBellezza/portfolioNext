@@ -51,6 +51,17 @@ export async function registerDocumentAction(input: {
   return { ok: true, message: "Documento caricato." };
 }
 
+/** Marks a payment file as provisional (final receipt still due) or as the final one. */
+export async function setDocumentProvisionalAction(formData: FormData): Promise<void> {
+  await requireOwner();
+  const id = String(formData.get("id") ?? "");
+  if (!/^[0-9a-f-]{36}$/.test(id)) return;
+  const db = await fiscaleDb();
+  const { error } = await db.from("documents").update({ provisional: formData.get("provisional") === "true" }).eq("id", id);
+  if (error) console.error("[fiscale] provisional document:", error.message);
+  revalidatePath("/dashboard/fiscale", "layout");
+}
+
 export async function deleteDocumentAction(formData: FormData): Promise<void> {
   await requireOwner();
   const id = String(formData.get("id") ?? "");

@@ -15,7 +15,7 @@ import { OverdueBanner } from "../components/overdue-banner";
 import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
 import { deleteCreditAction } from "./credit-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
-import { deleteDocumentAction } from "../documenti/actions";
+import { deleteDocumentAction, setDocumentProvisionalAction } from "../documenti/actions";
 import { PaymentFilesUpload } from "./receipt-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
 import { OpenTasks, ReminderForm } from "./tasks-ui";
@@ -80,6 +80,20 @@ function PaymentFiles({ files, links }: { files: PaymentFile[]; links: Map<strin
               </a>
             ) : (
               <span className="min-w-0 truncate text-[var(--fi-ink-2)]">{f.title}</span>
+            )}
+            {f.provisional && <Badge tone="warning">provvisoria</Badge>}
+            {f.id && (
+              <form action={setDocumentProvisionalAction} className="shrink-0">
+                <input type="hidden" name="id" value={f.id} />
+                <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
+                <button
+                  type="submit"
+                  title={f.provisional ? "È la ricevuta che attesta il pagamento" : "Es. prenotazione del bollo o ricevuta di invio: la ricevuta definitiva arriva dopo"}
+                  className="text-[var(--fi-muted)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline"
+                >
+                  {f.provisional ? "Segna definitiva" : "Segna provvisoria"}
+                </button>
+              </form>
             )}
             {f.id && (
               <form action={deleteDocumentAction} className="shrink-0">
@@ -299,15 +313,22 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
         {noReceipt.length > 0 && (
           <Panel
             title="Ricevute da caricare"
-            description="Pagamenti fatti senza nessun file allegato. Carica F24, quietanza della banca o ricevuta dell'Agenzia (anche più file insieme): finiscono anche in Documenti."
+            description="Pagamenti senza la ricevuta che li attesta. Puoi caricare più file insieme (F24, quietanza, ricevuta dell'Agenzia), che finiscono anche in Documenti. Una prenotazione segnala come provvisoria in Storico: resta qui finché non carichi quella definitiva."
           >
             <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
               {noReceipt.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
                   <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
-                  <span className="min-w-0 flex-1 truncate">{paymentLabel(p)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{paymentLabel(p)}</span>
+                    {p.files.length > 0 && (
+                      <span className="block text-xs text-[var(--fi-warning-text)]">
+                        Hai solo la ricevuta provvisoria: carica quella definitiva appena è pronta
+                      </span>
+                    )}
+                  </span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                  <PaymentFilesUpload table={p.table} id={p.id} demo={demo} />
+                  <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
                 </li>
               ))}
             </ul>

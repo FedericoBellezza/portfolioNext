@@ -12,9 +12,9 @@ const data = {
     { id: "e", paidAt: "2026-07-02", competenceYear: 2026, kind: "chamber_fee" as const, tributeCode: "3850", amount: 5_300, receiptPath: null },
   ],
   paymentDocuments: [
-    { id: "doc1", title: "Quietanza banca", path: "u/x1.pdf", inpsPaymentId: null, taxPaymentId: "e" },
-    { id: "doc2", title: "Modello F24", path: "u/x2.pdf", inpsPaymentId: null, taxPaymentId: "e" },
-    { id: "doc3", title: "Quietanza", path: "u/x3.pdf", inpsPaymentId: "b", taxPaymentId: null },
+    { id: "doc1", title: "Quietanza banca", path: "u/x1.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e" },
+    { id: "doc2", title: "Modello F24", path: "u/x2.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e" },
+    { id: "doc3", title: "Quietanza", path: "u/x3.pdf", provisional: false, inpsPaymentId: "b", taxPaymentId: null },
   ],
 };
 
@@ -31,6 +31,15 @@ describe("payment files", () => {
     expect(missingReceipts(paymentEntries(data), "2026-11-05").map((e) => e.id)).toEqual(["d", "a"]);
     // On the scheduled date the F24 is executed and its receipt is due too.
     expect(missingReceipts(paymentEntries(data), "2026-11-30").map((e) => e.id)).toEqual(["c", "d", "a"]);
+  });
+
+  it("keeps asking while the payment has only provisional files", () => {
+    const booking = { id: "doc4", title: "Prenotazione bollo", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null };
+    const withBooking = { ...data, paymentDocuments: [...data.paymentDocuments, booking] };
+    expect(missingReceipts(paymentEntries(withBooking), "2026-11-05").map((e) => e.id)).toEqual(["d", "a"]);
+    const final = { ...booking, id: "doc5", path: "u/x5.pdf", provisional: false };
+    const withFinal = { ...data, paymentDocuments: [...withBooking.paymentDocuments, final] };
+    expect(missingReceipts(paymentEntries(withFinal), "2026-11-05").map((e) => e.id)).toEqual(["d"]);
   });
 
   it("titles a file after its name", () => {

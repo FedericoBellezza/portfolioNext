@@ -8,6 +8,7 @@ export interface PaymentFile {
   title: string;
   path: string;
   bucket: "fiscale-docs" | "fiscale-f24";
+  provisional: boolean;
 }
 
 /** One recorded payment (INPS or Erario/other), as shown in the history. */
@@ -27,8 +28,8 @@ type Source = Pick<FiscalDataset, "inpsPayments" | "taxPayments" | "paymentDocum
 function filesOf(data: Source, table: "inps" | "tax", id: string, legacy: string | null): PaymentFile[] {
   const docs = data.paymentDocuments
     .filter((d) => (table === "inps" ? d.inpsPaymentId : d.taxPaymentId) === id)
-    .map((d) => ({ id: d.id, title: d.title, path: d.path, bucket: "fiscale-docs" as const }));
-  return legacy ? [{ id: null, title: "Ricevuta", path: legacy, bucket: "fiscale-f24" as const }, ...docs] : docs;
+    .map((d) => ({ id: d.id, title: d.title, path: d.path, bucket: "fiscale-docs" as const, provisional: d.provisional }));
+  return legacy ? [{ id: null, title: "Ricevuta", path: legacy, bucket: "fiscale-f24" as const, provisional: false }, ...docs] : docs;
 }
 
 export function paymentEntries(data: Source): PaymentEntry[] {
@@ -56,12 +57,16 @@ export function paymentEntries(data: Source): PaymentEntry[] {
   ].sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/** True when the payment has at least one file that is the final proof of payment. */
+export const hasFinalReceipt = (e: PaymentEntry) => e.files.some((f) => !f.provisional);
+
 /**
- * Payments already made (date reached) with no file attached. Scheduled ones
- * (date in the future) are left out: their receipt does not exist yet.
+ * Payments already made (date reached) with no final receipt: no file at all, or
+ * only provisional ones (e.g. the booking of the stamp duty debit). Scheduled
+ * ones (date in the future) are left out: their receipt does not exist yet.
  */
 export function missingReceipts(entries: PaymentEntry[], asOf: string): PaymentEntry[] {
-  return entries.filter((e) => e.files.length === 0 && e.date <= asOf);
+  return entries.filter((e) => !hasFinalReceipt(e) && e.date <= asOf);
 }
 
 /** Title for an uploaded file: its name without extension, tidied up. */

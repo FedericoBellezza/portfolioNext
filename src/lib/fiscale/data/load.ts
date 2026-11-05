@@ -56,7 +56,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note").order("used_at"),
     db
       .from("documents")
-      .select("id, title, file_path, inps_payment_id, tax_payment_id")
+      .select("id, title, file_path, provisional, inps_payment_id, tax_payment_id")
       .or("inps_payment_id.not.is.null,tax_payment_id.not.is.null")
       .order("created_at"),
   ]);
@@ -176,6 +176,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
       id: String(d.id),
       title: String(d.title),
       path: String(d.file_path),
+      provisional: Boolean(d.provisional),
       inpsPaymentId: str(d.inps_payment_id),
       taxPaymentId: str(d.tax_payment_id),
     })),

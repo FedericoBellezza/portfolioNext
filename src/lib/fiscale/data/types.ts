@@ -111,6 +111,8 @@ export interface PaymentDocument {
   id: string;
   title: string;
   path: string;
+  /** Temporary proof (e.g. booking of the stamp duty debit): the final receipt is still due. */
+  provisional: boolean;
   inpsPaymentId: string | null;
   taxPaymentId: string | null;
 }
