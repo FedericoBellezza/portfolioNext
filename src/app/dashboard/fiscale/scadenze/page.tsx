@@ -4,7 +4,8 @@ import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
 import { loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
-import { missingReceipts, paymentEntries, type PaymentEntry } from "@/lib/fiscale/receipts";
+import { FileText } from "lucide-react";
+import { missingReceipts, paymentEntries, type PaymentEntry, type PaymentFile } from "@/lib/fiscale/receipts";
 import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +15,8 @@ import { OverdueBanner } from "../components/overdue-banner";
 import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
 import { deleteCreditAction } from "./credit-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
-import { ReceiptUpload } from "./receipt-ui";
+import { deleteDocumentAction } from "../documenti/actions";
+import { PaymentFilesUpload } from "./receipt-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
 import { OpenTasks, ReminderForm } from "./tasks-ui";
 
@@ -48,12 +50,50 @@ const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "i
 type View = "da-fare" | "calendario" | "storico" | "crediti" | "promemoria";
 const VIEWS: View[] = ["da-fare", "calendario", "storico", "crediti", "promemoria"];
 
-/** Short-lived links to the private F24 receipts. */
-async function receiptLinks(paths: string[]): Promise<Map<string, string>> {
-  if (paths.length === 0) return new Map();
+/** Short-lived links to the private payment files (archive and older single receipts). */
+async function fileLinks(files: PaymentFile[]): Promise<Map<string, string>> {
+  const links = new Map<string, string>();
+  if (files.length === 0) return links;
   const supabase = await createClient();
-  const { data } = await supabase.storage.from("fiscale-f24").createSignedUrls(paths, 600);
-  return new Map((data ?? []).filter((d) => d.signedUrl && d.path).map((d) => [d.path!, d.signedUrl]));
+  for (const bucket of ["fiscale-docs", "fiscale-f24"] as const) {
+    const paths = files.filter((f) => f.bucket === bucket).map((f) => f.path);
+    if (paths.length === 0) continue;
+    const { data } = await supabase.storage.from(bucket).createSignedUrls(paths, 600);
+    for (const d of data ?? []) if (d.signedUrl && d.path) links.set(d.path, d.signedUrl);
+  }
+  return links;
+}
+
+/** The files of one payment, each openable and (archive ones) removable. */
+function PaymentFiles({ files, links }: { files: PaymentFile[]; links: Map<string, string> }) {
+  if (files.length === 0) return null;
+  return (
+    <ul className="mt-1.5 w-full space-y-1 pl-[6.75rem] text-xs">
+      {files.map((f) => {
+        const href = links.get(f.path);
+        return (
+          <li key={f.path} className="flex items-center gap-2">
+            <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+            {href ? (
+              <a href={href} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
+                {f.title}
+              </a>
+            ) : (
+              <span className="min-w-0 truncate text-[var(--fi-ink-2)]">{f.title}</span>
+            )}
+            {f.id && (
+              <form action={deleteDocumentAction} className="shrink-0">
+                <input type="hidden" name="id" value={f.id} />
+                <button type="submit" className="text-[var(--fi-muted)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                  Rimuovi
+                </button>
+              </form>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 /** Payments and filings of the coming months, one card per month. */
@@ -259,7 +299,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
         {noReceipt.length > 0 && (
           <Panel
             title="Ricevute da caricare"
-            description="Pagamenti fatti senza ricevuta allegata. Carica la quietanza della banca o la ricevuta dell'Agenzia (PDF o foto): così hai tutto in ordine per controlli e commercialista."
+            description="Pagamenti fatti senza nessun file allegato. Carica F24, quietanza della banca o ricevuta dell'Agenzia (anche più file insieme): finiscono anche in Documenti."
           >
             <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
               {noReceipt.map((p) => (
@@ -267,7 +307,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                   <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                   <span className="min-w-0 flex-1 truncate">{paymentLabel(p)}</span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                  <ReceiptUpload table={p.table} id={p.id} demo={demo} />
+                  <PaymentFilesUpload table={p.table} id={p.id} demo={demo} />
                 </li>
               ))}
             </ul>
@@ -286,7 +326,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
 
   async function Storico() {
     const payments = allPayments.filter((p) => yearOf(p.date) === m.year);
-    const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
+    const links = demo ? new Map<string, string>() : await fileLinks(payments.flatMap((p) => p.files));
     const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
 
     return (
@@ -301,7 +341,6 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
           ) : (
             <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
               {payments.map((p) => {
-                const href = p.receipt ? links.get(p.receipt) : undefined;
                 const scheduled = p.date > asOf;
                 return (
                   <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
@@ -312,14 +351,10 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                       {scheduled && <span className="ml-2"><Badge>programmato</Badge></span>}
                     </span>
                     <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                    <span className="flex w-full items-baseline justify-end gap-3 sm:w-auto">
-                      {href && (
-                        <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--fi-action)] hover:underline">
-                          Ricevuta
-                        </a>
-                      )}
-                      {!scheduled && <ReceiptUpload table={p.table} id={p.id} replace={Boolean(p.receipt)} demo={demo} />}
+                    <span className="flex w-full justify-end sm:w-28">
+                      <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
                     </span>
+                    <PaymentFiles files={p.files} links={links} />
                   </li>
                 );
               })}

@@ -2,6 +2,7 @@
 
 import { startTransition, useActionState, useState } from "react";
 import { FileUp, TriangleAlert } from "lucide-react";
+import { DOCUMENT_ACCEPT } from "@/lib/fiscale/documents";
 import { guideFor, type GuideMedia } from "@/lib/fiscale/guides";
 import type { F24Item } from "@/lib/fiscale/tax-calculator";
 import { dismissObligation, registerF24, type ActionState } from "../obligations-actions";
@@ -139,12 +140,13 @@ function RegisterForm({
           <input id={`${id}-amount`} name="amount" inputMode="decimal" required defaultValue={item.unknownAmount ? "" : toInput(item.amount)} />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor={`${id}-file`} className={fieldLabel}>Quietanza o ricevuta (anche dopo)</label>
+          <label htmlFor={`${id}-file`} className={fieldLabel}>F24, quietanza, ricevute (anche dopo)</label>
           <input
             id={`${id}-file`}
             name="receipt"
             type="file"
-            accept="application/pdf,image/jpeg,image/png"
+            multiple
+            accept={DOCUMENT_ACCEPT}
             className="file:mr-3 file:rounded-md file:border-0 file:bg-[var(--fi-fill)] file:px-3 file:py-1 file:text-sm"
           />
         </div>

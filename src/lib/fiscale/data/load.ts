@@ -39,7 +39,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
   if (profile.error) throw new Error(`Supabase (fiscale): ${profile.error.message}`);
   if (!profile.data) return demoDataset;
 
-  const [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses] = await Promise.all([
+  const [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses, payDocs] = await Promise.all([
     db.from("clients").select("*").is("archived_at", null).order("company_name"),
     db
       .from("invoices")
@@ -54,8 +54,13 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("task_completions").select("task_key, completed_at, document_id, note"),
     db.from("tax_credits").select("*").order("reference_year", { ascending: false }),
     db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note").order("used_at"),
+    db
+      .from("documents")
+      .select("id, title, file_path, inps_payment_id, tax_payment_id")
+      .or("inps_payment_id.not.is.null,tax_payment_id.not.is.null")
+      .order("created_at"),
   ]);
-  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses].find((r) => r.error);
+  const failed = [clients, invoices, payments, inps, taxes, expenses, dismissals, reminders, completions, credits, creditUses, payDocs].find((r) => r.error);
   if (failed?.error) throw new Error(`Supabase (fiscale): ${failed.error.message}`);
 
   const collections = (payments.data ?? []).map((p: Row) => ({
@@ -166,6 +171,13 @@ export async function loadDataset(): Promise<FiscalDataset> {
       completedAt: String(c.completed_at),
       documentId: str(c.document_id),
       note: str(c.note),
+    })),
+    paymentDocuments: (payDocs.data ?? []).map((d: Row) => ({
+      id: String(d.id),
+      title: String(d.title),
+      path: String(d.file_path),
+      inpsPaymentId: str(d.inps_payment_id),
+      taxPaymentId: str(d.tax_payment_id),
     })),
   };
 }

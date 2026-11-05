@@ -62,5 +62,6 @@ export async function deleteDocumentAction(formData: FormData): Promise<void> {
   await supabase.storage.from(DOCUMENT_BUCKET).remove([String(data.file_path)]);
   const { error } = await db.from("documents").delete().eq("id", id);
   if (error) console.error("[fiscale] delete document:", error.message);
-  revalidatePath("/dashboard/fiscale/documenti");
+  // Payment files live in the archive too: refresh Scadenze as well.
+  revalidatePath("/dashboard/fiscale", "layout");
 }

@@ -103,4 +103,14 @@ export interface FiscalDataset {
   completedTasks: { key: string; completedAt: string; documentId: string | null; note: string | null }[];
   /** Tax credits (e.g. IRPEF from the tax return) and their use in F24 compensation. */
   credits: TaxCredit[];
+  /** Archive documents attached to a payment (F24, bank receipt, Agenzia receipt...). */
+  paymentDocuments: PaymentDocument[];
+}
+
+export interface PaymentDocument {
+  id: string;
+  title: string;
+  path: string;
+  inpsPaymentId: string | null;
+  taxPaymentId: string | null;
 }
