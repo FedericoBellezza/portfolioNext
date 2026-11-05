@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { monthlyNetAverage } from "../tax-calculator";
 import { buildDashboard } from "../data/dashboard";
 import { demoDataset } from "../data/demo";
 import type { FiscalDataset } from "../data/types";
@@ -58,6 +59,12 @@ describe("dashboard model", () => {
     const refund = buildDashboard({ ...data, credits: [{ ...credit, destination: "refund" as const }] }, "2026-11-04");
     expect(refund.availableCredit).toBe(0);
     expect(refund.reserveAfterCredit).toBe(refund.reserve.cashOutUntilHorizon);
+  });
+
+  it("averages the monthly net on what was invoiced, not on what was collected", () => {
+    expect(m.monthlyNet).toEqual(
+      monthlyNetAverage({ ytdRevenue: m.invoicedYtd, asOf: m.asOf, inpsDeducted: m.yearEndOnCurrentRevenue.inpsDeducted, profile: data.profile }),
+    );
   });
 
   it("keeps aside next year's advances too, since they are due anyway", () => {

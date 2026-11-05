@@ -60,13 +60,7 @@ export function Overview({
   const toSend = data.invoices.filter((i) => i.status === "issued" && i.sdiStatus === "not_sent");
   const next = m.reserve.upcoming.find((i) => (i.amount > 0 || i.unknownAmount) && daysBetween(asOf, i.dueDate) <= 30);
   const limitWarning = m.projected.revenueLimit.status !== "ok";
-  // Invoiced this year, stamp duty charged to the client included (it is income too, as in
-  // collections). Taxes and the threshold stay on collections: the forfettario is cash-based.
-  const invoicedYtd = sumCents(
-    data.invoices
-      .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === m.year && i.issueDate <= asOf)
-      .map((i) => i.total),
-  );
+  const invoicedYtd = m.invoicedYtd;
 
   const todos: Todo[] = [];
   if (m.overdue.length > 0)
@@ -225,10 +219,10 @@ export function Overview({
                 {m.monthlyNet && (
                   <p
                     className="border-t border-[var(--fi-rule)] pt-1.5"
-                    title={`Incassato in ${months(m.monthlyNet.monthsElapsed)} mesi, con imposta e contributi dell'anno ripartiti sui mesi: non conta il fatturato non ancora incassato.`}
+                    title={`Fatturato in ${months(m.monthlyNet.monthsElapsed)} mesi, come se fosse tutto incassato, con imposta e contributi dell'anno ripartiti sui mesi.`}
                   >
                     In media <span className="fi-num font-medium text-[var(--fi-ink)]">{eur(m.monthlyNet.monthly)}</span> netti al
-                    mese, calcolati sull&apos;incassato e non sul fatturato
+                    mese, calcolati sul fatturato (come se fosse tutto incassato)
                   </p>
                 )}
               </div>
@@ -331,7 +325,7 @@ export function Overview({
                     ...(m.monthlyNet
                       ? [
                           [
-                            `Netto medio al mese: incassato di ${months(m.monthlyNet.monthsElapsed)} mesi, imposta e contributi dell'anno ripartiti sui mesi`,
+                            `Netto medio al mese: fatturato di ${months(m.monthlyNet.monthsElapsed)} mesi, imposta e contributi dell'anno ripartiti sui mesi`,
                             eur(m.monthlyNet.monthly),
                           ],
                         ]

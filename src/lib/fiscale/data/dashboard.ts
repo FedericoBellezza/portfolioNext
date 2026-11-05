@@ -36,7 +36,9 @@ export interface DashboardModel {
   yearEndOnCurrentRevenue: TaxYearResult;
   /** Linear projection of revenue to 31/12. */
   projected: TaxYearResult;
-  /** Average net per month on what was collected (not invoiced); null in the first 30 days. */
+  /** Invoiced this year up to today, stamp duty charged to the client included. */
+  invoicedYtd: Cents;
+  /** Average net per month on what was invoiced (as if all collected); null in the first 30 days. */
   monthlyNet: MonthlyNet | null;
   schedule: F24Item[];
   reserve: SavingsReserve;
@@ -109,7 +111,15 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     profile,
   });
 
-  const monthlyNet = monthlyNetAverage({ ytdRevenue, asOf, inpsDeducted: inpsDeductedYearEnd, profile });
+  // Invoiced this year, stamp duty charged to the client included (it is income too, as in
+  // collections). Taxes and the threshold stay on collections: the forfettario is cash-based.
+  const invoicedYtd = sumCents(
+    data.invoices
+      .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === C && i.issueDate <= asOf)
+      .map((i) => i.total),
+  );
+  // The owner reads the monthly average on what was invoiced, as if it were all collected.
+  const monthlyNet = monthlyNetAverage({ ytdRevenue: invoicedYtd, asOf, inpsDeducted: inpsDeductedYearEnd, profile });
 
   const schedule = [
     ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile, inail }),
@@ -145,6 +155,7 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     ytd,
     yearEndOnCurrentRevenue,
     projected,
+    invoicedYtd,
     monthlyNet,
     schedule,
     reserve,

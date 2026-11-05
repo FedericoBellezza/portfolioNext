@@ -336,7 +336,8 @@ export interface MonthlyNet {
 }
 
 /**
- * Average net per month on the revenue collected so far (not invoiced). The
+ * Average net per month on the revenue so far: collected, or invoiced as if
+ * it were all collected (the caller chooses; the dashboard uses invoiced). The
  * yearly costs (fixed INPS on the minimale, excess INPS over it, substitute
  * tax) are spread over the year and charged for the months elapsed only:
  * dividing the year-to-date net by the months would charge the whole year's
@@ -345,6 +346,7 @@ export interface MonthlyNet {
  * Null in the first 30 days, when an average says nothing yet.
  */
 export function monthlyNetAverage(args: {
+  /** Revenue of the year up to `asOf`. */
   ytdRevenue: Cents;
   asOf: string;
   /** INPS deductible in the year (paid within it). */
