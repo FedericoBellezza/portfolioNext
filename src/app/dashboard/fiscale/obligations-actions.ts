@@ -145,6 +145,40 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
   return { ok: true, message: "Pagamento registrato." };
 }
 
+/** Adds (or replaces) the receipt of a payment already recorded. */
+export async function attachReceipt(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  let ctx;
+  try {
+    ctx = await ownerContext();
+  } catch {
+    return { ok: false, message: "Non autorizzato." };
+  }
+  if (!ctx.hasProfile) return { ok: false, message: "Modalità demo: crea prima il profilo fiscale." };
+
+  const table = formData.get("table") === "inps" ? "inps_payments" : formData.get("table") === "tax" ? "tax_payments" : null;
+  const id = String(formData.get("id") ?? "");
+  if (!table || !/^[0-9a-f-]{36}$/.test(id)) return { ok: false, message: "Pagamento non valido." };
+  const file = formData.get("receipt");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Scegli un file." };
+
+  const { data: row, error: readError } = await ctx.db.from(table).select("competence_year, kind, receipt_path").eq("id", id).maybeSingle();
+  if (readError || !row) return { ok: false, message: "Pagamento non trovato." };
+
+  const stored = await storeReceipt(ctx, file, `${row.competence_year}/${row.kind}_${id.slice(0, 8)}`);
+  if ("error" in stored) return { ok: false, message: stored.error };
+
+  const { error } = await ctx.db.from(table).update({ receipt_path: stored.path, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) {
+    if (stored.path) await ctx.supabase.storage.from(BUCKET).remove([stored.path]);
+    console.error("[fiscale] attach receipt:", error.message);
+    return { ok: false, message: "Salvataggio non riuscito." };
+  }
+  if (row.receipt_path) await ctx.supabase.storage.from(BUCKET).remove([row.receipt_path]);
+
+  revalidatePath("/dashboard/fiscale", "layout");
+  return { ok: true, message: "Ricevuta caricata." };
+}
+
 /** Marks a calendar item as not due (e.g. the estimate does not apply to you). */
 export async function dismissObligation(_prev: ActionState, formData: FormData): Promise<ActionState> {
   let ctx;

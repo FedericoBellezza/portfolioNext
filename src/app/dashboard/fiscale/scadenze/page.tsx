@@ -3,7 +3,8 @@ import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
 import { loadDataset } from "@/lib/fiscale/data/load";
-import { sumCents, type Cents } from "@/lib/fiscale/money";
+import { sumCents } from "@/lib/fiscale/money";
+import { missingReceipts, paymentEntries, type PaymentEntry } from "@/lib/fiscale/receipts";
 import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,7 @@ import { OverdueBanner } from "../components/overdue-banner";
 import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
 import { deleteCreditAction } from "./credit-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
+import { ReceiptUpload } from "./receipt-ui";
 import { archiveReminderAction, undoTaskAction } from "./task-actions";
 import { OpenTasks, ReminderForm } from "./tasks-ui";
 
@@ -37,6 +39,9 @@ const KIND_LABEL: Record<string, string> = {
   inail_premium: "Premio INAIL",
   other: "Altro",
 };
+
+const paymentLabel = (p: PaymentEntry) =>
+  `${p.kind === "other" ? (p.table === "inps" ? "Altri contributi INPS" : "Altro versamento") : KIND_LABEL[p.kind]} ${p.competenceYear}`;
 
 const CREDIT_KIND: Record<string, string> = { irpef: "IRPEF", substitute_tax: "imposta sostitutiva", inps: "INPS", other: "altro" };
 
@@ -124,9 +129,11 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   const doneTasks = m.tasks.filter((t) => m.doneTasks.has(t.key));
   const urgentTasks = openTasks.filter((t) => t.dueDate <= `${m.year}-12-31`);
   const creditLabel = (c: (typeof data.credits)[number]) => `Credito ${CREDIT_KIND[c.kind]} ${c.referenceYear}`;
+  const allPayments = paymentEntries(data);
+  const noReceipt = missingReceipts(allPayments, asOf);
 
   const tabs = [
-    { id: "da-fare", label: "Da fare", count: toHandle.length + urgentTasks.length },
+    { id: "da-fare", label: "Da fare", count: toHandle.length + urgentTasks.length + noReceipt.length },
     { id: "calendario", label: "Calendario" },
     { id: "storico", label: "Storico" },
     { id: "crediti", label: "Crediti", count: data.credits.filter((c) => c.residual > 0).length },
@@ -249,6 +256,24 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
           />
         )}
 
+        {noReceipt.length > 0 && (
+          <Panel
+            title="Ricevute da caricare"
+            description="Pagamenti fatti senza ricevuta allegata. Carica la quietanza della banca o la ricevuta dell'Agenzia (PDF o foto): così hai tutto in ordine per controlli e commercialista."
+          >
+            <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+              {noReceipt.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
+                  <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
+                  <span className="min-w-0 flex-1 truncate">{paymentLabel(p)}</span>
+                  <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
+                  <ReceiptUpload table={p.table} id={p.id} demo={demo} />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
+
         <section aria-labelledby="tasks-title">
           <h2 id="tasks-title" className="mb-3 text-[15px] font-semibold">
             Dichiarazioni e promemoria
@@ -260,13 +285,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   }
 
   async function Storico() {
-    type Payment = { id: string; date: string; label: string; amount: Cents; receipt: string | null; compensated?: boolean };
-    const payments: Payment[] = [
-      ...data.inpsPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
-      ...data.taxPayments.map((p) => ({ id: p.id, date: p.paidAt, label: `${KIND_LABEL[p.kind]} ${p.competenceYear}`, amount: p.amount, receipt: p.receiptPath, compensated: p.compensated })),
-    ]
-      .filter((p) => yearOf(p.date) === m.year)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    const payments = allPayments.filter((p) => yearOf(p.date) === m.year);
     const links = demo ? new Map<string, string>() : await receiptLinks(payments.map((p) => p.receipt).filter((p): p is string => Boolean(p)));
     const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
 
@@ -283,19 +302,24 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
             <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
               {payments.map((p) => {
                 const href = p.receipt ? links.get(p.receipt) : undefined;
+                const scheduled = p.date > asOf;
                 return (
-                  <li key={p.id} className="flex items-baseline gap-3 py-2.5">
+                  <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
                     <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                     <span className="min-w-0 flex-1 truncate">
-                      {p.label}
+                      {paymentLabel(p)}
                       {p.compensated && <span className="ml-2"><Badge tone="accent">compensato</Badge></span>}
+                      {scheduled && <span className="ml-2"><Badge>programmato</Badge></span>}
                     </span>
-                    {href && (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--fi-action)] hover:underline">
-                        Ricevuta
-                      </a>
-                    )}
                     <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
+                    <span className="flex w-full items-baseline justify-end gap-3 sm:w-auto">
+                      {href && (
+                        <a href={href} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-[var(--fi-action)] hover:underline">
+                          Ricevuta
+                        </a>
+                      )}
+                      {!scheduled && <ReceiptUpload table={p.table} id={p.id} replace={Boolean(p.receipt)} demo={demo} />}
+                    </span>
                   </li>
                 );
               })}

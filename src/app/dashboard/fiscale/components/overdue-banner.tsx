@@ -139,7 +139,7 @@ function RegisterForm({
           <input id={`${id}-amount`} name="amount" inputMode="decimal" required defaultValue={item.unknownAmount ? "" : toInput(item.amount)} />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor={`${id}-file`} className={fieldLabel}>Ricevuta F24 (facoltativa: PDF, JPG o PNG, max 5 MB)</label>
+          <label htmlFor={`${id}-file`} className={fieldLabel}>Quietanza o ricevuta (anche dopo)</label>
           <input
             id={`${id}-file`}
             name="receipt"
