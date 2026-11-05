@@ -6,7 +6,7 @@ import { requireOwner } from "@/lib/fiscale/auth";
 import { DOCUMENT_BUCKET, DOCUMENT_MAX_BYTES, documentMime } from "@/lib/fiscale/documents";
 import { toEuro, toCents } from "@/lib/fiscale/money";
 import { obligationTarget } from "@/lib/fiscale/obligations";
-import { fileTitle } from "@/lib/fiscale/receipts";
+import { fileKind, fileTitle } from "@/lib/fiscale/receipts";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { ok: boolean; message: string } | null;
@@ -44,6 +44,8 @@ async function linkFiles(ctx: OwnerContext, table: PaymentTable, paymentId: stri
   const { error } = await ctx.db.from("documents").insert(
     files.map((f) => ({
       title: fileTitle(f.name),
+      // The F24 form or a booking only shows the payment was ordered.
+      provisional: fileKind(f.name).provisional ?? false,
       category: "f24",
       year,
       file_path: f.path,

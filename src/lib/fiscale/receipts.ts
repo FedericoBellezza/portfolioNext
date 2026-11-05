@@ -94,6 +94,52 @@ export function missingReceipts(entries: PaymentEntry[], asOf: string): PaymentE
   return entries.filter((e) => !hasFinalReceipt(e) && e.date <= asOf);
 }
 
+/**
+ * What a payment file is, guessed from its title or file name. Final proof
+ * (provisional false): the bank receipt, the Agenzia receipt, the stamp duty
+ * payment certificate. Provisional: the F24 form itself, the sending receipt
+ * of an F24, the stamp duty booking. Null when the name says nothing.
+ */
+const FILE_KINDS: { test: RegExp; label: string; provisional: boolean | null }[] = [
+  { test: /quietanza[\s_-]*banca/i, label: "Quietanza della banca", provisional: false },
+  { test: /quietanza/i, label: "Quietanza", provisional: false },
+  { test: /attestazione[\s_-]*(di[\s_-]*)?pagamento/i, label: "Attestazione di pagamento", provisional: false },
+  { test: /cassetto[\s_-]*fiscale/i, label: "Ricevuta del Cassetto fiscale", provisional: false },
+  { test: /prenotazione/i, label: "Prenotazione", provisional: true },
+  { test: /ricevuta[\s_-]*(di[\s_-]*)?invio/i, label: "Ricevuta di invio", provisional: true },
+  { test: /modello[\s_-]*f24|(^|[^a-z])f24([^a-z]|$)/i, label: "Modello F24", provisional: true },
+  { test: /ricevuta/i, label: "Ricevuta", provisional: null },
+];
+
+export function fileKind(title: string): { label: string; provisional: boolean | null } {
+  const hit = FILE_KINDS.find((k) => k.test.test(title));
+  return hit ? { label: hit.label, provisional: hit.provisional } : { label: "Documento", provisional: null };
+}
+
+/**
+ * Where a payment stands with its proof: confirmed by a final receipt, waiting
+ * for it (only provisional files), missing (date reached, no file), or just
+ * scheduled (future date, no file yet).
+ */
+export type ProofStatus = "confirmed" | "waiting" | "missing" | "scheduled";
+
+export function proofStatus(e: PaymentEntry, asOf: string): ProofStatus {
+  if (hasFinalReceipt(e)) return "confirmed";
+  if (e.files.length > 0) return "waiting";
+  return e.date <= asOf ? "missing" : "scheduled";
+}
+
+/** Where to get the final receipt of a payment. */
+export function finalReceiptHint(e: Pick<PaymentEntry, "kind" | "amount" | "creditUsed" | "compensated">): string {
+  if (e.kind.startsWith("stamp_duty")) {
+    return "Dopo l'addebito scarica l'attestazione di pagamento da Fatture e Corrispettivi (Pagamento imposta di bollo).";
+  }
+  if (settlement(e).bank === 0 && (e.compensated || e.creditUsed > 0)) {
+    return "Nessun addebito in banca: dalla data del pagamento trovi la quietanza nel Cassetto fiscale, sezione Versamenti F24.";
+  }
+  return "Dopo l'addebito scarica la quietanza dall'home banking (sezione F24) o dal Cassetto fiscale, sezione Versamenti F24.";
+}
+
 /** Title for an uploaded file: its name without extension, tidied up. */
 export function fileTitle(name: string): string {
   const base = name.replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[_\s]+/g, " ").trim();

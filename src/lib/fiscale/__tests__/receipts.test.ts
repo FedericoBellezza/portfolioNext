@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fileTitle, missingReceipts, paymentEntries, settlement } from "../receipts";
+import { fileKind, fileTitle, finalReceiptHint, missingReceipts, paymentEntries, proofStatus, settlement } from "../receipts";
 
 const data = {
   inpsPayments: [
@@ -47,6 +47,31 @@ describe("payment files", () => {
     expect(settlement({ amount: 56_610, creditUsed: 20_000, compensated: true })).toEqual({ mode: "mixed", credit: 20_000, bank: 36_610 });
     expect(settlement({ amount: 7_800, creditUsed: 0, compensated: true })).toEqual({ mode: "compensated", credit: 0, bank: 0 });
     expect(settlement({ amount: 5_300, creditUsed: 0, compensated: false })).toEqual({ mode: "bank", credit: 0, bank: 5_300 });
+  });
+
+  it("tells what a file is and whether it proves the payment", () => {
+    expect(fileKind("2026-10-19 INPS rata 3 - 566,10 (quietanza banca)")).toEqual({ label: "Quietanza della banca", provisional: false });
+    expect(fileKind("2026-02-16 Bollo IV trimestre 2025 - 4,00 (attestazione pagamento)").provisional).toBe(false);
+    expect(fileKind("Bollo III trimestre 2026 (prenotazione, in corso)")).toEqual({ label: "Prenotazione", provisional: true });
+    expect(fileKind("Acconto imposta 2026 (ricevuta invio 02-07-2026)").label).toBe("Ricevuta di invio");
+    expect(fileKind("F24_BLLFRC01D21L219B.pdf")).toEqual({ label: "Modello F24", provisional: true });
+    expect(fileKind("Quietanza F24 saldo.pdf").label).toBe("Quietanza");
+    expect(fileKind("scansione.pdf")).toEqual({ label: "Documento", provisional: null });
+  });
+
+  it("gives each payment one proof status", () => {
+    const entries = paymentEntries(data);
+    const status = (id: string) => proofStatus(entries.find((e) => e.id === id)!, "2026-11-05");
+    expect([status("b"), status("a"), status("c")]).toEqual(["confirmed", "missing", "scheduled"]);
+    const booking = { id: "doc4", title: "Prenotazione", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null };
+    const withBooking = paymentEntries({ ...data, paymentDocuments: [...data.paymentDocuments, booking] });
+    expect(proofStatus(withBooking.find((e) => e.id === "a")!, "2026-11-05")).toBe("waiting");
+  });
+
+  it("points to where the final receipt is", () => {
+    expect(finalReceiptHint({ kind: "stamp_duty_q2", amount: 400, creditUsed: 0, compensated: false })).toMatch(/attestazione di pagamento/);
+    expect(finalReceiptHint({ kind: "substitute_tax_advance_2", amount: 7_800, creditUsed: 7_800, compensated: true })).toMatch(/Nessun addebito/);
+    expect(finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false })).toMatch(/home banking/);
   });
 
   it("titles a file after its name", () => {

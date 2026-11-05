@@ -2,10 +2,20 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
-import { FileText } from "lucide-react";
+import { CheckCircle2, ChevronDown, CircleAlert, Clock3, FileText, Trash2 } from "lucide-react";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
-import { missingReceipts, paymentEntries, settlement, type PaymentEntry, type PaymentFile } from "@/lib/fiscale/receipts";
+import {
+  fileKind,
+  finalReceiptHint,
+  missingReceipts,
+  paymentEntries,
+  proofStatus,
+  settlement,
+  type PaymentEntry,
+  type PaymentFile,
+  type ProofStatus,
+} from "@/lib/fiscale/receipts";
 import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
@@ -64,49 +74,99 @@ async function fileLinks(files: PaymentFile[]): Promise<Map<string, string>> {
   return links;
 }
 
-/** The files of one payment, each openable and (archive ones) removable. */
-function PaymentFiles({ files, links }: { files: PaymentFile[]; links: Map<string, string> }) {
-  if (files.length === 0) return null;
+const PROOF: Record<ProofStatus, { icon: typeof CheckCircle2; text: string; color: string }> = {
+  confirmed: { icon: CheckCircle2, text: "Pagamento confermato", color: "text-[var(--fi-good-text)]" },
+  waiting: { icon: Clock3, text: "In attesa della ricevuta definitiva", color: "text-[var(--fi-warning-text)]" },
+  missing: { icon: CircleAlert, text: "Manca la ricevuta", color: "text-[var(--fi-warning-text)]" },
+  scheduled: { icon: Clock3, text: "Programmato", color: "text-[var(--fi-muted)]" },
+};
+
+/**
+ * Proof of one payment: a single status line that opens the list of its files.
+ * Each file shows what it is (quietanza, F24 form, booking...) and whether it
+ * is final; the full file name stays in the tooltip and in Documenti.
+ */
+function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string; links: Map<string, string>; demo: boolean }) {
+  const status = proofStatus(p, asOf);
+  const { icon: Icon, text, color } = PROOF[status];
+  const line = (
+    <span className={cx("inline-flex items-center gap-1.5 text-xs font-medium", color)}>
+      <Icon aria-hidden className="h-3.5 w-3.5 shrink-0" />
+      {text}
+    </span>
+  );
+
+  if (p.files.length === 0) {
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {line}
+        <PaymentFilesUpload table={p.table} id={p.id} demo={demo} />
+      </div>
+    );
+  }
+
   return (
-    <ul className="mt-1.5 w-full space-y-1 pl-[6.75rem] text-xs">
-      {files.map((f) => {
-        const href = links.get(f.path);
-        return (
-          <li key={f.path} className="flex items-center gap-2">
-            <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
-            {href ? (
-              <a href={href} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
-                {f.title}
-              </a>
-            ) : (
-              <span className="min-w-0 truncate text-[var(--fi-ink-2)]">{f.title}</span>
-            )}
-            {f.provisional && <Badge tone="warning">provvisoria</Badge>}
-            {f.id && (
-              <form action={setDocumentProvisionalAction} className="shrink-0">
-                <input type="hidden" name="id" value={f.id} />
-                <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
-                <button
-                  type="submit"
-                  title={f.provisional ? "È la ricevuta che attesta il pagamento" : "Es. prenotazione del bollo o ricevuta di invio: la ricevuta definitiva arriva dopo"}
-                  className="text-[var(--fi-muted)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline"
-                >
-                  {f.provisional ? "Segna definitiva" : "Segna provvisoria"}
-                </button>
-              </form>
-            )}
-            {f.id && (
-              <form action={deleteDocumentAction} className="shrink-0">
-                <input type="hidden" name="id" value={f.id} />
-                <button type="submit" className="text-[var(--fi-muted)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
-                  Rimuovi
-                </button>
-              </form>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+    <details className="group mt-1.5">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-sm [&::-webkit-details-marker]:hidden">
+        {line}
+        <span className="inline-flex items-center gap-0.5 text-xs text-[var(--fi-muted)] group-hover:text-[var(--fi-ink-2)]">
+          {p.files.length === 1 ? "1 file" : `${p.files.length} file`}
+          <ChevronDown aria-hidden className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
+      <div className="mt-2 rounded-md bg-[var(--fi-ground)] p-2.5">
+        <ul className="space-y-1.5 text-xs">
+          {p.files.map((f) => {
+            const href = links.get(f.path);
+            const kind = fileKind(f.title).label;
+            return (
+              <li key={f.path} className="flex items-center gap-2">
+                <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+                {href ? (
+                  <a href={href} target="_blank" rel="noopener noreferrer" title={f.title} className="min-w-0 flex-1 truncate font-medium text-[var(--fi-ink)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
+                    {kind}
+                  </a>
+                ) : (
+                  <span title={f.title} className="min-w-0 flex-1 truncate font-medium">
+                    {kind}
+                  </span>
+                )}
+                {f.id ? (
+                  <form action={setDocumentProvisionalAction} className="shrink-0">
+                    <input type="hidden" name="id" value={f.id} />
+                    <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
+                    <button
+                      type="submit"
+                      title={f.provisional ? "Segna come definitiva: attesta che il pagamento è avvenuto" : "Segna come provvisoria: il pagamento non è ancora confermato"}
+                      className={cx(
+                        "rounded-full px-2 py-0.5 text-[11px] font-medium hover:ring-1 hover:ring-current",
+                        f.provisional ? "bg-[var(--fi-warning-soft)] text-[var(--fi-warning-text)]" : "bg-[var(--fi-good-soft)] text-[var(--fi-good-text)]",
+                      )}
+                    >
+                      {f.provisional ? "provvisoria" : "definitiva"}
+                    </button>
+                  </form>
+                ) : (
+                  <Badge tone="good">definitiva</Badge>
+                )}
+                {f.id && (
+                  <form action={deleteDocumentAction} className="shrink-0">
+                    <input type="hidden" name="id" value={f.id} />
+                    <button type="submit" aria-label={`Rimuovi ${kind}`} title="Rimuovi il file" className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-critical-soft)] hover:text-[var(--fi-critical-text)]">
+                      <Trash2 aria-hidden className="h-3.5 w-3.5" />
+                    </button>
+                  </form>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {status !== "confirmed" && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{finalReceiptHint(p)}</p>}
+        <div className="mt-2 border-t border-[var(--fi-rule)] pt-2">
+          <PaymentFilesUpload table={p.table} id={p.id} hasFiles demo={demo} />
+        </div>
+      </div>
+    </details>
   );
 }
 
@@ -320,11 +380,10 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                   <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{paymentLabel(p)}</span>
-                    {p.files.length > 0 && (
-                      <span className="block text-xs text-[var(--fi-warning-text)]">
-                        Hai solo la ricevuta provvisoria: carica quella definitiva appena è pronta
-                      </span>
-                    )}
+                    <span className="block text-xs text-[var(--fi-ink-2)]">
+                      {p.files.length > 0 && <span className="text-[var(--fi-warning-text)]">Hai solo file provvisori. </span>}
+                      {finalReceiptHint(p)}
+                    </span>
                   </span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
                   <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
@@ -390,7 +449,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
         <div className="grid gap-6 lg:grid-cols-5">
           <Panel
             title={`Pagamenti del ${year}`}
-            description="Per ogni pagamento i suoi file: F24, quietanze, ricevute. Li trovi anche in Documenti."
+            description="Confermato = hai la ricevuta definitiva (quietanza o attestazione di pagamento). Il modello F24 o una prenotazione da soli sono provvisori: dicono che hai disposto il pagamento, non che è avvenuto."
             className="lg:col-span-3"
             action={<span className="fi-num text-sm font-medium">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
           >
@@ -402,28 +461,25 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                   const scheduled = p.date > asOf;
                   const s = settlement(p);
                   return (
-                    <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
-                      <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                          <span className="min-w-0">{paymentLabel(p)}</span>
-                          {scheduled && <Badge>programmato</Badge>}
-                        </span>
+                    <li key={p.id} className="grid grid-cols-[5.5rem_minmax(0,1fr)_auto] gap-x-4 py-3 sm:grid-cols-[6.5rem_minmax(0,1fr)_auto]">
+                      <span className="fi-num text-[var(--fi-ink-2)]">{date(p.date)}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium">
+                          {paymentLabel(p)}
+                          {scheduled && <span className="ml-1.5 text-xs font-normal text-[var(--fi-muted)]">· programmato</span>}
+                        </p>
                         {s.mode !== "bank" && (
-                          <span className="fi-num block text-xs text-[var(--fi-ink-2)]">
+                          <p className="fi-num mt-0.5 text-xs text-[var(--fi-ink-2)]">
                             {s.mode === "credit"
-                              ? `Pagato tutto con il credito (${eur(s.credit)}), niente addebito in banca`
+                              ? `Tutto con il credito (${eur(s.credit)}), niente addebito in banca`
                               : s.mode === "mixed"
                                 ? `Credito ${eur(s.credit)} + addebito in banca ${eur(s.bank)}`
-                                : "Compensato con un credito (importo del credito non registrato)"}
-                          </span>
+                                : "Compensato con un credito (importo non registrato)"}
+                          </p>
                         )}
-                      </span>
-                      <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                      <span className="flex w-full justify-end sm:w-28">
-                        <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
-                      </span>
-                      <PaymentFiles files={p.files} links={links} />
+                        <PaymentProof p={p} asOf={asOf} links={links} demo={demo} />
+                      </div>
+                      <span className="fi-num text-right font-medium">{eur(p.amount)}</span>
                     </li>
                   );
                 })}
