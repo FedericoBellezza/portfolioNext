@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fileTitle, missingReceipts, paymentEntries } from "../receipts";
+import { fileTitle, missingReceipts, paymentEntries, settlement } from "../receipts";
 
 const data = {
   inpsPayments: [
@@ -40,6 +40,13 @@ describe("payment files", () => {
     const final = { ...booking, id: "doc5", path: "u/x5.pdf", provisional: false };
     const withFinal = { ...data, paymentDocuments: [...withBooking.paymentDocuments, final] };
     expect(missingReceipts(paymentEntries(withFinal), "2026-11-05").map((e) => e.id)).toEqual(["d"]);
+  });
+
+  it("tells how much of a payment the credit covered", () => {
+    expect(settlement({ amount: 7_800, creditUsed: 7_800, compensated: true })).toEqual({ mode: "credit", credit: 7_800, bank: 0 });
+    expect(settlement({ amount: 56_610, creditUsed: 20_000, compensated: true })).toEqual({ mode: "mixed", credit: 20_000, bank: 36_610 });
+    expect(settlement({ amount: 7_800, creditUsed: 0, compensated: true })).toEqual({ mode: "compensated", credit: 0, bank: 0 });
+    expect(settlement({ amount: 5_300, creditUsed: 0, compensated: false })).toEqual({ mode: "bank", credit: 0, bank: 5_300 });
   });
 
   it("titles a file after its name", () => {

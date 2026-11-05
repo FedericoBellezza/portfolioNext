@@ -584,23 +584,23 @@ export function buildF24Schedule(input: F24ScheduleInput): F24Item[] {
       amount: prevStamps[3], estimate: false,
     });
   }
+  // Each quarter is paid on its own (codes 2521-2523, one payment each on the
+  // Agenzia portal). Small amounts only move the deadline: Q1 under 5.000 € goes
+  // to Q2's date (30/9), and if Q1+Q2 stay under 5.000 € both go to 30/11.
   const [q1, q2, q3] = stamps[C] ?? [0, 0, 0, 0];
   const limit = STAMP_DUTY.deferralThreshold;
-  const stampItem = (q: number, date: string, amount: Cents, label: string) =>
+  const stampItem = (q: number, date: string, amount: Cents, deferred: boolean) => {
+    if (amount <= 0) return;
     push({
-      key: `stamp:q${q}:${C}`, date, category: "stamp_duty", label, code: `252${q}`,
-      competenceYear: C, amount, estimate: isEstimate(C),
+      key: `stamp:q${q}:${C}`, date, category: "stamp_duty", code: `252${q}`,
+      label: `Bollo fatture ${q}° trimestre ${C}`, competenceYear: C, amount, estimate: isEstimate(C),
+      note: deferred ? "Importo sotto 5.000 €: scadenza rinviata, si paga comunque a parte" : undefined,
     });
-  if (q1 >= limit) stampItem(1, iso(C, 5, 31), q1, `Bollo fatture 1° trimestre ${C}`);
-  const q1Deferred = q1 < limit ? q1 : 0;
-  if (q1Deferred + q2 >= limit) {
-    stampItem(2, iso(C, 9, 30), q1Deferred + q2, `Bollo fatture ${q1Deferred ? "1°+2°" : "2°"} trimestre ${C}`);
-  }
-  const deferredToNov = q1Deferred + q2 < limit ? q1Deferred + q2 : 0;
-  if (deferredToNov + q3 > 0) {
-    stampItem(3, iso(C, 11, 30), deferredToNov + q3,
-      `Bollo fatture ${deferredToNov ? "1°-3°" : "3°"} trimestre ${C}`);
-  }
+  };
+  const q1q2Deferred = q1 < limit && q1 + q2 < limit;
+  stampItem(1, q1 >= limit ? iso(C, 5, 31) : q1q2Deferred ? iso(C, 11, 30) : iso(C, 9, 30), q1, q1 < limit);
+  stampItem(2, q1q2Deferred ? iso(C, 11, 30) : iso(C, 9, 30), q2, q1q2Deferred);
+  stampItem(3, iso(C, 11, 30), q3, false);
 
   return items.sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.key.localeCompare(b.key));
 }

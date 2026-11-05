@@ -53,7 +53,7 @@ export async function loadDataset(): Promise<FiscalDataset> {
     db.from("reminders").select("*").is("archived_at", null).order("first_due"),
     db.from("task_completions").select("task_key, completed_at, document_id, note"),
     db.from("tax_credits").select("*").order("reference_year", { ascending: false }),
-    db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note").order("used_at"),
+    db.from("tax_credit_uses").select("id, credit_id, used_at, amount, note, inps_payment_id, tax_payment_id").order("used_at"),
     db
       .from("documents")
       .select("id, title, file_path, provisional, inps_payment_id, tax_payment_id")
@@ -150,7 +150,14 @@ export async function loadDataset(): Promise<FiscalDataset> {
     credits: (credits.data ?? []).map((c: Row) => {
       const uses = (creditUses.data ?? [])
         .filter((u: Row) => u.credit_id === c.id)
-        .map((u: Row) => ({ id: String(u.id), usedAt: String(u.used_at), amount: toCents(u.amount as string), note: str(u.note) }));
+        .map((u: Row) => ({
+          id: String(u.id),
+          usedAt: String(u.used_at),
+          amount: toCents(u.amount as string),
+          note: str(u.note),
+          inpsPaymentId: str(u.inps_payment_id),
+          taxPaymentId: str(u.tax_payment_id),
+        }));
       const amount = toCents(c.amount as string);
       const used = uses.reduce((s, u) => s + u.amount, 0);
       return {

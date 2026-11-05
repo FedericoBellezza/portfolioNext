@@ -2,10 +2,10 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
-import { loadDataset } from "@/lib/fiscale/data/load";
-import { sumCents } from "@/lib/fiscale/money";
 import { FileText } from "lucide-react";
-import { missingReceipts, paymentEntries, type PaymentEntry, type PaymentFile } from "@/lib/fiscale/receipts";
+import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
+import { sumCents } from "@/lib/fiscale/money";
+import { missingReceipts, paymentEntries, settlement, type PaymentEntry, type PaymentFile } from "@/lib/fiscale/receipts";
 import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
@@ -166,9 +166,9 @@ function MonthCalendar({
   );
 }
 
-export default async function ScadenzePage({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
+export default async function ScadenzePage({ searchParams }: { searchParams: Promise<{ vista?: string; anno?: string }> }) {
   await connection();
-  const { vista } = await searchParams;
+  const { vista, anno } = await searchParams;
   const view: View = VIEWS.includes(vista as View) ? (vista as View) : "da-fare";
   const asOf = todayInRome();
   const data = await loadDataset();
@@ -180,7 +180,6 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   );
   const horizon = `${m.year + 1}${asOf.slice(4)}`;
   const openTasks = m.tasks.filter((t) => !m.doneTasks.has(t.key) && t.dueDate <= horizon);
-  const doneTasks = m.tasks.filter((t) => m.doneTasks.has(t.key));
   const urgentTasks = openTasks.filter((t) => t.dueDate <= `${m.year}-12-31`);
   const creditLabel = (c: (typeof data.credits)[number]) => `Credito ${CREDIT_KIND[c.kind]} ${c.referenceYear}`;
   const allPayments = paymentEntries(data);
@@ -346,85 +345,151 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   }
 
   async function Storico() {
-    const payments = allPayments.filter((p) => yearOf(p.date) === m.year);
-    const links = demo ? new Map<string, string>() : await fileLinks(payments.flatMap((p) => p.files));
-    const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === m.year);
+    // Years with something recorded, newest first; the current one is always there.
+    const years = [
+      ...new Set([m.year, ...allPayments.map((p) => yearOf(p.date)), ...data.completedTasks.map((t) => yearOf(t.completedAt))]),
+    ].sort((a, b) => b - a);
+    const year = years.includes(Number(anno)) ? Number(anno) : m.year;
+    const payments = allPayments.filter((p) => yearOf(p.date) === year);
+    const filings = data.completedTasks
+      .filter((t) => yearOf(t.completedAt) === year)
+      .sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+    const expenses = data.expenses.filter((e) => yearOf(e.spentAt) === year);
+
+    // Files of the filings (task receipts are archive documents).
+    const filingDocs = new Map<string, PaymentFile>();
+    const docIds = filings.map((t) => t.documentId).filter((id): id is string => Boolean(id));
+    if (!demo && docIds.length > 0) {
+      const db = await fiscaleDb();
+      const { data: docs } = await db.from("documents").select("id, title, file_path").in("id", docIds);
+      for (const d of docs ?? []) {
+        filingDocs.set(String(d.id), { id: null, title: String(d.title), path: String(d.file_path), bucket: "fiscale-docs", provisional: false });
+      }
+    }
+    const links = demo ? new Map<string, string>() : await fileLinks([...payments.flatMap((p) => p.files), ...filingDocs.values()]);
+    const filingTitle = (key: string) => {
+      const known = m.tasks.find((t) => t.key === key)?.title;
+      if (known) return known;
+      const [, kind, y] = key.split(":");
+      if (kind === "redditi") return `Dichiarazione dei redditi per il ${Number(y) - 1} (Modello Redditi PF)`;
+      if (kind === "inail") return `Dichiarazione retribuzioni INAIL per il ${Number(y) - 1}`;
+      if (kind === "inps35") return "Riduzione INPS: passaggio dal 50% al 35%";
+      return "Promemoria";
+    };
 
     return (
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Panel
-          title={`Pagamenti registrati nel ${m.year}`}
-          className="lg:col-span-3"
-          action={<span className="fi-num text-sm font-medium">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
-        >
-          {payments.length === 0 ? (
-            <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessun F24 registrato.</p>
-          ) : (
-            <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
-              {payments.map((p) => {
-                const scheduled = p.date > asOf;
-                return (
-                  <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
-                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
-                    <span className="min-w-0 flex-1 truncate">
-                      {paymentLabel(p)}
-                      {p.compensated && <span className="ml-2"><Badge tone="accent">compensato</Badge></span>}
-                      {scheduled && <span className="ml-2"><Badge>programmato</Badge></span>}
-                    </span>
-                    <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
-                    <span className="flex w-full justify-end sm:w-28">
-                      <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
-                    </span>
-                    <PaymentFiles files={p.files} links={links} />
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Panel>
-
-        <div className="space-y-6 lg:col-span-2">
-          <Panel title="Dichiarazioni fatte">
-            {doneTasks.length === 0 ? (
-              <p className="text-sm text-[var(--fi-ink-2)]">Nessuna ancora.</p>
+      <div className="space-y-6">
+        {years.length > 1 && (
+          <Tabs
+            label="Anno dello storico"
+            active={String(year)}
+            className="inline-flex"
+            items={years.map((y) => ({ id: String(y), label: String(y), href: `/dashboard/fiscale/scadenze?vista=storico&anno=${y}` }))}
+          />
+        )}
+        <div className="grid gap-6 lg:grid-cols-5">
+          <Panel
+            title={`Pagamenti del ${year}`}
+            description="Per ogni pagamento i suoi file: F24, quietanze, ricevute. Li trovi anche in Documenti."
+            className="lg:col-span-3"
+            action={<span className="fi-num text-sm font-medium">{eur(sumCents(payments.map((p) => p.amount)))}</span>}
+          >
+            {payments.length === 0 ? (
+              <p className="text-sm text-[var(--fi-ink-2)]">Nessun pagamento registrato nel {year}.</p>
             ) : (
               <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
-                {doneTasks.map((t) => {
-                  const done = m.doneTasks.get(t.key)!;
+                {payments.map((p) => {
+                  const scheduled = p.date > asOf;
+                  const s = settlement(p);
                   return (
-                    <li key={t.key} className="flex items-baseline gap-3 py-2.5">
+                    <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
+                      <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate">{t.title}</span>
-                        <span className="block text-xs text-[var(--fi-muted)]">
-                          Fatto il {date(done.completedAt)}
-                          {done.documentId ? " · ricevuta in Documenti" : ""}
+                        <span className="block truncate">
+                          {paymentLabel(p)}
+                          {scheduled && <span className="ml-2"><Badge>programmato</Badge></span>}
                         </span>
+                        {s.mode !== "bank" && (
+                          <span className="fi-num block text-xs text-[var(--fi-ink-2)]">
+                            {s.mode === "credit"
+                              ? `Pagato tutto con il credito (${eur(s.credit)}), niente addebito in banca`
+                              : s.mode === "mixed"
+                                ? `Credito ${eur(s.credit)} + addebito in banca ${eur(s.bank)}`
+                                : "Compensato con un credito (importo del credito non registrato)"}
+                          </span>
+                        )}
                       </span>
-                      <form action={undoTaskAction}>
-                        <input type="hidden" name="key" value={t.key} />
-                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
-                          Annulla
-                        </button>
-                      </form>
+                      <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
+                      <span className="flex w-full justify-end sm:w-28">
+                        <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
+                      </span>
+                      <PaymentFiles files={p.files} links={links} />
                     </li>
                   );
                 })}
               </ul>
             )}
           </Panel>
-          {expenses.length > 0 && (
-            <Panel title={`Spese operative ${m.year}`} description="Non deducibili nel forfettario: solo per tua analisi" action={<span className="fi-num text-sm">{eur(m.expensesYtd)}</span>}>
-              <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
-                {expenses.map((e) => (
-                  <li key={e.id} className="flex items-baseline gap-3 py-2">
-                    <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(e.spentAt)}</span>
-                    <span className="min-w-0 flex-1 truncate">{e.description ?? e.category}</span>
-                    <span className="fi-num">{eur(e.amount)}</span>
-                  </li>
-                ))}
-              </ul>
+
+          <div className="space-y-6 lg:col-span-2">
+            <Panel title={`Dichiarazioni fatte nel ${year}`}>
+              {filings.length === 0 ? (
+                <p className="text-sm text-[var(--fi-ink-2)]">Nessuna.</p>
+              ) : (
+                <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+                  {filings.map((t) => {
+                    const doc = t.documentId ? filingDocs.get(t.documentId) : undefined;
+                    return (
+                      <li key={t.key} className="flex flex-wrap items-baseline gap-x-3 py-2.5">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{filingTitle(t.key)}</span>
+                          <span className="block text-xs text-[var(--fi-muted)]">Fatto il {date(t.completedAt)}</span>
+                        </span>
+                        <form action={undoTaskAction}>
+                          <input type="hidden" name="key" value={t.key} />
+                          <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                            Annulla
+                          </button>
+                        </form>
+                        {doc && (
+                          <span className="mt-1.5 flex w-full items-center gap-2 text-xs">
+                            <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+                            {links.get(doc.path) ? (
+                              <a href={links.get(doc.path)} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-action)] hover:underline">
+                                {doc.title}
+                              </a>
+                            ) : (
+                              <span className="min-w-0 truncate text-[var(--fi-ink-2)]">{doc.title}</span>
+                            )}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="mt-4 border-t border-[var(--fi-rule)] pt-3 text-xs text-[var(--fi-ink-2)]">
+                Dichiarazioni, visure e gli altri file sono tutti in{" "}
+                <Link href="/dashboard/fiscale/documenti" className="font-medium text-[var(--fi-action)] hover:underline">
+                  Documenti
+                </Link>
+                .
+              </p>
             </Panel>
-          )}
+            {expenses.length > 0 && (
+              <Panel title={`Spese operative ${year}`} description="Non deducibili nel forfettario: solo per tua analisi" action={<span className="fi-num text-sm">{eur(sumCents(expenses.map((e) => e.amount)))}</span>}>
+                <ul className="-my-2 divide-y divide-[var(--fi-rule)] text-sm">
+                  {expenses.map((e) => (
+                    <li key={e.id} className="flex items-baseline gap-3 py-2">
+                      <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(e.spentAt)}</span>
+                      <span className="min-w-0 flex-1 truncate">{e.description ?? e.category}</span>
+                      <span className="fi-num">{eur(e.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
+          </div>
         </div>
       </div>
     );

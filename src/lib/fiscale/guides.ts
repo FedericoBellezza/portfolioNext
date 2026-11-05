@@ -40,8 +40,8 @@ const euro = (cents: number) =>
 
 const STAMP_QUARTERS: Record<string, string> = {
   "stamp:q1": "1° trimestre",
-  "stamp:q2": "2° trimestre (e il 1°, se rinviato)",
-  "stamp:q3": "3° trimestre (e i precedenti, se rinviati)",
+  "stamp:q2": "2° trimestre",
+  "stamp:q3": "3° trimestre",
   "stamp:q4": "4° trimestre",
 };
 
@@ -166,6 +166,8 @@ function stampDuty(item: F24Item): Guide {
           "• Inserisci l'IBAN per l'addebito",
           "• Premi \"Inoltra pagamento\" e poi \"Conferma\"",
           `L'importo valido è quello calcolato dal portale (stima qui: ${euro(item.amount)}). Registra quello che paghi.`,
+          "Ogni trimestre si paga a parte, anche quando la scadenza è rinviata: se ne hai più di uno da pagare, ripeti per ciascuno.",
+          "Scarica subito l'attestazione di prenotazione e caricala come provvisoria: quella di pagamento arriva dopo qualche giorno.",
         ],
         media: "bollo-3",
       },

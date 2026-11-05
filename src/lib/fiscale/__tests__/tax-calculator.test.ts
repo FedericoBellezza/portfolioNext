@@ -176,9 +176,21 @@ describe("deadlines", () => {
     // 201 € ≤ 257,52 → single advance in November, nothing in June
     expect(byKey["tax:advance_1:2026"]).toBeUndefined();
     expect(byKey["tax:advance_2:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: toCents(201), code: "1791" });
-    // Stamp duty Q1–Q3 under 5.000 € → all paid on 30/11
-    expect(byKey["stamp:q3:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: 3_200 });
-    expect(byKey["stamp:q1:2026"]).toBeUndefined();
+    // Stamp duty Q1–Q3 under 5.000 € → all due on 30/11, still one payment per quarter
+    expect(byKey["stamp:q1:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: 1_000, code: "2521" });
+    expect(byKey["stamp:q2:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: 1_200, code: "2522" });
+    expect(byKey["stamp:q3:2026"]).toMatchObject({ dueDate: "2026-11-30", amount: 1_000, code: "2523" });
+  });
+
+  it("stamp duty: a large first quarter is due in May, a large half-year in September", () => {
+    const due = (q: [number, number, number, number]) =>
+      Object.fromEntries(
+        buildF24Schedule({ calendarYear: 2026, figures: {}, stampDutyByQuarter: { 2026: q } })
+          .filter((i) => i.category === "stamp_duty")
+          .map((i) => [i.key, i.dueDate]),
+      );
+    expect(due([600_000, 200, 200, 0])).toEqual({ "stamp:q1:2026": "2026-06-01", "stamp:q2:2026": "2026-09-30", "stamp:q3:2026": "2026-11-30" });
+    expect(due([300_000, 300_000, 200, 0])).toEqual({ "stamp:q1:2026": "2026-09-30", "stamp:q2:2026": "2026-09-30", "stamp:q3:2026": "2026-11-30" });
   });
 
   it("reserve sums unpaid items until next June and splits out next-year advances", () => {

@@ -80,7 +80,7 @@ export interface TaxCredit {
   destination: "compensation" | "refund";
   source: string | null;
   notes: string | null;
-  uses: { id: string; usedAt: string; amount: Cents; note: string | null }[];
+  uses: { id: string; usedAt: string; amount: Cents; note: string | null; inpsPaymentId?: string | null; taxPaymentId?: string | null }[];
   used: Cents;
   residual: Cents;
 }

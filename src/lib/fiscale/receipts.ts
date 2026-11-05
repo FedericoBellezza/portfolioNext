@@ -20,10 +20,33 @@ export interface PaymentEntry {
   competenceYear: number;
   amount: Cents;
   files: PaymentFile[];
+  /** Marked as paid in F24 compensation (also when the credit used is not recorded). */
   compensated: boolean;
+  /** Recorded credit used for this payment; the rest was debited to the bank. */
+  creditUsed: Cents;
 }
 
-type Source = Pick<FiscalDataset, "inpsPayments" | "taxPayments" | "paymentDocuments">;
+type Source = Pick<FiscalDataset, "inpsPayments" | "taxPayments" | "paymentDocuments"> & Partial<Pick<FiscalDataset, "credits">>;
+
+function creditOf(data: Source, table: "inps" | "tax", id: string): Cents {
+  let used = 0;
+  for (const c of data.credits ?? []) {
+    for (const u of c.uses) if ((table === "inps" ? u.inpsPaymentId : u.taxPaymentId) === id) used += u.amount;
+  }
+  return used;
+}
+
+/** How a payment was settled: all by credit, part credit and part bank, or bank only. */
+export function settlement(e: Pick<PaymentEntry, "amount" | "creditUsed" | "compensated">): {
+  mode: "credit" | "mixed" | "bank" | "compensated";
+  credit: Cents;
+  bank: Cents;
+} {
+  if (e.creditUsed <= 0) return { mode: e.compensated ? "compensated" : "bank", credit: 0, bank: e.compensated ? 0 : e.amount };
+  const credit = Math.min(e.creditUsed, e.amount);
+  const bank = e.amount - credit;
+  return { mode: bank > 0 ? "mixed" : "credit", credit, bank };
+}
 
 function filesOf(data: Source, table: "inps" | "tax", id: string, legacy: string | null): PaymentFile[] {
   const docs = data.paymentDocuments
@@ -43,6 +66,7 @@ export function paymentEntries(data: Source): PaymentEntry[] {
       amount: p.amount,
       files: filesOf(data, "inps", p.id, p.receiptPath),
       compensated: Boolean(p.compensated),
+      creditUsed: creditOf(data, "inps", p.id),
     })),
     ...data.taxPayments.map((p) => ({
       table: "tax" as const,
@@ -53,6 +77,7 @@ export function paymentEntries(data: Source): PaymentEntry[] {
       amount: p.amount,
       files: filesOf(data, "tax", p.id, p.receiptPath),
       compensated: Boolean(p.compensated),
+      creditUsed: creditOf(data, "tax", p.id),
     })),
   ].sort((a, b) => b.date.localeCompare(a.date));
 }
