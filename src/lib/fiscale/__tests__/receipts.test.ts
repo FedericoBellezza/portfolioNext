@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { cassettoF24Url, fileKind, fileTitle, finalReceiptHint, missingReceipts, paymentEntries, proofStatus, settlement } from "../receipts";
+import { awaitingCheck, cassettoF24Url, fileKind, fileTitle, finalReceiptHint, missingReceipts, paymentEntries, proofStatus, settlement } from "../receipts";
+
+// Files already read by Claude (a file not read yet is "in validazione").
+const read = { status: "ok" as const, kind: "quietanza_banca", final: true, date: null, amount: null, matches: true, note: null, checkedAt: "2026-11-05T10:00:00Z" };
 
 const data = {
   inpsPayments: [
@@ -12,9 +15,9 @@ const data = {
     { id: "e", paidAt: "2026-07-02", competenceYear: 2026, kind: "chamber_fee" as const, tributeCode: "3850", amount: 5_300, receiptPath: null },
   ],
   paymentDocuments: [
-    { id: "doc1", title: "Quietanza banca", path: "u/x1.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e" },
-    { id: "doc2", title: "Modello F24", path: "u/x2.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e" },
-    { id: "doc3", title: "Quietanza", path: "u/x3.pdf", provisional: false, inpsPaymentId: "b", taxPaymentId: null },
+    { id: "doc1", title: "Quietanza banca", path: "u/x1.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e", check: read },
+    { id: "doc2", title: "Modello F24", path: "u/x2.pdf", provisional: false, inpsPaymentId: null, taxPaymentId: "e", check: read },
+    { id: "doc3", title: "Quietanza", path: "u/x3.pdf", provisional: false, inpsPaymentId: "b", taxPaymentId: null, check: read },
   ],
 };
 
@@ -34,7 +37,7 @@ describe("payment files", () => {
   });
 
   it("keeps asking while the payment has only provisional files", () => {
-    const booking = { id: "doc4", title: "Prenotazione bollo", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null };
+    const booking = { id: "doc4", title: "Prenotazione bollo", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null, check: read };
     const withBooking = { ...data, paymentDocuments: [...data.paymentDocuments, booking] };
     expect(missingReceipts(paymentEntries(withBooking), "2026-11-05").map((e) => e.id)).toEqual(["d", "a"]);
     const final = { ...booking, id: "doc5", path: "u/x5.pdf", provisional: false };
@@ -63,9 +66,25 @@ describe("payment files", () => {
     const entries = paymentEntries(data);
     const status = (id: string) => proofStatus(entries.find((e) => e.id === id)!, "2026-11-05");
     expect([status("b"), status("a"), status("c")]).toEqual(["confirmed", "missing", "scheduled"]);
-    const booking = { id: "doc4", title: "Prenotazione", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null };
+    const booking = { id: "doc4", title: "Prenotazione", path: "u/x4.pdf", provisional: true, inpsPaymentId: "a", taxPaymentId: null, check: read };
     const withBooking = paymentEntries({ ...data, paymentDocuments: [...data.paymentDocuments, booking] });
     expect(proofStatus(withBooking.find((e) => e.id === "a")!, "2026-11-05")).toBe("waiting");
+  });
+
+  it("does not confirm a payment with a PDF Claude has not read yet", () => {
+    // Its name says "ricevuta" and it is not provisional, but nobody has read it.
+    const fresh = { id: "doc6", title: "ricevuta 100008599892", path: "u/x6.pdf", provisional: false, inpsPaymentId: "a", taxPaymentId: null, check: null };
+    const entries = paymentEntries({ ...data, paymentDocuments: [...data.paymentDocuments, fresh] });
+    const a = entries.find((e) => e.id === "a")!;
+    expect(awaitingCheck(a.files[0])).toBe(true);
+    expect(proofStatus(a, "2026-11-05")).toBe("validating");
+    expect(missingReceipts(entries, "2026-11-05").map((e) => e.id)).toContain("a");
+    // Once read as a payment certificate it confirms the payment.
+    const done = paymentEntries({ ...data, paymentDocuments: [...data.paymentDocuments, { ...fresh, check: read }] });
+    expect(proofStatus(done.find((e) => e.id === "a")!, "2026-11-05")).toBe("confirmed");
+    // A picture cannot be read: it is not left waiting forever.
+    const photo = paymentEntries({ ...data, paymentDocuments: [...data.paymentDocuments, { ...fresh, path: "u/x6.jpg" }] });
+    expect(proofStatus(photo.find((e) => e.id === "a")!, "2026-11-05")).toBe("confirmed");
   });
 
   it("points to the page where the final receipt is", () => {

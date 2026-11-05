@@ -108,8 +108,15 @@ export function paymentEntries(data: Source): PaymentEntry[] {
   ].sort((a, b) => b.date.localeCompare(a.date));
 }
 
+/**
+ * A PDF of the archive that Claude has not read yet: until then it proves
+ * nothing, whatever its name suggests ("in validazione").
+ */
+export const awaitingCheck = (f: Pick<PaymentFile, "id" | "check" | "path">) => Boolean(f.id) && !f.check && /\.pdf$/i.test(f.path);
+
 /** True when the payment has at least one file that is the final proof of payment. */
-export const hasFinalReceipt = (e: PaymentEntry) => e.files.some((f) => !f.provisional && !belongsElsewhere(f));
+export const hasFinalReceipt = (e: PaymentEntry) =>
+  e.files.some((f) => !f.provisional && !belongsElsewhere(f) && !awaitingCheck(f));
 
 /** Claude found that the file is about another payment. */
 export const belongsElsewhere = (f: Pick<PaymentFile, "check">) => f.check?.status === "ok" && f.check.matches === false;
@@ -146,14 +153,16 @@ export function fileKind(title: string): { label: string; provisional: boolean |
 }
 
 /**
- * Where a payment stands with its proof: confirmed by a final receipt, waiting
- * for it (only provisional files), missing (date reached, no file), or just
+ * Where a payment stands with its proof: confirmed by a final receipt,
+ * validating (Claude has still to read some files), waiting for the final
+ * receipt (only provisional files), missing (date reached, no file), or just
  * scheduled (future date, no file yet).
  */
-export type ProofStatus = "confirmed" | "waiting" | "missing" | "scheduled";
+export type ProofStatus = "confirmed" | "validating" | "waiting" | "missing" | "scheduled";
 
 export function proofStatus(e: PaymentEntry, asOf: string): ProofStatus {
   if (hasFinalReceipt(e)) return "confirmed";
+  if (e.files.some(awaitingCheck)) return "validating";
   if (e.files.length > 0) return "waiting";
   return e.date <= asOf ? "missing" : "scheduled";
 }
@@ -178,7 +187,7 @@ export function fileLabel(f: Pick<PaymentFile, "title" | "check">): string {
 /** PDF files of the archive not yet checked by Claude. */
 export function uncheckedFiles(entries: PaymentEntry[]): { entry: PaymentEntry; file: PaymentFile }[] {
   return entries.flatMap((entry) =>
-    entry.files.filter((f) => f.id && !f.check && /\.pdf$/i.test(f.path)).map((file) => ({ entry, file })),
+    entry.files.filter(awaitingCheck).map((file) => ({ entry, file })),
   );
 }
 

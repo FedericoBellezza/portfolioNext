@@ -6,6 +6,7 @@ import { CheckCircle2, ChevronDown, CircleAlert, Clock3, ExternalLink, FileText,
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
 import {
+  awaitingCheck,
   belongsElsewhere,
   fileLabel,
   finalReceiptHint,
@@ -59,6 +60,7 @@ async function fileLinks(files: PaymentFile[]): Promise<Map<string, string>> {
 
 const PROOF: Record<ProofStatus, { icon: typeof CheckCircle2; text: string; color: string }> = {
   confirmed: { icon: CheckCircle2, text: "Pagamento confermato", color: "text-[var(--fi-good-text)]" },
+  validating: { icon: Sparkles, text: "In validazione: Claude sta leggendo i file", color: "text-[var(--fi-action)]" },
   waiting: { icon: Clock3, text: "In attesa della ricevuta definitiva", color: "text-[var(--fi-warning-text)]" },
   missing: { icon: CircleAlert, text: "Manca la ricevuta", color: "text-[var(--fi-warning-text)]" },
   scheduled: { icon: Clock3, text: "Programmato", color: "text-[var(--fi-muted)]" },
@@ -165,7 +167,14 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
                         </span>
                       )}
                     </span>
-                    {f.id ? (
+                    {awaitingCheck(f) ? (
+                      <span
+                        title="Claude deve ancora leggere il file: fino ad allora non conferma il pagamento"
+                        className="shrink-0 rounded-full bg-[var(--fi-action-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--fi-action)]"
+                      >
+                        in validazione
+                      </span>
+                    ) : f.id ? (
                       <form action={setDocumentProvisionalAction} className="shrink-0">
                         <input type="hidden" name="id" value={f.id} />
                         <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
@@ -441,10 +450,16 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                   <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{paymentLabel(p)}</span>
-                    {p.files.length > 0 && <span className="block text-xs text-[var(--fi-warning-text)]">Hai solo file provvisori.</span>}
-                    <span className="mt-0.5 block">
-                      <FinalReceiptLinks p={p} asOf={asOf} />
-                    </span>
+                    {p.files.some(awaitingCheck) ? (
+                      <span className="block text-xs text-[var(--fi-action)]">In validazione: Claude sta leggendo i file caricati.</span>
+                    ) : (
+                      <>
+                        {p.files.length > 0 && <span className="block text-xs text-[var(--fi-warning-text)]">Hai solo file provvisori.</span>}
+                        <span className="mt-0.5 block">
+                          <FinalReceiptLinks p={p} asOf={asOf} />
+                        </span>
+                      </>
+                    )}
                   </span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>
                   <PaymentFilesUpload table={p.table} id={p.id} hasFiles={p.files.length > 0} demo={demo} />
