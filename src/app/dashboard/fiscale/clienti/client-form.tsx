@@ -48,7 +48,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
       </div>
 
       {kind === "individual" ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="firstName" className={label}>Nome</label>
             <input id="firstName" name="firstName" autoComplete="off" aria-invalid={invalid("firstName")} />
@@ -65,7 +65,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="vatNumber" className={label}>{foreign ? "Partita IVA / VAT number" : "Partita IVA"}</label>
           <input id="vatNumber" name="vatNumber" autoComplete="off" aria-invalid={invalid("vatNumber")} />
@@ -79,7 +79,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
       </div>
 
       {!foreign && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="sdiCode" className={label}>{pa ? "Codice univoco ufficio (6 caratteri)" : "Codice destinatario SDI"}</label>
             <input id="sdiCode" name="sdiCode" autoComplete="off" maxLength={7} aria-invalid={invalid("sdiCode")} />
@@ -92,7 +92,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <div className="sm:col-span-4">
           <label htmlFor="address" className={label}>Indirizzo</label>
           <input id="address" name="address" autoComplete="off" aria-invalid={invalid("address")} />
@@ -122,7 +122,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="email" className={label}>Email (facoltativa)</label>
           <input id="email" name="email" type="email" autoComplete="off" aria-invalid={invalid("email")} />

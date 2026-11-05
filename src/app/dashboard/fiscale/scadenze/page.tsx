@@ -373,7 +373,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
       {view === "storico" && <Storico />}
       {view === "crediti" && <Crediti />}
       {view === "promemoria" && (
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Panel title="Nuovo promemoria" description="IMU, bollo auto, canoni, raccolta spese detraibili…" className="lg:col-span-3">
             <ReminderForm demo={demo} />
           </Panel>
@@ -418,7 +418,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
       .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Stat
             tone="accent"
             label="Da tenere da parte"
@@ -544,7 +544,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
             items={years.map((y) => ({ id: String(y), label: String(y), href: `/dashboard/fiscale/scadenze?vista=storico&anno=${y}` }))}
           />
         )}
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Panel
             title={`Pagamenti del ${year}`}
             description="Confermato = hai la ricevuta definitiva (quietanza o attestazione di pagamento). Il modello F24 o una prenotazione da soli sono provvisori: dicono che hai disposto il pagamento, non che è avvenuto."
@@ -656,7 +656,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
 
   function Crediti() {
     return (
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-3">
           {data.credits.length === 0 ? (
             <Panel title="Crediti d'imposta">

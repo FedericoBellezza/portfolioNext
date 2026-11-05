@@ -70,7 +70,7 @@ function CompleteForm({ task, demo }: { task: TaskItem; demo: boolean }) {
           ))}
         </div>
       )}
-      <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-6">
+      <form onSubmit={onSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-6">
         <div className="sm:col-span-2">
           <label htmlFor={`${id}-date`} className={fieldLabel}>Fatto il</label>
           <input id={`${id}-date`} name="completedAt" type="date" required max={today()} defaultValue={task.dueDate < today() ? task.dueDate : today()} />
@@ -164,7 +164,7 @@ export function ReminderForm({ demo }: { demo: boolean }) {
   return (
     <form
       ref={formRef}
-      className="grid max-w-3xl gap-3 sm:grid-cols-6"
+      className="grid grid-cols-1 max-w-3xl gap-3 sm:grid-cols-6"
       onSubmit={(e) => {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);

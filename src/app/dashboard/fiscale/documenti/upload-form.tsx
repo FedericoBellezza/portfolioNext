@@ -141,7 +141,7 @@ export function UploadForm({ currentYear }: { currentYear: number }) {
   }
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-6">
+    <form ref={formRef} onSubmit={onSubmit} className="grid grid-cols-1 gap-3 sm:grid-cols-6">
       <div className="sm:col-span-6">
         <label htmlFor="doc-file" className={label}>File (PDF, immagine, XML o P7M, max 25 MB)</label>
         <input

@@ -29,7 +29,7 @@ export function CreditForm({ defaultYear, demo }: { defaultYear: number; demo: b
     if (state?.ok) ref.current?.reset();
   }, [state]);
   return (
-    <form ref={ref} onSubmit={submit(action)} className="grid gap-3 sm:grid-cols-2">
+    <form ref={ref} onSubmit={submit(action)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
         <label htmlFor="cr-kind" className={fieldLabel}>Tipo</label>
         <select id="cr-kind" name="kind" defaultValue="irpef">

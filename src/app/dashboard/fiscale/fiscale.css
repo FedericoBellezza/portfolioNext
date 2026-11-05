@@ -87,7 +87,7 @@ html:has(.fi) body {
   outline-offset: 2px;
 }
 
-.fi input:not([type="checkbox"]):not([type="radio"]),
+.fi input:not([type="checkbox"]):not([type="radio"]):not(.sr-only),
 .fi select,
 .fi textarea {
   width: 100%;
@@ -100,7 +100,7 @@ html:has(.fi) body {
   transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
 }
 
-.fi input:not([type="checkbox"]):not([type="radio"]):hover,
+.fi input:not([type="checkbox"]):not([type="radio"]):not(.sr-only):hover,
 .fi select:hover,
 .fi textarea:hover {
   border-color: var(--fi-rule-strong);

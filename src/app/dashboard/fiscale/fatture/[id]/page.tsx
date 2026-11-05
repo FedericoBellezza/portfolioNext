@@ -70,7 +70,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      <div className="grid gap-6 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         <div className="space-y-6 xl:col-span-3">
           <Panel title="Righe">
             <ul className="divide-y divide-[var(--fi-rule)] text-sm">
@@ -113,7 +113,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
           </Panel>
 
           <Panel title="Cliente" description={draft ? "Dati attuali in anagrafica" : "Dati congelati al momento dell'emissione"}>
-            <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
               <div><dt className="fi-label">Nome</dt><dd>{clientName(client)}</dd></div>
               <div><dt className="fi-label">P.IVA / CF</dt><dd className="fi-num">{String(client?.vat_number ?? client?.tax_code ?? "—")}</dd></div>
               <div><dt className="fi-label">Recapito SdI</dt><dd className="fi-num">{String(client?.sdi_code ?? "—")}{client?.pec ? ` · ${client.pec}` : ""}</dd></div>

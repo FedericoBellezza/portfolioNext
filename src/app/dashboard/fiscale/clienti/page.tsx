@@ -16,7 +16,7 @@ export default async function ClientiPage() {
     <>
       <PageTitle title="Clienti" description="Anagrafica usata nelle fatture elettroniche (cessionario/committente)." />
       <DemoNotice show={demo} />
-      <div className="grid gap-6 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         <Panel title="Nuovo cliente" className="xl:col-span-3">
           <ClientForm demo={demo} />
         </Panel>

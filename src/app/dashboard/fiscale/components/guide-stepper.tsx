@@ -142,7 +142,7 @@ export function GuideStepper({
           {children}
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <div className={cx(!step.media && "lg:col-span-2")}>
             <h3 className="mb-2 text-[15px] font-semibold">{step.title}</h3>
             <Paragraphs body={step.body} />

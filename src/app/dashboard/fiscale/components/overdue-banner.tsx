@@ -123,7 +123,7 @@ function RegisterForm({
   return (
     <div>
       <form
-        className="grid gap-3 sm:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-4"
         onSubmit={(e) => {
           // Manual submit keeps date, amount and file selected if the server rejects it.
           e.preventDefault();

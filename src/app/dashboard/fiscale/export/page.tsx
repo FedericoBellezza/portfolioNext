@@ -31,7 +31,7 @@ export default async function ExportPage() {
         description="Registro incassi e pagamenti e riepilogo per il Quadro LM del Modello Redditi PF."
       />
       <DemoNotice show={data.source === "demo"} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {years.map((y) => {
           const summary = ledgerSummary(data, y);
           const rows = buildLedger(data, y).length;

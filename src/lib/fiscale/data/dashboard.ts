@@ -3,9 +3,11 @@ import {
   buildF24Schedule,
   computeSavingsReserve,
   computeTaxYear,
+  monthlyNetAverage,
   projectYearRevenue,
   yearOf,
   type F24Item,
+  type MonthlyNet,
   type SavingsReserve,
   type TaxYearResult,
 } from "../tax-calculator";
@@ -34,6 +36,8 @@ export interface DashboardModel {
   yearEndOnCurrentRevenue: TaxYearResult;
   /** Linear projection of revenue to 31/12. */
   projected: TaxYearResult;
+  /** Average net per month on what was collected (not invoiced); null in the first 30 days. */
+  monthlyNet: MonthlyNet | null;
   schedule: F24Item[];
   reserve: SavingsReserve;
   monthlyRevenue: Cents[];
@@ -105,6 +109,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     profile,
   });
 
+  const monthlyNet = monthlyNetAverage({ ytdRevenue, asOf, inpsDeducted: inpsDeductedYearEnd, profile });
+
   const schedule = [
     ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile, inail }),
     ...buildF24Schedule({ calendarYear: C + 1, figures, stampDutyByQuarter: stamps, profile, inail, provisionalFrom: C }),
@@ -139,6 +145,7 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     ytd,
     yearEndOnCurrentRevenue,
     projected,
+    monthlyNet,
     schedule,
     reserve,
     monthlyRevenue,

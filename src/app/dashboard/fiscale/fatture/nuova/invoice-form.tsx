@@ -77,13 +77,13 @@ export function InvoiceForm({
     setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
 
   return (
-    <form action={formAction} className="grid gap-6 xl:grid-cols-5">
+    <form action={formAction} className="grid grid-cols-1 gap-6 xl:grid-cols-5">
       <input type="hidden" name="payload" value={payload} />
 
       <div className="space-y-6 xl:col-span-3">
         <section className={card}>
           <h2 className="mb-4 text-[15px] font-semibold">Cliente e date</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="sm:col-span-3">
               <label htmlFor="client" className={label}>
                 Cliente
