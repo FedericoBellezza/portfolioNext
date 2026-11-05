@@ -405,9 +405,9 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                     <li key={p.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-2.5">
                       <span className="fi-num w-24 shrink-0 text-[var(--fi-ink-2)]">{date(p.date)}</span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate">
-                          {paymentLabel(p)}
-                          {scheduled && <span className="ml-2"><Badge>programmato</Badge></span>}
+                        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <span className="min-w-0">{paymentLabel(p)}</span>
+                          {scheduled && <Badge>programmato</Badge>}
                         </span>
                         {s.mode !== "bank" && (
                           <span className="fi-num block text-xs text-[var(--fi-ink-2)]">
