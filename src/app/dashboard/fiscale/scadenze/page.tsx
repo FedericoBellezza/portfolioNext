@@ -65,8 +65,8 @@ const PROOF: Record<ProofStatus, { icon: typeof CheckCircle2; text: string; colo
 };
 
 /** Where to download the final receipt: the pages to open, the steps in the tooltip. */
-function FinalReceiptLinks({ p }: { p: PaymentEntry }) {
-  const hint = finalReceiptHint(p);
+function FinalReceiptLinks({ p, asOf }: { p: PaymentEntry; asOf: string }) {
+  const hint = finalReceiptHint(p, asOf);
   return (
     <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--fi-ink-2)]" title={hint.text}>
       <span>Scarica la definitiva da</span>
@@ -103,7 +103,7 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
     <>
       {(status === "waiting" || status === "missing") && (
         <div className="mt-1">
-          <FinalReceiptLinks p={p} />
+          <FinalReceiptLinks p={p} asOf={asOf} />
         </div>
       )}
       {misplaced.length > 0 && (
@@ -219,7 +219,7 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
               );
             })}
           </ul>
-          {status !== "confirmed" && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{finalReceiptHint(p).text}</p>}
+          {status !== "confirmed" && <p className="mt-2 text-xs text-[var(--fi-ink-2)]">{finalReceiptHint(p, asOf).text}</p>}
           <div className="mt-2 border-t border-[var(--fi-rule)] pt-2">
             <PaymentFilesUpload table={p.table} id={p.id} hasFiles demo={demo} />
           </div>
@@ -443,7 +443,7 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                     <span className="block truncate">{paymentLabel(p)}</span>
                     {p.files.length > 0 && <span className="block text-xs text-[var(--fi-warning-text)]">Hai solo file provvisori.</span>}
                     <span className="mt-0.5 block">
-                      <FinalReceiptLinks p={p} />
+                      <FinalReceiptLinks p={p} asOf={asOf} />
                     </span>
                   </span>
                   <span className="fi-num w-24 shrink-0 text-right">{eur(p.amount)}</span>

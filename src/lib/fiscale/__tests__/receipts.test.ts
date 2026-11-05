@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fileKind, fileTitle, finalReceiptHint, missingReceipts, paymentEntries, proofStatus, settlement } from "../receipts";
+import { cassettoF24Url, fileKind, fileTitle, finalReceiptHint, missingReceipts, paymentEntries, proofStatus, settlement } from "../receipts";
 
 const data = {
   inpsPayments: [
@@ -68,10 +68,28 @@ describe("payment files", () => {
     expect(proofStatus(withBooking.find((e) => e.id === "a")!, "2026-11-05")).toBe("waiting");
   });
 
-  it("points to where the final receipt is", () => {
-    expect(finalReceiptHint({ kind: "stamp_duty_q2", amount: 400, creditUsed: 0, compensated: false }).text).toMatch(/attestazione di pagamento/);
-    expect(finalReceiptHint({ kind: "substitute_tax_advance_2", amount: 7_800, creditUsed: 7_800, compensated: true }).text).toMatch(/Nessun addebito/);
-    expect(finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false }).text).toMatch(/home banking/);
+  it("points to the page where the final receipt is", () => {
+    const today = "2026-11-05";
+    const stamp = finalReceiptHint({ kind: "stamp_duty_q2", amount: 400, creditUsed: 0, compensated: false, date: "2026-11-05", competenceYear: 2026 }, today);
+    expect(stamp.text).toMatch(/anno 2026 e 2° trimestre/);
+    expect(stamp.links.map((l) => l.href)).toEqual(["https://ivaservizi.agenziaentrate.gov.it/cons/cons-web/fatture/bollo"]);
+
+    const zero = finalReceiptHint({ kind: "substitute_tax_advance_2", amount: 7_800, creditUsed: 7_800, compensated: true, date: "2026-11-30", competenceYear: 2026 }, today);
+    expect(zero.text).toMatch(/Nessun addebito/);
+    // Not paid yet: the whole year, the date filter would be refused.
+    expect(zero.links.map((l) => l.href)).toEqual([
+      "https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet?Ric=F24&Anno=2026",
+      "https://apptel.agenziaentrate.gov.it/RicevuteComunicazioniWeb/ricevute",
+    ]);
+
+    const bank = finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false, date: "2026-10-19", competenceYear: 2026 }, today);
+    expect(bank.text).toMatch(/home banking/);
+    expect(bank.links[1].href).toBe("https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet?Ric=F24&Anno=2026&dataDal=19/10/2026&dataAl=26/10/2026");
+  });
+
+  it("keeps the Cassetto date filter within the year and not after today", () => {
+    expect(cassettoF24Url("2026-11-03", "2026-11-05")).toMatch(/dataDal=03\/11\/2026&dataAl=05\/11\/2026$/);
+    expect(cassettoF24Url("2026-12-29", "2027-01-20")).toMatch(/Anno=2026&dataDal=29\/12\/2026&dataAl=31\/12\/2026$/);
   });
 
   it("titles a file after its name", () => {

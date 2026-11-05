@@ -154,7 +154,9 @@ function stampDuty(item: F24Item): Guide {
         body: [
           "• Scorri in fondo ed entra in \"Fatture elettroniche e altri dati IVA\"",
           "• Scegli \"Pagamento imposta di bollo\"",
+          "Se hai già fatto l'accesso, il link qui sotto ti porta direttamente alla pagina.",
         ],
+        link: { label: "Apri Pagamento imposta di bollo", href: "https://ivaservizi.agenziaentrate.gov.it/cons/cons-web/fatture/bollo" },
         media: "bollo-2",
       },
       {

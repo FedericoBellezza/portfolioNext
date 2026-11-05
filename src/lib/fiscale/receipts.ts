@@ -182,30 +182,62 @@ export function uncheckedFiles(entries: PaymentEntry[]): { entry: PaymentEntry; 
   );
 }
 
-const ADE = "https://www.agenziaentrate.gov.it/portale/";
-const FATTURE_CORRISPETTIVI = "https://ivaservizi.agenziaentrate.gov.it/portale/";
+/*
+ * Pages of the Agenzia reserved area (they open once logged in with SPID),
+ * checked by hand in November 2026:
+ * - stamp duty list: year and quarter are form fields, not in the URL;
+ * - Cassetto fiscale, paid F24: Anno = year, dataDal/dataAl = dd/mm/yyyy
+ *   within that year, "Al" not after today;
+ * - receipts of F24 sent online: search by protocol in the form only.
+ */
+const STAMP_DUTY_PAGE = "https://ivaservizi.agenziaentrate.gov.it/cons/cons-web/fatture/bollo";
+const CASSETTO_F24 = "https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet";
+const ADE_RECEIPTS = "https://apptel.agenziaentrate.gov.it/RicevuteComunicazioniWeb/ricevute";
 const BANK = "https://www.bancamediolanum.it/";
 
-/** Where to get the final receipt of a payment, with the page to open. */
-export function finalReceiptHint(e: Pick<PaymentEntry, "kind" | "amount" | "creditUsed" | "compensated">): {
+const dmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const addDays = (iso: string, days: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * Paid F24 of the Cassetto fiscale around a payment date: the week after it
+ * (the F24 may be recorded a few days later), within its year and not after
+ * today; only the year when the date has not come yet.
+ */
+export function cassettoF24Url(paidAt: string, today: string): string {
+  const year = paidAt.slice(0, 4);
+  if (paidAt > today) return `${CASSETTO_F24}?Ric=F24&Anno=${year}`;
+  const to = [addDays(paidAt, 7), today, `${year}-12-31`].sort()[0];
+  return `${CASSETTO_F24}?Ric=F24&Anno=${year}&dataDal=${dmy(paidAt)}&dataAl=${dmy(to)}`;
+}
+
+/** Where to get the final receipt of a payment, with the pages to open. */
+export function finalReceiptHint(
+  e: Pick<PaymentEntry, "kind" | "amount" | "creditUsed" | "compensated" | "date" | "competenceYear">,
+  today: string = e.date,
+): {
   text: string;
   links: { label: string; href: string }[];
 } {
-  const cassetto = { label: "Cassetto fiscale", href: ADE };
-  if (e.kind.startsWith("stamp_duty")) {
+  const cassetto = { label: "Cassetto fiscale", href: cassettoF24Url(e.date, today) };
+  const quarter = e.kind.match(/^stamp_duty_q(\d)$/)?.[1];
+  if (quarter) {
     return {
-      text: "Dopo l'addebito scarica l'attestazione di pagamento: Fatture e Corrispettivi → Fatture elettroniche e altri dati IVA → Pagamento imposta di bollo.",
-      links: [{ label: "Fatture e Corrispettivi", href: FATTURE_CORRISPETTIVI }],
+      text: `In Pagamento imposta di bollo scegli anno ${e.competenceYear} e ${quarter}° trimestre, poi Cerca: dopo l'addebito l'attestazione di pagamento è nella colonna "Attestazioni" (icona PDF).`,
+      links: [{ label: "Pagamento imposta di bollo", href: STAMP_DUTY_PAGE }],
     };
   }
   if (settlement(e).bank === 0 && (e.compensated || e.creditUsed > 0)) {
     return {
-      text: "Nessun addebito in banca: dalla data del pagamento scarichi l'F24 versato dall'area riservata dell'Agenzia → Cassetto fiscale → Versamenti → F24.",
-      links: [cassetto],
+      text: 'Nessun addebito in banca: dalla data del pagamento la quietanza compare nel Cassetto fiscale (colonna "Quietanza", icona PDF); l\'esito dell\'F24 inviato è anche nelle Ricevute dell\'Agenzia, cercando il protocollo.',
+      links: [cassetto, { label: "Ricevute dell'Agenzia", href: ADE_RECEIPTS }],
     };
   }
   return {
-    text: "Dopo l'addebito scarica la quietanza dall'home banking (sezione F24), oppure l'F24 versato dall'area riservata dell'Agenzia → Cassetto fiscale → Versamenti → F24.",
+    text: 'Dopo l\'addebito scarica la quietanza dall\'home banking (sezione F24), oppure dal Cassetto fiscale: colonna "dettaglio" (lente) → Pdf per la copia dell\'F24 versato.',
     links: [{ label: "Home banking", href: BANK }, cassetto],
   };
 }
