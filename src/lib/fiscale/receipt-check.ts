@@ -102,7 +102,9 @@ export function parseCheckReply(reply: string, count: number, checkedAt: string)
       date: d.data,
       amount: d.importo,
       matches: d.importo_coerente,
-      note: d.nota?.trim() || null,
+      // Notes are only kept for a file that seems to be of another payment:
+      // otherwise the model tends to explain the obvious (e.g. compensation).
+      note: d.importo_coerente === false ? d.nota?.trim() || null : null,
       checkedAt,
     };
   });
