@@ -52,8 +52,14 @@ export interface DashboardModel {
   overdueTasks: TaskItem[];
   /** Residual of the credits meant for F24 compensation. */
   availableCredit: Cents;
-  /** Cash to keep aside once the available credit is used: max(0, matured − credit). */
+  /**
+   * Cash to keep aside once the available credit is used: every F24 still to pay
+   * until 30/6 of next year, next year's advances and fixed INPS included (they
+   * are due whatever happens), minus the credit.
+   */
   reserveAfterCredit: Cents;
+  /** Part of the F24 until 30/6 of next year that is for next year (advances, fixed INPS). */
+  nextYearShare: Cents;
 }
 
 export function buildDashboard(data: FiscalDataset, asOf: string): DashboardModel {
@@ -147,7 +153,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     doneTasks,
     overdueTasks: tasks.filter((t) => t.dueDate < asOf && !doneTasks.has(t.key)),
     availableCredit,
-    reserveAfterCredit: Math.max(0, reserve.matured - availableCredit),
+    reserveAfterCredit: Math.max(0, reserve.cashOutUntilHorizon - availableCredit),
+    nextYearShare: reserve.cashOutUntilHorizon - reserve.matured,
   };
 }
 

@@ -3,6 +3,7 @@
 import { startTransition, useActionState } from "react";
 import { btn, cx } from "../../components/ui";
 import { issueInvoiceAction, registerCollectionAction, updateSdiStatusAction, type InvoiceActionState } from "./actions";
+import { Spinner } from "../../components/form-buttons";
 
 const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 
@@ -38,6 +39,7 @@ export function IssueForm({ id, defaultDate, today }: { id: string; defaultDate:
         l&apos;emissione serve una nota di credito.
       </p>
       <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending}>
+        {pending && <Spinner className="h-4 w-4" />}
         {pending ? "Emissione…" : "Emetti fattura"}
       </button>
       <Feedback state={state} />
@@ -70,6 +72,7 @@ export function SdiStatusForm({ id, current, identifier }: { id: string; current
         <input id="identifier" name="identifier" inputMode="numeric" defaultValue={identifier ?? ""} />
       </div>
       <button type="submit" className={cx(btn.outline, "w-full")} disabled={pending}>
+        {pending && <Spinner className="h-4 w-4" />}
         {pending ? "Salvataggio…" : "Aggiorna stato"}
       </button>
       <Feedback state={state} />
@@ -93,6 +96,7 @@ export function CollectionForm({ id, remaining, today }: { id: string; remaining
         </div>
       </div>
       <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending}>
+        {pending && <Spinner className="h-4 w-4" />}
         {pending ? "Salvataggio…" : "Registra incasso"}
       </button>
       <Feedback state={state} />

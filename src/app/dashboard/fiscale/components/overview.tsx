@@ -211,8 +211,8 @@ export function Overview({
             value={eur(m.reserveAfterCredit)}
             hint={
               m.availableCredit > 0
-                ? `Per gli F24 fino al 30/6/${m.year + 1}, già scalato il credito`
-                : `Per gli F24 fino al 30/6/${m.year + 1}`
+                ? `Tutti gli F24 fino al 30/6/${m.year + 1}, acconti compresi, meno il credito`
+                : `Tutti gli F24 fino al 30/6/${m.year + 1}, acconti compresi`
             }
           />
           <Stat label="Ti resta" value={eur(year.netAccrual)} hint="Dopo imposta sostitutiva e contributi INPS dell'anno" />

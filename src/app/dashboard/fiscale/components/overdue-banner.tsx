@@ -9,6 +9,7 @@ import { dismissObligation, registerF24, type ActionState } from "../obligations
 import { date, eur } from "./format";
 import { GuideStepper } from "./guide-stepper";
 import { btn, cx } from "./ui";
+import { Spinner } from "./form-buttons";
 
 const toInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
 const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
@@ -190,7 +191,7 @@ function RegisterForm({
         </div>
         <div className="flex items-end">
           <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending || demo}>
-            <FileUp aria-hidden className="h-4 w-4" />
+            {pending ? <Spinner className="h-4 w-4" /> : <FileUp aria-hidden className="h-4 w-4" />}
             {pending ? "Salvataggio…" : "Registra"}
           </button>
         </div>
@@ -211,6 +212,7 @@ function RegisterForm({
               <input id={`${id}-reason`} name="reason" maxLength={300} placeholder="Es. pagato all'iscrizione" />
             </div>
             <button type="submit" className={btn.outline} disabled={dismissing || demo}>
+              {dismissing && <Spinner className="h-4 w-4" />}
               Conferma
             </button>
           </form>

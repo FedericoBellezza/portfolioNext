@@ -7,6 +7,7 @@ import { loadInvoiceForXml } from "@/lib/fiscale/data/invoice-xml";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { toCents } from "@/lib/fiscale/money";
 import { daysBetween, date, eur } from "../../components/format";
+import { ConfirmSubmit, SubmitButton } from "../../components/form-buttons";
 import { Badge, btn, PageTitle, Panel } from "../../components/ui";
 import { deleteCollectionAction, deleteDraftAction, regenerateXmlAction } from "./actions";
 import { CollectionForm, IssueForm, SdiStatusForm } from "./invoice-actions";
@@ -137,9 +138,9 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
                       <form action={deleteCollectionAction}>
                         <input type="hidden" name="invoiceId" value={id} />
                         <input type="hidden" name="paymentId" value={p.id} />
-                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]">
+                        <ConfirmSubmit question="Eliminare l'incasso?" className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]">
                           Elimina
-                        </button>
+                        </ConfirmSubmit>
                       </form>
                     </li>
                   ))}
@@ -153,9 +154,9 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
               <IssueForm id={id} defaultDate={issueDate && issueDate <= today ? issueDate : today} today={today} />
               <form action={deleteDraftAction} className="mt-4 border-t border-[var(--fi-rule)] pt-3">
                 <input type="hidden" name="id" value={id} />
-                <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]">
+                <ConfirmSubmit question="Eliminare la bozza?" className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]">
                   Elimina bozza
-                </button>
+                </ConfirmSubmit>
               </form>
             </Panel>
           ) : (
@@ -177,7 +178,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
                   </p>
                   <form action={regenerateXmlAction} className="mt-3">
                     <input type="hidden" name="id" value={id} />
-                    <button type="submit" className={btn.primary}>Rigenera XML con i dati attuali</button>
+                    <SubmitButton className={btn.primary}>Rigenera XML con i dati attuali</SubmitButton>
                   </form>
                 </div>
               )}
@@ -192,7 +193,7 @@ export default async function FatturaPage({ params }: { params: Promise<{ id: st
                   ) : (
                     <form action={regenerateXmlAction}>
                       <input type="hidden" name="id" value={id} />
-                      <button type="submit" className={btn.primary}>Genera XML</button>
+                      <SubmitButton className={btn.primary}>Genera XML</SubmitButton>
                     </form>
                   )}
                 </li>

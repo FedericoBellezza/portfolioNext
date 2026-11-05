@@ -5,6 +5,7 @@ import { generate } from "@/lib/assistant/generate";
 import { requireOwner } from "@/lib/fiscale/auth";
 import type { FileCheck } from "@/lib/fiscale/data/types";
 import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
+import { pdfText } from "@/lib/fiscale/file-text";
 import { loadDataset } from "@/lib/fiscale/data/load";
 import { formatEUR as eurText } from "@/lib/fiscale/money";
 import {
@@ -17,22 +18,11 @@ import {
   receiptText,
   type CheckInput,
 } from "@/lib/fiscale/receipt-check";
-import { paymentEntries, paymentLabel, settlement, uncheckedFiles, type PaymentEntry } from "@/lib/fiscale/receipts";
+import { CHECK_KINDS, paymentEntries, paymentLabel, settlement, uncheckedFiles, type PaymentEntry } from "@/lib/fiscale/receipts";
+import { renameStoredFile } from "@/lib/fiscale/stored-file";
 import { createClient } from "@/lib/supabase/server";
 
 export type CheckState = { ok: boolean; checked: number; remaining: number; message: string };
-
-async function pdfText(data: ArrayBuffer): Promise<string> {
-  // The worker must be loaded before pdf-parse (serverless), as in the assistant.
-  await import("pdf-parse/worker");
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: new Uint8Array(data) });
-  try {
-    return (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
-}
 
 function describePayment(e: PaymentEntry): string {
   const s = settlement(e);
@@ -106,12 +96,27 @@ export async function checkPaymentFilesAction(): Promise<CheckState> {
     });
   }
 
+  const byId = new Map(batch.map((b) => [b.file.id!, b]));
   for (const [id, check] of results) {
+    // Once Claude knows what the file is, it takes that name ("Quietanza della
+    // banca – INPS fissi 3ª rata 2026"); not when it seems of another payment.
+    const named = check.status === "ok" && check.matches !== false;
+    const { entry, file } = byId.get(id)!;
+    const title = named ? `${CHECK_KINDS[check.kind]?.label ?? "Documento"} – ${paymentLabel(entry)}` : file.title;
     const { error } = await db
       .from("documents")
-      .update(check.status === "ok" ? { ai_check: check, provisional: !check.final } : { ai_check: check })
+      .update(check.status === "ok" ? { ai_check: check, provisional: !check.final, title } : { ai_check: check })
       .eq("id", id);
-    if (error) console.error("[fiscale] save receipt check:", error.message);
+    if (error) {
+      console.error("[fiscale] save receipt check:", error.message);
+      continue;
+    }
+    if (named && title !== file.title) {
+      await renameStoredFile(supabase, file.path, title, async (path) => {
+        const { error: e } = await db.from("documents").update({ file_path: path }).eq("id", id);
+        return !e;
+      });
+    }
   }
 
   revalidatePath("/dashboard/fiscale", "layout");

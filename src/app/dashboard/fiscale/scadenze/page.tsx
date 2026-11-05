@@ -24,6 +24,7 @@ import type { TaskItem } from "@/lib/fiscale/tasks";
 import { yearOf, type F24Item } from "@/lib/fiscale/tax-calculator";
 import { createClient } from "@/lib/supabase/server";
 import { DeadlineList } from "../components/charts";
+import { ConfirmSubmit, SubmitButton } from "../components/form-buttons";
 import { date, dayDate, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
 import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
@@ -178,8 +179,7 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
                       <form action={setDocumentProvisionalAction} className="shrink-0">
                         <input type="hidden" name="id" value={f.id} />
                         <input type="hidden" name="provisional" value={f.provisional ? "false" : "true"} />
-                        <button
-                          type="submit"
+                        <SubmitButton
                           title={f.provisional ? "Segna come definitiva: attesta che il pagamento è avvenuto" : "Segna come provvisoria: il pagamento non è ancora confermato"}
                           className={cx(
                             "rounded-full px-2 py-0.5 text-[11px] font-medium hover:ring-1 hover:ring-current",
@@ -187,7 +187,7 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
                           )}
                         >
                           {f.provisional ? "provvisoria" : "definitiva"}
-                        </button>
+                        </SubmitButton>
                       </form>
                     ) : (
                       <Badge tone="good">definitiva</Badge>
@@ -195,27 +195,29 @@ function PaymentProof({ p, asOf, links, demo }: { p: PaymentEntry; asOf: string;
                     {f.id && checked && (
                       <form action={recheckFileAction} className="shrink-0">
                         <input type="hidden" name="id" value={f.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          iconOnly
                           aria-label={`Fai ricontrollare ${kind} a Claude`}
                           title="Fai ricontrollare a Claude"
-                          className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-action-soft)] hover:text-[var(--fi-action)]"
+                          className="h-6 w-6 justify-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-action-soft)] hover:text-[var(--fi-action)]"
                         >
                           <RotateCcw aria-hidden className="h-3.5 w-3.5" />
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
                     {f.id && (
                       <form action={deleteDocumentAction} className="shrink-0">
                         <input type="hidden" name="id" value={f.id} />
-                        <button
-                          type="submit"
+                        <ConfirmSubmit
+                          question="Rimuovere il file?"
+                          confirmLabel="Sì, rimuovi"
+                          pendingLabel="Rimozione…"
                           aria-label={`Rimuovi ${kind}`}
                           title="Rimuovi il file"
                           className="grid h-6 w-6 place-items-center rounded text-[var(--fi-muted)] hover:bg-[var(--fi-critical-soft)] hover:text-[var(--fi-critical-text)]"
                         >
                           <Trash2 aria-hidden className="h-3.5 w-3.5" />
-                        </button>
+                        </ConfirmSubmit>
                       </form>
                     )}
                   </div>
@@ -264,13 +266,22 @@ function MonthCalendar({
         const [y, mm] = month.split("-").map(Number);
         const pay = payments.filter((p) => p.dueDate.startsWith(month));
         const tsk = tasks.filter((t) => t.dueDate.startsWith(month));
+        // Deadlines of the month already paid (maybe in advance, in another month) or
+        // marked as not due are not money still to put out: they are told apart.
+        const toPay = sumCents(pay.filter((p) => !paid.has(p.key)).map((p) => p.amount));
+        const alreadyPaid = sumCents(pay.filter((p) => paid.has(p.key) && !dismissed.has(p.key)).map((p) => p.amount));
         return (
           <section key={month} className={cx(card, "px-5 pt-4 pb-1")}>
             <div className="flex items-baseline justify-between">
               <h3 className="text-sm font-semibold">
                 {MONTHS[mm - 1]} {y}
               </h3>
-              {pay.length > 0 && <span className="fi-num text-xs text-[var(--fi-muted)]">{eur(sumCents(pay.map((i) => i.amount)))}</span>}
+              {pay.length > 0 && (
+                <span className="fi-num text-xs text-[var(--fi-muted)]">
+                  {toPay > 0 || alreadyPaid === 0 ? `${eur(toPay)} da pagare` : "Tutto pagato"}
+                  {alreadyPaid > 0 && ` · ${eur(alreadyPaid)} già pagati`}
+                </span>
+              )}
             </div>
             {pay.length > 0 && <DeadlineList items={pay} asOf={asOf} paid={paid} dismissed={dismissed} showCategory />}
             {tsk.length > 0 && (
@@ -383,9 +394,12 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                     </span>
                     <form action={archiveReminderAction}>
                       <input type="hidden" name="id" value={r.id} />
-                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                      <ConfirmSubmit
+                        question="Eliminare il promemoria?"
+                        className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline"
+                      >
                         Elimina
-                      </button>
+                      </ConfirmSubmit>
                     </form>
                   </li>
                 ))}
@@ -409,9 +423,17 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
             tone="accent"
             label="Da tenere da parte"
             value={eur(m.reserveAfterCredit)}
-            hint={m.availableCredit > 0 ? "Già scalato il credito disponibile" : `F24 maturati fino al 30/6/${m.year + 1}`}
+            hint={
+              m.availableCredit > 0
+                ? `Tutti gli F24 fino al 30/6/${m.year + 1} (${eur(m.reserve.cashOutUntilHorizon)}) meno il credito`
+                : `Tutti gli F24 fino al 30/6/${m.year + 1}, acconti compresi`
+            }
           />
-          <Stat label={`Uscite fino al 30/6/${m.year + 1}`} value={eur(m.reserve.cashOutUntilHorizon)} hint="Inclusi gli acconti dell'anno prossimo" />
+          <Stat
+            label={`Di cui anticipi sul ${m.year + 1}`}
+            value={eur(m.nextYearShare)}
+            hint={`Acconti e contributi INPS fissi del ${m.year + 1}: già compresi, si pagano comunque`}
+          />
           <Stat
             label="Credito disponibile"
             value={eur(m.availableCredit)}
@@ -579,9 +601,14 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                         </span>
                         <form action={undoTaskAction}>
                           <input type="hidden" name="key" value={t.key} />
-                          <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                          <ConfirmSubmit
+                            question="Segnarla come non fatta?"
+                            confirmLabel="Sì, annulla"
+                            pendingLabel="Annullamento…"
+                            className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline"
+                          >
                             Annulla
-                          </button>
+                          </ConfirmSubmit>
                         </form>
                         {doc && (
                           <span className="mt-1.5 flex w-full items-center gap-2 text-xs">
@@ -678,9 +705,12 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                     <CreditAmountEdit id={c.id} amount={c.amount} />
                     <form action={deleteCreditAction}>
                       <input type="hidden" name="id" value={c.id} />
-                      <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline">
+                      <ConfirmSubmit
+                        question="Eliminare il credito?"
+                        className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline"
+                      >
                         Elimina
-                      </button>
+                      </ConfirmSubmit>
                     </form>
                   </div>
                 </section>

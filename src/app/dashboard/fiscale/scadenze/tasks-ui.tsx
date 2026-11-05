@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { dayDate, daysBetween, eur } from "../components/format";
 import { Badge, btn, cx } from "../components/ui";
 import { completeTaskAction, createReminderAction, type TaskState } from "./task-actions";
+import { Spinner } from "../components/form-buttons";
 
 const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Rome" }).format(new Date());
@@ -42,7 +43,7 @@ function CompleteForm({ task, demo }: { task: TaskItem; demo: boolean }) {
           path,
           mime,
           size: file.size,
-          title: task.title,
+          title: `Ricevuta – ${task.title}`,
           category: (task.guide && CATEGORY_FOR[task.guide]) || "other",
           year: Number(task.dueDate.slice(0, 4)),
         };
@@ -90,7 +91,7 @@ function CompleteForm({ task, demo }: { task: TaskItem; demo: boolean }) {
         </div>
         <div className="flex items-end sm:col-span-2">
           <button type="submit" className={cx(btn.primary, "w-full")} disabled={pending || demo}>
-            <Check aria-hidden className="h-4 w-4" />
+            {pending ? <Spinner className="h-4 w-4" /> : <Check aria-hidden className="h-4 w-4" />}
             {pending ? "Salvataggio…" : "Segna come fatto"}
           </button>
         </div>
@@ -203,6 +204,7 @@ export function ReminderForm({ demo }: { demo: boolean }) {
       </div>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-6">
         <button type="submit" className={btn.primary} disabled={pending || demo}>
+          {pending && <Spinner className="h-4 w-4" />}
           {pending ? "Salvataggio…" : "Aggiungi promemoria"}
         </button>
         {state && (

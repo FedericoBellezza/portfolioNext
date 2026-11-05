@@ -5,6 +5,7 @@ import { UserPlus } from "lucide-react";
 import { CLIENT_KIND_LABEL, CLIENT_KINDS, type ClientKind } from "@/lib/fiscale/client-kinds";
 import { btn, cx } from "../components/ui";
 import { createClientAction, type ClientFormState } from "./actions";
+import { Spinner } from "../components/form-buttons";
 
 const label = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 const hint = "mt-1 text-xs text-[var(--fi-muted)]";
@@ -141,7 +142,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </p>
       )}
       <button type="submit" className={btn.primary} disabled={pending || demo}>
-        <UserPlus aria-hidden className="h-4 w-4" />
+        {pending ? <Spinner className="h-4 w-4" /> : <UserPlus aria-hidden className="h-4 w-4" />}
         {pending ? "Salvataggio…" : demo ? "Crea il profilo fiscale per salvare" : "Aggiungi cliente"}
       </button>
     </form>

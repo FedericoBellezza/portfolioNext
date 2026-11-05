@@ -5,11 +5,14 @@ import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { DOCUMENT_BUCKET, DOCUMENT_CATEGORIES } from "@/lib/fiscale/documents";
 import { createClient } from "@/lib/supabase/server";
 import { date } from "../components/format";
+import { ConfirmSubmit } from "../components/form-buttons";
 import { DemoNotice, PageTitle, Panel, Section } from "../components/ui";
 import { deleteDocumentAction } from "./actions";
 import { UploadForm } from "./upload-form";
 
 export const metadata = { title: "Documenti | Fiscale" };
+// Claude reads the chosen file in this page's server actions.
+export const maxDuration = 300;
 
 type Doc = { id: string; title: string; category: string; year: number | null; file_path: string; size_bytes: number; created_at: string };
 
@@ -78,9 +81,12 @@ export default async function DocumentiPage() {
                       </div>
                       <form action={deleteDocumentAction}>
                         <input type="hidden" name="id" value={d.id} />
-                        <button type="submit" className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline">
+                        <ConfirmSubmit
+                          question="Eliminare il documento?"
+                          className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline"
+                        >
                           Elimina
-                        </button>
+                        </ConfirmSubmit>
                       </form>
                     </li>
                   ))}

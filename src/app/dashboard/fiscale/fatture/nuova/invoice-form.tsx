@@ -10,6 +10,7 @@ import type { FiscalProfile } from "@/lib/fiscale/tax-config";
 import { eur, pct } from "../../components/format";
 import { btn, cx } from "../../components/ui";
 import { createDraftInvoice, type DraftState } from "../actions";
+import { Spinner } from "../../components/form-buttons";
 
 type Line = { description: string; quantity: string; unitPrice: string };
 
@@ -234,6 +235,7 @@ export function InvoiceForm({
             </p>
           )}
           <button type="submit" className={cx(btn.primary, "mt-5 w-full")} disabled={pending || !clientId || demo}>
+            {pending && <Spinner className="h-4 w-4" />}
             {pending ? "Salvataggio…" : demo ? "Crea il profilo fiscale per salvare" : "Salva bozza"}
           </button>
         </section>

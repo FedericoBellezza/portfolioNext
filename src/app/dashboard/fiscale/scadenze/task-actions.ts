@@ -5,6 +5,7 @@ import { requireOwner } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { DOCUMENT_BUCKET, DOCUMENT_CATEGORIES, DOCUMENT_MAX_BYTES } from "@/lib/fiscale/documents";
 import { toCents, toEuro } from "@/lib/fiscale/money";
+import { renameStoredFile } from "@/lib/fiscale/stored-file";
 import { createClient } from "@/lib/supabase/server";
 
 export type TaskState = { ok: boolean; message: string } | null;
@@ -44,17 +45,23 @@ export async function completeTaskAction(input: {
       d.size <= DOCUMENT_MAX_BYTES &&
       DOCUMENT_CATEGORIES.some((c) => c.id === d.category);
     if (!valid) return { ok: false, message: "Ricevuta non valida." };
+    const supabase = await createClient();
+    const title = d.title.slice(0, 200) || "Ricevuta";
     const { data, error } = await db
       .from("documents")
-      .insert({ title: d.title.slice(0, 200) || "Ricevuta", category: d.category, year: d.year, file_path: d.path, mime_type: d.mime, size_bytes: d.size })
+      .insert({ title, category: d.category, year: d.year, file_path: d.path, mime_type: d.mime, size_bytes: d.size })
       .select("id")
       .single();
     if (error || !data) {
-      const supabase = await createClient();
       await supabase.storage.from(DOCUMENT_BUCKET).remove([d.path]);
       return { ok: false, message: "Salvataggio della ricevuta non riuscito." };
     }
     documentId = String(data.id);
+    const id = documentId;
+    await renameStoredFile(supabase, d.path, title, async (path) => {
+      const { error: e } = await db.from("documents").update({ file_path: path }).eq("id", id);
+      return !e;
+    });
   }
 
   const { error } = await db.from("task_completions").upsert({

@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { loadDataset } from "@/lib/fiscale/data/load";
+import { ConfirmSubmit } from "../components/form-buttons";
 import { DemoNotice, PageTitle, Panel } from "../components/ui";
 import { archiveClientAction } from "./actions";
 import { ClientForm } from "./client-form";
@@ -44,12 +45,14 @@ export default async function ClientiPage() {
                   {!demo && (
                     <form action={archiveClientAction}>
                       <input type="hidden" name="id" value={c.id} />
-                      <button
-                        type="submit"
+                      <ConfirmSubmit
+                        question="Archiviare il cliente?"
+                        confirmLabel="Sì, archivia"
+                        pendingLabel="Archiviazione…"
                         className="text-xs text-[var(--fi-ink-2)] underline hover:text-[var(--fi-critical)]"
                       >
                         Archivia
-                      </button>
+                      </ConfirmSubmit>
                     </form>
                   )}
                 </li>
