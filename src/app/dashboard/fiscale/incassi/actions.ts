@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 
 export type BulkState = { ok: boolean; message: string; errors?: Record<string, string> } | null;
@@ -14,7 +14,7 @@ const parseEuro = (raw: string) => Number(raw.includes(",") ? raw.replace(/\./g,
 /** Registers the collections of all ticked invoices in one go. */
 export async function registerCollectionsAction(_prev: BulkState, formData: FormData): Promise<BulkState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }

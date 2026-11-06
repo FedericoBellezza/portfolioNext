@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { ClientSchema, normaliseClientForm, toClientRow } from "@/lib/fiscale/clients";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 
@@ -12,7 +12,7 @@ export type ClientFormState =
 
 export async function createClientAction(_prev: ClientFormState, formData: FormData): Promise<ClientFormState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -39,7 +39,7 @@ export async function createClientAction(_prev: ClientFormState, formData: FormD
 
 /** Archived clients disappear from lists; their invoices keep the data snapshot. */
 export async function archiveClientAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const db = await fiscaleDb();

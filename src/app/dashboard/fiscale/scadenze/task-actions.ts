@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { DOCUMENT_BUCKET, DOCUMENT_CATEGORIES, DOCUMENT_MAX_BYTES } from "@/lib/fiscale/documents";
 import { toCents, toEuro } from "@/lib/fiscale/money";
@@ -25,7 +25,7 @@ export async function completeTaskAction(input: {
 }): Promise<TaskState> {
   let user;
   try {
-    user = await requireOwner();
+    user = await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -79,7 +79,7 @@ export async function completeTaskAction(input: {
 }
 
 export async function undoTaskAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const key = String(formData.get("key") ?? "");
   if (!KEY.test(key)) return;
   const db = await fiscaleDb();
@@ -89,7 +89,7 @@ export async function undoTaskAction(formData: FormData): Promise<void> {
 
 export async function createReminderAction(_prev: TaskState, formData: FormData): Promise<TaskState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -121,7 +121,7 @@ export async function createReminderAction(_prev: TaskState, formData: FormData)
 }
 
 export async function archiveReminderAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const db = await fiscaleDb();

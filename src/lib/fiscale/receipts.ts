@@ -202,7 +202,6 @@ export function uncheckedFiles(entries: PaymentEntry[]): { entry: PaymentEntry; 
 const STAMP_DUTY_PAGE = "https://ivaservizi.agenziaentrate.gov.it/cons/cons-web/fatture/bollo";
 const CASSETTO_F24 = "https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet";
 const ADE_RECEIPTS = "https://apptel.agenziaentrate.gov.it/RicevuteComunicazioniWeb/ricevute";
-const BANK = "https://www.bancamediolanum.it/";
 
 const dmy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const addDays = (iso: string, days: number) => {
@@ -247,7 +246,8 @@ export function finalReceiptHint(
   }
   return {
     text: 'Dopo l\'addebito scarica la quietanza dall\'home banking (sezione F24), oppure dal Cassetto fiscale: colonna "dettaglio" (lente) → Pdf per la copia dell\'F24 versato.',
-    links: [{ label: "Home banking", href: BANK }, cassetto],
+    // Each user has their own bank: only the Cassetto fiscale gets a link.
+    links: [cassetto],
   };
 }
 

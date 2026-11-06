@@ -138,7 +138,13 @@ export function DemoNotice({ show }: { show: boolean }) {
   return (
     <p className="mb-6 rounded-xl border border-dashed border-[var(--fi-rule-strong)] bg-white/60 px-4 py-3 text-sm text-[var(--fi-ink-2)]">
       <b className="font-medium text-[var(--fi-ink)]">Dati dimostrativi.</b> Appena crei il tuo profilo fiscale, qui
-      vedi i tuoi dati.
+      vedi i tuoi dati.{" "}
+      <Link
+        href="/dashboard/fiscale/profilo"
+        className={`rounded-sm font-medium text-[var(--fi-action)] underline-offset-4 hover:underline ${focus}`}
+      >
+        Crea il profilo
+      </Link>
     </p>
   );
 }

@@ -2,11 +2,8 @@
 // (in origine in lib/leads/server.js, spostati qui quando la sezione lead è stata rimossa).
 
 import { NextResponse } from 'next/server'
+import { accessOf } from '@/lib/auth/access'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-
-// Stesso default usato dal middleware per proteggere /dashboard.
-const OWNER_EMAIL = () =>
-  (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').toLowerCase()
 
 export function json(body, status = 200) {
   return NextResponse.json(body, {
@@ -39,11 +36,13 @@ function isSameOrigin(request) {
 }
 
 /**
- * Wrapper per i route handler: verifica sessione + owner (401/403), protezione
+ * Wrapper per i route handler: verifica sessione + accesso (401/403), protezione
  * CSRF sulle scritture e risposta 500 generica (niente dettagli interni al client).
  * Il middleware protegge solo le pagine /dashboard, non le /api: serve questo controllo.
+ * Di default solo l'owner; `{ fiscale: true }` apre la route anche agli utenti della
+ * sezione Fiscale (i dati restano separati per utente dalla RLS).
  */
-export function protectedRoute(handler) {
+export function protectedRoute(handler, { fiscale = false } = {}) {
   return async function route(request, ctx) {
     try {
       if (!['GET', 'HEAD'].includes(request.method)) {
@@ -59,7 +58,8 @@ export function protectedRoute(handler) {
       const supabase = await createSessionClient()
       const { data, error } = await supabase.auth.getUser()
       if (error || !data?.user) return fail(401, 'Non autenticato')
-      if ((data.user.email || '').toLowerCase() !== OWNER_EMAIL()) {
+      const access = accessOf(data.user.email)
+      if (access !== 'owner' && !(fiscale && access === 'fiscale')) {
         return fail(403, 'Non autorizzato')
       }
 

@@ -3,7 +3,7 @@ import { fiscaleDb } from "@/lib/fiscale/data/load";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/fiscale/fatture/:id/xml — scarica l'XML FatturaPA salvato all'emissione (solo OWNER_EMAIL).
+// GET /api/fiscale/fatture/:id/xml — scarica l'XML FatturaPA salvato all'emissione (owner e utenti della sezione Fiscale, ognuno le sue).
 export const GET = protectedRoute(async (_request: Request, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
   if (!/^[0-9a-f-]{36}$/.test(id)) return fail(400, "Fattura non valida");
@@ -25,4 +25,4 @@ export const GET = protectedRoute(async (_request: Request, ctx: { params: Promi
       "Cache-Control": "no-store",
     },
   });
-});
+}, { fiscale: true });

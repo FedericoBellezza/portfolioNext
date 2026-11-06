@@ -8,7 +8,7 @@ import { LogOut, Home, LayoutDashboard, GraduationCap, TrendingUp, Landmark, Rec
 const LINKS = [
   { href: "/dashboard/assistant", label: "Assistente", Icon: GraduationCap },
   { href: "/dashboard/trader", label: "Trader", Icon: TrendingUp },
-  { href: "/dashboard/fiscale", label: "Fiscale", Icon: Receipt },
+  { href: "/dashboard/fiscale", label: "Fiscale", Icon: Receipt, fiscale: true },
   { href: "/dashboard/copybot", label: "Copy Bot", Icon: Landmark },
 ];
 
@@ -16,7 +16,8 @@ const LINKS = [
 const item =
   "inline-flex min-h-10 items-center gap-1.5 rounded-md px-2.5 text-sm transition-colors pointer-coarse:min-h-11";
 
-export default function DashboardNav({ user }) {
+// access: 'owner' vede tutte le sezioni, 'fiscale' solo la sua (vedi lib/auth/access.js).
+export default function DashboardNav({ user, access }) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -32,14 +33,14 @@ export default function DashboardNav({ user }) {
       <div className="container mx-auto flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1 sm:gap-3">
           <Link
-            href="/dashboard"
+            href={access === "owner" ? "/dashboard" : "/dashboard/fiscale"}
             className="mr-1 flex shrink-0 items-center gap-2 rounded-md px-1 font-serif text-xl font-semibold text-[var(--dashboard-text)]"
           >
             <LayoutDashboard aria-hidden className="h-6 w-6 text-[var(--dashboard-accent)]" />
             <span className="hidden min-[400px]:inline">Dashboard</span>
             <span className="sr-only min-[400px]:hidden">Dashboard</span>
           </Link>
-          {LINKS.map(({ href, label, Icon }) => {
+          {LINKS.filter((l) => access === "owner" || l.fiscale).map(({ href, label, Icon }) => {
             const active = pathname?.startsWith(href);
             return (
               <Link

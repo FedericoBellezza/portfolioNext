@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { computeInvoiceTotals } from "@/lib/fiscale/invoice-math";
 import { toCents, toEuro } from "@/lib/fiscale/money";
@@ -30,7 +30,7 @@ export type DraftState = { ok: boolean; message: string } | null;
 
 export async function createDraftInvoice(_prev: DraftState, formData: FormData): Promise<DraftState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }

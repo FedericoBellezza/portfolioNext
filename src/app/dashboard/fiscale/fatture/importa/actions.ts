@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { snapshotOf } from "@/lib/fiscale/data/invoice-xml";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { extractXml, ImportError, parseFatturaPa, type ParsedInvoice } from "@/lib/fiscale/fatturapa-import";
@@ -148,7 +148,7 @@ async function importOne(db: Db, file: File, ownVat: string): Promise<ImportResu
 
 export async function importInvoicesAction(_prev: ImportState, formData: FormData): Promise<ImportState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { error: "Non autorizzato." };
   }

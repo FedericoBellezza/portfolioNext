@@ -224,7 +224,7 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
           : "Ci vuole ancora un po': con la ricerca web una risposta può richiedere un paio di minuti…";
 
   return (
-    <div className="flex h-[calc(100dvh-61px-52px-48px)] min-h-[540px] flex-col overflow-hidden rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)] lg:h-[calc(100dvh-61px-72px)]">
+    <div className="flex h-[calc(100dvh_-_var(--dash-nav-h,61px)_-_52px_-_48px)] min-h-[540px] flex-col overflow-hidden rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)] lg:h-[calc(100dvh_-_var(--dash-nav-h,61px)_-_72px)]">
       <header className="flex items-center justify-between gap-3 border-b border-[var(--fi-rule)] px-4 py-3 sm:px-5">
         <div className="min-w-0">
           <h1 className="text-[17px] font-semibold leading-tight tracking-[-0.01em]">Chiedi al commercialista</h1>

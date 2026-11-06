@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { toCents, toEuro } from "@/lib/fiscale/money";
 
@@ -12,7 +12,7 @@ const refresh = () => revalidatePath("/dashboard/fiscale", "layout");
 
 export async function createCreditAction(_prev: CreditState, formData: FormData): Promise<CreditState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -40,7 +40,7 @@ export async function createCreditAction(_prev: CreditState, formData: FormData)
 /** Corrects the amount of a credit (e.g. after checking it with the accountant). */
 export async function updateCreditAmountAction(_prev: CreditState, formData: FormData): Promise<CreditState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -62,7 +62,7 @@ export async function updateCreditAmountAction(_prev: CreditState, formData: For
 }
 
 export async function deleteCreditAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const db = await fiscaleDb();

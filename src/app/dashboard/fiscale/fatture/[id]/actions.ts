@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { FatturaPaError, progressivoAttempt } from "@/lib/fiscale/fatturapa";
 import { loadInvoiceForXml, renderInvoiceXml, snapshotOf } from "@/lib/fiscale/data/invoice-xml";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
@@ -20,7 +20,7 @@ const addDays = (iso: string, days: number) => {
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
 async function ctx() {
-  await requireOwner();
+  await requireFiscaleUser();
   return fiscaleDb();
 }
 

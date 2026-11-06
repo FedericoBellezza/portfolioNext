@@ -23,7 +23,7 @@ import {
   type AdvisorFile,
   type AdvisorReply,
 } from "@/lib/fiscale/advisor-shared";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
 import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
@@ -241,7 +241,7 @@ async function removeOldAttachments(supabase: Supabase, userId: string) {
 export async function POST(request: Request) {
   let userId: string;
   try {
-    userId = (await requireOwner()).id;
+    userId = (await requireFiscaleUser()).id;
   } catch {
     return fail("Non autorizzato", 401);
   }

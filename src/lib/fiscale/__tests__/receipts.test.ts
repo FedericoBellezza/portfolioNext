@@ -103,7 +103,9 @@ describe("payment files", () => {
 
     const bank = finalReceiptHint({ kind: "fixed_q3", amount: 56_610, creditUsed: 0, compensated: false, date: "2026-10-19", competenceYear: 2026 }, today);
     expect(bank.text).toMatch(/home banking/);
-    expect(bank.links[1].href).toBe("https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet?Ric=F24&Anno=2026&dataDal=19/10/2026&dataAl=26/10/2026");
+    // No bank link: every user has their own bank.
+    expect(bank.links).toHaveLength(1);
+    expect(bank.links[0].href).toBe("https://cassetto.agenziaentrate.gov.it/cassfisc-web/CassettoFiscaleServlet?Ric=F24&Anno=2026&dataDal=19/10/2026&dataAl=26/10/2026");
   });
 
   it("keeps the Cassetto date filter within the year and not after today", () => {

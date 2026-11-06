@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { accessOf } from '@/lib/auth/access'
 import DashboardNav from './components/DashboardNav'
 
 export const metadata = {
@@ -37,9 +38,16 @@ export default async function DashboardLayout({ children }) {
     redirect('/login')
   }
 
+  // Users of the fiscal section only get no top bar: their section has its own menu and logout.
+  // --dash-nav-h tells the sections how tall the bar is (61px, or none).
+  const showNav = accessOf(user.email) === 'owner'
+
   return (
-    <div className="min-h-screen dashboard-theme bg-[var(--dashboard-bg)]">
-      <DashboardNav user={user} />
+    <div
+      className="min-h-screen dashboard-theme bg-[var(--dashboard-bg)]"
+      style={{ '--dash-nav-h': showNav ? '61px' : '0px' }}
+    >
+      {showNav && <DashboardNav user={user} access="owner" />}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>

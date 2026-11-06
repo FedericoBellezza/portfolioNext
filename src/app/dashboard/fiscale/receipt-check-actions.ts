@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { generate } from "@/lib/assistant/generate";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import type { FileCheck } from "@/lib/fiscale/data/types";
 import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
 import { pdfText } from "@/lib/fiscale/file-text";
@@ -43,7 +43,7 @@ function describePayment(e: PaymentEntry): string {
  */
 export async function checkPaymentFilesAction(): Promise<CheckState> {
   try {
-    await requireOwner();
+    await requireFiscaleUser();
   } catch {
     return { ok: false, checked: 0, remaining: 0, message: "Non autorizzato." };
   }
@@ -126,7 +126,7 @@ export async function checkPaymentFilesAction(): Promise<CheckState> {
 
 /** Clears the check of one file so that Claude reads it again. */
 export async function recheckFileAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const supabase = await createClient();

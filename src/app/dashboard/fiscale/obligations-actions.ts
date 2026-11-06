@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { DOCUMENT_BUCKET, DOCUMENT_MAX_BYTES, documentMime } from "@/lib/fiscale/documents";
 import { toEuro, toCents } from "@/lib/fiscale/money";
 import { obligationTarget } from "@/lib/fiscale/obligations";
@@ -26,7 +26,7 @@ const RegisterSchema = z.object({
 });
 
 async function ownerContext() {
-  const user = await requireOwner();
+  const user = await requireFiscaleUser();
   const supabase = await createClient();
   const db = supabase.schema("fiscale");
   const { data: profile } = await db.from("fiscal_profiles").select("user_id").maybeSingle();

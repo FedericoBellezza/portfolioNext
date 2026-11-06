@@ -5,7 +5,7 @@ import { toFixed2 } from "@/lib/fiscale/money";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/fiscale/export?year=2026&format=csv|json — solo OWNER_EMAIL (protectedRoute).
+// GET /api/fiscale/export?year=2026&format=csv|json — owner e utenti della sezione Fiscale, ognuno con i suoi dati.
 export const GET = protectedRoute(async (request: Request) => {
   const params = new URL(request.url).searchParams;
   const year = Number(params.get("year"));
@@ -42,4 +42,4 @@ export const GET = protectedRoute(async (request: Request) => {
       "Content-Disposition": `attachment; filename="${filename}.csv"`,
     },
   });
-});
+}, { fiscale: true });

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
+import { accessOf, canAccessPath, homeOf } from '@/lib/auth/access'
 
 export async function middleware(request) {
   let supabaseResponse = NextResponse.next({ request })
@@ -48,7 +49,7 @@ export async function middleware(request) {
     return supabaseResponse
   }
 
-  // Protected routes - dashboard
+  // Protected routes - dashboard: the owner sees everything, fiscale users only their section.
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
       const url = request.nextUrl.clone()
@@ -56,21 +57,26 @@ export async function middleware(request) {
       return NextResponse.redirect(url)
     }
 
-    // Owner-only check
-    const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').trim().toLowerCase()
-    if ((user.email || '').toLowerCase() !== OWNER_EMAIL) {
+    const access = accessOf(user.email)
+    if (!access) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
+    if (!canAccessPath(access, request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone()
+      url.pathname = homeOf(access)
+      url.search = ''
+      return NextResponse.redirect(url)
+    }
   }
 
-  // Redirect authenticated owner from login to dashboard
+  // Redirect an authenticated user from login to their dashboard
   if (request.nextUrl.pathname === '/login' && user) {
-    const OWNER_EMAIL = (process.env.OWNER_EMAIL || 'federico.bellezza.dev@gmail.com').trim().toLowerCase()
-    if ((user.email || '').toLowerCase() === OWNER_EMAIL) {
+    const access = accessOf(user.email)
+    if (access) {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = homeOf(access)
       return NextResponse.redirect(url)
     }
   }

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireOwner } from "@/lib/fiscale/auth";
+import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { generate } from "@/lib/assistant/generate";
 import {
@@ -34,7 +34,7 @@ export async function registerDocumentAction(input: {
 }): Promise<DocumentState> {
   let user;
   try {
-    user = await requireOwner();
+    user = await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -85,7 +85,7 @@ export type ReadState = { ok: true; fields: DocumentFields } | { ok: false; mess
 export async function readDocumentAction(input: { path: string; name: string }): Promise<ReadState> {
   let user;
   try {
-    user = await requireOwner();
+    user = await requireFiscaleUser();
   } catch {
     return { ok: false, message: "Non autorizzato." };
   }
@@ -127,7 +127,7 @@ export async function readDocumentAction(input: { path: string; name: string }):
 
 /** Marks a payment file as provisional (final receipt still due) or as the final one. */
 export async function setDocumentProvisionalAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const db = await fiscaleDb();
@@ -137,7 +137,7 @@ export async function setDocumentProvisionalAction(formData: FormData): Promise<
 }
 
 export async function deleteDocumentAction(formData: FormData): Promise<void> {
-  await requireOwner();
+  await requireFiscaleUser();
   const id = String(formData.get("id") ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return;
   const db = await fiscaleDb();
