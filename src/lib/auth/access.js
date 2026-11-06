@@ -10,9 +10,8 @@ const DEFAULT_OWNER_EMAIL = 'federico.bellezza.dev@gmail.com'
 /**
  * Utenti della sola sezione Fiscale. Per cambiare l'email basta modificarla qui;
  * altre si possono aggiungere senza toccare il codice con FISCALE_USER_EMAILS (separate da virgola).
- * Le immagini e i video delle guide di pagamento dell'owner sono condivisi con queste email da una
- * policy dello Storage (supabase/migrations/0018_fiscale_shared_guides.sql): se cambi un'email,
- * aggiorna anche quella.
+ * I tutorial di pagamento dell'owner sono leggibili da tutti gli utenti con accesso
+ * (supabase/migrations/0019_fiscale_guides_for_all.sql): nessuna email da aggiornare altrove.
  */
 const FISCALE_USERS = [
   'gabriele.bellezza1999@gmail.com', // Gabriele, fratello: partita IVA forfettaria propria

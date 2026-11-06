@@ -25,14 +25,17 @@ export function OverdueBanner({
   intro,
   tone = "warning",
   media = {},
+  canUpload = false,
   credits = [],
 }: {
   items: F24Item[];
   demo: boolean;
   /** Credits with a residual, selectable when paying in compensation. */
   credits?: { id: string; label: string; residual: number }[];
-  /** Owner's guide images and videos (signed links), by slot. */
+  /** Payment tutorials (signed links), by slot: the same set for every user. */
   media?: GuideMedia;
+  /** Only the owner adds or replaces the tutorials. */
+  canUpload?: boolean;
   title?: string;
   intro?: string;
   tone?: "warning" | "neutral";
@@ -92,7 +95,7 @@ export function OverdueBanner({
               </div>
             </div>
             {open === item.key && (
-              <GuideStepper guide={guideFor(item)} media={media} canUpload={!demo}>
+              <GuideStepper guide={guideFor(item)} media={media} canUpload={canUpload}>
                 <RegisterForm item={item} demo={demo} credits={credits} />
               </GuideStepper>
             )}

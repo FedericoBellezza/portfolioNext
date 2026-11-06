@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import Link from "next/link";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
-import { loadGuideMedia } from "@/lib/fiscale/data/guide-media";
+import { loadGuides } from "@/lib/fiscale/data/guide-media";
 import { CheckCircle2, ChevronDown, CircleAlert, Clock3, ExternalLink, FileText, RotateCcw, Sparkles, Trash2 } from "lucide-react";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
 import { sumCents } from "@/lib/fiscale/money";
@@ -412,8 +412,8 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   );
 
   async function DaFare() {
-    // Guides show their images and videos in demo too: they explain how to pay, not the user's data.
-    const media = await loadGuideMedia();
+    // The tutorials are the same for every user, demo included: they explain how to pay, not the user's data.
+    const guides = await loadGuides();
     const usableCredits = data.credits
       .filter((c) => c.destination === "compensation" && c.residual > 0)
       .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
@@ -454,7 +454,8 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
           <OverdueBanner
             items={toHandle}
             demo={demo}
-            media={media}
+            media={guides.media}
+            canUpload={guides.canUpload}
             credits={usableCredits}
             tone={m.overdue.length > 0 ? "warning" : "neutral"}
             title="Pagamenti da fare o da registrare"
