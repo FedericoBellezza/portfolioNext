@@ -15,6 +15,7 @@ import {
 } from "@/lib/fiscale/advisor-shared";
 import { btn, cx } from "../components/ui";
 import { Markdown } from "./markdown";
+import { ModelSelect } from "./model-select";
 
 type Message = AdvisorTurn & { id: string; meta?: { model: string | null; durationMs: number | null } };
 type Prefs = { model: string; webSearch: boolean };
@@ -354,23 +355,7 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
                 <Globe aria-hidden className="h-3.5 w-3.5" />
                 Ricerca web
               </button>
-              <label htmlFor="advisor-model" className="sr-only">
-                Modello
-              </label>
-              <select
-                id="advisor-model"
-                value={prefs.model}
-                onChange={(e) => setPrefs((p) => ({ ...p, model: e.target.value }))}
-                style={{ width: "auto", border: 0, boxShadow: "none", background: "transparent", padding: "4px 6px" }}
-                className="cursor-pointer rounded-lg text-xs text-[var(--fi-ink-2)] hover:bg-[var(--fi-fill)]"
-                title={MODELS.find((m) => m.id === prefs.model)?.hint}
-              >
-                {MODELS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
+              <ModelSelect value={prefs.model} onChange={(model) => setPrefs((p) => ({ ...p, model }))} />
 
               <div className="ml-auto">
                 {pending ? (
