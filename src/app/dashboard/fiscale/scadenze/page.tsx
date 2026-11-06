@@ -412,7 +412,8 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
   );
 
   async function DaFare() {
-    const media = demo ? {} : await loadGuideMedia();
+    // Guides show their images and videos in demo too: they explain how to pay, not the user's data.
+    const media = await loadGuideMedia();
     const usableCredits = data.credits
       .filter((c) => c.destination === "compensation" && c.residual > 0)
       .map((c) => ({ id: c.id, label: creditLabel(c), residual: c.residual }));
