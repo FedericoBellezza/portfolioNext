@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AdvisorInputError, advisorSystem, archiveFileName, buildAdvisorPrompt, capFiles, fiscalSnapshot, FILE_CHARS } from "../advisor";
+import { advisorFileType, isAdvisorFile } from "../advisor-shared";
 import { buildDashboard } from "../data/dashboard";
 import { demoDataset } from "../data/demo";
 import type { FiscalDataset } from "../data/types";
@@ -124,5 +125,38 @@ describe("prompt within the webhook limit", () => {
     const three = capFiles([file("a", 20_000), file("b", 20_000), file("c", 100)]);
     expect(three[0].text).toContain("[… testo troncato]");
     expect(three[2].text).toBe("x".repeat(100));
+  });
+});
+
+describe("photos and scans attached in the chat", () => {
+  const photo = { name: "avviso.jpg", text: "", path: "u/1-avviso.jpg" };
+
+  it("point Claude to the file in its folder, or say it is gone", () => {
+    const openable = new Map([[photo.path, "allegato-01.jpg"]]);
+    const now = buildAdvisorPrompt({ system: "S", snapshot: "dati", history: [], message: "cosa dice?", files: [photo], openable });
+    expect(now.prompt).toContain("### avviso.jpg\n(Foto o scansione senza testo: è il file allegato-01.jpg nella tua cartella di lavoro, aprilo con Read.)");
+
+    const later = buildAdvisorPrompt({
+      system: "S",
+      snapshot: "dati",
+      history: [{ role: "user", content: "guarda", files: [photo] }],
+      message: "e quindi?",
+      files: [],
+    });
+    expect(later.prompt).toContain("(Foto o scansione non più disponibile.)");
+  });
+
+  it("leave the text room to the files that have text", () => {
+    const capped = capFiles([photo, { name: "a.txt", text: "x".repeat(40_000) }]);
+    expect(capped[0]).toEqual(photo);
+    expect(capped[1].text.length).toBeLessThan(FILE_CHARS + 30);
+  });
+});
+
+describe("chat file types", () => {
+  it("takes photos, PDF, Word, PowerPoint and text, not old Office formats", () => {
+    for (const n of ["foto.HEIC", "scan.jpeg", "a.pdf", "b.docx", "c.pptx", "d.txt", "e.md", "f.eml"]) expect(isAdvisorFile(n)).toBe(true);
+    for (const n of ["vecchio.doc", "slide.ppt", "foglio.xlsx", "senza-estensione"]) expect(isAdvisorFile(n)).toBe(false);
+    expect(advisorFileType("Relazione.DOCX")).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   });
 });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MODELS } from "@/lib/assistant/constants";
+import { ExtractionError, extractDocument } from "@/lib/assistant/extract";
 import { generate } from "@/lib/assistant/generate";
 import {
   AdvisorInputError,
@@ -12,10 +13,13 @@ import {
   type ArchiveDocument,
 } from "@/lib/fiscale/advisor";
 import {
+  ADVISOR_BUCKET,
+  ADVISOR_IMAGE,
+  ADVISOR_MAX_FILE_BYTES,
   ADVISOR_MAX_FILES,
-  ADVISOR_MAX_FILES_BYTES,
   ADVISOR_MAX_HISTORY,
   ADVISOR_MAX_MESSAGE,
+  extensionOf,
   type AdvisorFile,
   type AdvisorReply,
 } from "@/lib/fiscale/advisor-shared";
@@ -27,19 +31,39 @@ import { pdfText } from "@/lib/fiscale/file-text";
 import { createClient } from "@/lib/supabase/server";
 
 // Fiscal chat: the answer comes from Claude Code on the owner's server through
-// the n8n webhook of the study assistant, with web search and the archive
-// documents (downloaded by n8n into a folder Claude can read). 300 s is the
-// route limit; generate() stops just before it.
+// the n8n webhook of the study assistant, with web search and a folder of files
+// Claude can open (archive documents, photos and scans attached in the chat),
+// downloaded by n8n from short-lived signed links. 300 s is the route limit;
+// generate() stops just before it.
 export const maxDuration = 300;
 
-const ADVISOR_EFFORT = "medium";
-const TEXT_FILE = /\.(txt|eml|md|xml|csv)$/i;
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+type Link = { name: string; url: string };
 
-const FileSchema = z.object({ name: z.string().trim().min(1).max(200), text: z.string().max(20_000) });
+const ADVISOR_EFFORT = "medium";
+const TEXT_FILE = /^(txt|eml|md|xml|csv)$/;
+/** n8n takes up to 80 files: the archive leaves room for the chat's photos and scans. */
+const MAX_DOCUMENT_FILES = 70;
+const MAX_OPENABLE_ATTACHMENTS = 10;
+/** Long enough for n8n to download the files before Claude starts, then useless. */
+const LINK_SECONDS = 600;
+/** Chat attachments are removed this long after upload. */
+const ATTACHMENT_DAYS = 30;
+
+const FileSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  text: z.string().max(20_000),
+  path: z.string().min(1).max(400).optional(),
+});
 const Payload = z.object({
   message: z.string().trim().min(1).max(ADVISOR_MAX_MESSAGE),
   model: z.enum(MODELS.map((m) => m.id) as [string, ...string[]]).optional().catch(undefined),
   webSearch: z.boolean().default(true),
+  /** Files the browser has just uploaded to the chat bucket. */
+  attachments: z
+    .array(z.object({ path: z.string().min(1).max(400), name: z.string().trim().min(1).max(200) }))
+    .max(ADVISOR_MAX_FILES)
+    .default([]),
   history: z
     .array(
       z.object({
@@ -63,42 +87,62 @@ class HttpError extends Error {
 
 const fail = (error: string, status: number) => Response.json({ ok: false, error }, { status });
 
-async function readFile(file: File): Promise<AdvisorFile> {
-  const name = file.name || "allegato";
-  if (/\.pdf$/i.test(name)) {
-    let text = "";
-    try {
-      text = tidyText(await pdfText(await file.arrayBuffer()));
-    } catch (e) {
-      console.error("[fiscale] chat pdf:", e instanceof Error ? e.message : e);
-      throw new HttpError(`"${name}": non riesco ad aprire il PDF.`, 422);
-    }
-    if (text.length < 40) {
-      throw new HttpError(`"${name}" è una scansione senza testo: incolla il testo nel messaggio.`, 422);
-    }
-    return { name, text };
-  }
-  if (TEXT_FILE.test(name)) {
-    const text = tidyText(new TextDecoder("utf-8").decode(await file.arrayBuffer()));
-    if (!text) throw new HttpError(`"${name}" è vuoto.`, 422);
-    return { name, text };
-  }
-  throw new HttpError(`"${name}": allega PDF o file di testo (txt, eml, md, xml, csv). Per le immagini incolla il testo.`, 415);
-}
-
-/** Files n8n accepts per request: the most recent documents go to Claude's folder, the rest are listed by title. */
-const MAX_DOCUMENT_FILES = 80;
-/** Long enough for n8n to download the files before Claude starts, then useless. */
-const LINK_SECONDS = 600;
 /** n8n refuses links with spaces, quotes or backslashes (they end up in a shell command). */
 const safeUrl = (url: string) =>
   url.replace(/[\s'"`\\]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
 
+/** Only the user's own uploads, never a path that climbs out of their folder. */
+const ownPath = (path: string, userId: string) => path.startsWith(`${userId}/`) && !path.includes("..");
+
+/** Text of an attachment; photos and PDFs without text are left to Claude, who opens the file. */
+async function readAttachment(supabase: Supabase, a: { path: string; name: string }): Promise<AdvisorFile> {
+  const { name, path } = a;
+  if (ADVISOR_IMAGE.test(path)) return { name, text: "", path };
+
+  const { data, error } = await supabase.storage.from(ADVISOR_BUCKET).download(path);
+  if (error || !data) throw new HttpError(`"${name}": file non trovato, riprova ad allegarlo.`, 404);
+  if (data.size > ADVISOR_MAX_FILE_BYTES) throw new HttpError(`"${name}" è troppo grande (massimo 15 MB).`, 413);
+  const bytes = await data.arrayBuffer();
+  const ext = extensionOf(path);
+
+  if (ext === "pdf") {
+    let text = "";
+    try {
+      text = tidyText(await pdfText(bytes));
+    } catch (e) {
+      console.error("[fiscale] chat pdf:", e instanceof Error ? e.message : e);
+    }
+    // A scan has no text layer: Claude reads the pages as images.
+    return text.length >= 40 ? { name, text } : { name, text: "", path };
+  }
+  if (ext === "docx" || ext === "pptx") {
+    try {
+      const doc = await extractDocument({ buffer: Buffer.from(bytes), fileName: path });
+      const text = tidyText(
+        (doc.units as { text: string; page?: number; heading?: string }[])
+          .map((u) => (u.page ? `[slide ${u.page}] ${u.text}` : u.heading ? `## ${u.heading}\n${u.text}` : u.text))
+          .join("\n\n"),
+      );
+      if (!text) throw new ExtractionError("vuoto");
+      return { name, text };
+    } catch (e) {
+      if (!(e instanceof ExtractionError)) console.error("[fiscale] chat office:", e);
+      throw new HttpError(`"${name}": non riesco a leggerne il testo.`, 422);
+    }
+  }
+  if (TEXT_FILE.test(ext)) {
+    const text = tidyText(new TextDecoder("utf-8").decode(bytes).replace(/^﻿/, ""));
+    if (!text) throw new HttpError(`"${name}" è vuoto.`, 422);
+    return { name, text };
+  }
+  throw new HttpError(`"${name}": tipo di file non supportato.`, 415);
+}
+
 /**
- * The owner's archive: titles for the snapshot and short-lived signed links,
- * which n8n downloads into a temporary folder that Claude can read.
+ * The owner's archive: titles for the snapshot and signed links for the most
+ * recent documents, which n8n downloads into Claude's working folder.
  */
-async function loadArchive(): Promise<{ archive: ArchiveDocument[]; links: { name: string; url: string }[] }> {
+async function loadArchive(supabase: Supabase): Promise<{ archive: ArchiveDocument[]; links: Link[] }> {
   const db = await fiscaleDb();
   const { data, error } = await db
     .from("documents")
@@ -111,14 +155,13 @@ async function loadArchive(): Promise<{ archive: ArchiveDocument[]; links: { nam
   }
   const rows = data ?? [];
   const withFile = rows.slice(0, MAX_DOCUMENT_FILES);
-  const supabase = await createClient();
   const { data: signed, error: signError } = withFile.length
     ? await supabase.storage.from(DOCUMENT_BUCKET).createSignedUrls(withFile.map((d) => String(d.file_path)), LINK_SECONDS)
     : { data: [], error: null };
   if (signError) console.error("[fiscale] chat signed links:", signError.message);
   const urlOf = new Map((signed ?? []).filter((s) => s.path && s.signedUrl).map((s) => [s.path as string, s.signedUrl]));
 
-  const links: { name: string; url: string }[] = [];
+  const links: Link[] = [];
   const archive = rows.map((d, i): ArchiveDocument => {
     const url = i < MAX_DOCUMENT_FILES ? urlOf.get(String(d.file_path)) : undefined;
     const file = url ? archiveFileName(links.length, String(d.title), String(d.file_path)) : null;
@@ -128,53 +171,86 @@ async function loadArchive(): Promise<{ archive: ArchiveDocument[]; links: { nam
   return { archive, links };
 }
 
+/** Photos and scans to open, newest first: names in the folder and signed links. */
+async function attachmentLinks(supabase: Supabase, paths: string[]): Promise<{ openable: Map<string, string>; links: Link[] }> {
+  const openable = new Map<string, string>();
+  const links: Link[] = [];
+  if (paths.length === 0) return { openable, links };
+  const { data, error } = await supabase.storage.from(ADVISOR_BUCKET).createSignedUrls(paths, LINK_SECONDS);
+  if (error) console.error("[fiscale] chat attachment links:", error.message);
+  for (const s of data ?? []) {
+    if (!s.path || !s.signedUrl) continue;
+    const base = s.path.split("/").pop() ?? "allegato";
+    const ext = extensionOf(base) || "jpg";
+    const name = `allegato-${String(links.length + 1).padStart(2, "0")}.${ext}`;
+    openable.set(s.path, name);
+    links.push({ name, url: safeUrl(s.signedUrl) });
+  }
+  return { openable, links };
+}
+
+/** Best effort: chat uploads older than ATTACHMENT_DAYS are removed. */
+async function removeOldAttachments(supabase: Supabase, userId: string) {
+  const { data, error } = await supabase.storage
+    .from(ADVISOR_BUCKET)
+    .list(userId, { limit: 100, sortBy: { column: "created_at", order: "asc" } });
+  if (error || !data) return;
+  const limit = Date.now() - ATTACHMENT_DAYS * 86_400_000;
+  const old = data.filter((f) => f.created_at && Date.parse(f.created_at) < limit).map((f) => `${userId}/${f.name}`);
+  if (old.length) {
+    const { error: e } = await supabase.storage.from(ADVISOR_BUCKET).remove(old);
+    if (e) console.warn("[fiscale] chat cleanup:", e.message);
+  }
+}
+
 export async function POST(request: Request) {
+  let userId: string;
   try {
-    await requireOwner();
+    userId = (await requireOwner()).id;
   } catch {
     return fail("Non autorizzato", 401);
   }
 
   try {
-    const form = await request.formData().catch(() => null);
-    if (!form) throw new HttpError("Richiesta non valida", 400);
-    let raw: unknown = null;
-    try {
-      raw = JSON.parse(String(form.get("payload") ?? ""));
-    } catch {
-      raw = null;
-    }
-    const parsed = Payload.safeParse(raw);
+    const parsed = Payload.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      throw new HttpError(`Richiesta non valida: ${issue?.path.join(".") || "payload"} ${issue?.message ?? ""}`, 422);
+      throw new HttpError(`Richiesta non valida: ${issue?.path.join(".") || "body"} ${issue?.message ?? ""}`, 422);
     }
-    const { message, model, webSearch, history } = parsed.data;
+    const { message, model, webSearch, attachments } = parsed.data;
+    if (attachments.some((a) => !ownPath(a.path, userId))) throw new HttpError("Allegato non valido.", 400);
+    // Earlier photos stay available only if they are the user's own uploads.
+    const history = parsed.data.history.slice(-ADVISOR_MAX_HISTORY * 2).map((t) => ({
+      ...t,
+      files: t.files?.map((f) => (f.path && !ownPath(f.path, userId) ? { name: f.name, text: f.text } : f)),
+    }));
 
-    const uploads = form.getAll("files").filter((f): f is File => f instanceof File && f.size > 0);
-    if (uploads.length > ADVISOR_MAX_FILES) throw new HttpError(`Al massimo ${ADVISOR_MAX_FILES} allegati per messaggio.`, 413);
-    if (uploads.reduce((s, f) => s + f.size, 0) > ADVISOR_MAX_FILES_BYTES) {
-      throw new HttpError("Allegati troppo grandi: al massimo 4 MB in tutto.", 413);
-    }
-
-    const [files, data, { archive, links }] = await Promise.all([
-      Promise.all(uploads.map(readFile)).then(capFiles),
+    const supabase = await createClient();
+    const [files, data, { archive, links: archiveLinks }] = await Promise.all([
+      Promise.all(attachments.map((a) => readAttachment(supabase, a))).then(capFiles),
       loadDataset(),
-      loadArchive(),
+      loadArchive(supabase),
+      removeOldAttachments(supabase, userId),
     ]);
 
+    // Photos and scans of this message first, then those of earlier turns (newest first).
+    const toOpen = [
+      ...files.map((f) => f.path),
+      ...history.flatMap((t) => t.files ?? []).reverse().map((f) => (f.text ? undefined : f.path)),
+    ].filter((p, i, all): p is string => Boolean(p) && all.indexOf(p) === i);
+    const { openable, links: attachmentFiles } = await attachmentLinks(supabase, toOpen.slice(0, MAX_OPENABLE_ATTACHMENTS));
+
+    // Demo data have no files of their own: only the chat's photos go to the folder.
+    const folder = [...(data.source === "supabase" ? archiveLinks : []), ...attachmentFiles];
     const asOf = todayInRome();
-    const snapshot = fiscalSnapshot({ data, dashboard: buildDashboard(data, asOf), archive, asOf });
-    // Demo data have no files of their own: no folder to read.
-    const documents = data.source === "supabase" ? links : [];
-    const system = advisorSystem({ webSearch, documents: documents.length > 0 });
-    const { prompt, turns } = buildAdvisorPrompt({
-      system,
-      snapshot,
-      history: history.slice(-ADVISOR_MAX_HISTORY * 2),
-      message,
-      files,
+    const snapshot = fiscalSnapshot({
+      data,
+      dashboard: buildDashboard(data, asOf),
+      archive: data.source === "supabase" ? archive : archive.map((a) => ({ ...a, file: null })),
+      asOf,
     });
+    const system = advisorSystem({ webSearch, documents: folder.length > 0 });
+    const { prompt, turns } = buildAdvisorPrompt({ system, snapshot, history, message, files, openable });
 
     const result = await generate({
       system,
@@ -182,15 +258,15 @@ export async function POST(request: Request) {
       model,
       effort: ADVISOR_EFFORT,
       webSearch,
-      files: documents,
+      files: folder,
       signal: request.signal,
     });
 
     console.log("[fiscale] chat", {
       model: result.model,
       webSearch,
-      files: files.length,
-      documents: documents.length,
+      attachments: files.length,
+      folder: folder.length,
       turns,
       chars: system.length + prompt.length,
       durationMs: result.durationMs,

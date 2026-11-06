@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Check, CircleAlert, Copy, FileText, Globe, Loader2, Paperclip, Plus, Sparkles, Square, X } from "lucide-react";
+import {
+  ArrowUp,
+  Check,
+  CircleAlert,
+  Copy,
+  FileText,
+  Globe,
+  Image as ImageIcon,
+  Loader2,
+  Paperclip,
+  Plus,
+  Sparkles,
+  Square,
+  X,
+} from "lucide-react";
 import { DEFAULT_MODEL, MODELS } from "@/lib/assistant/constants";
 import {
   ADVISOR_ACCEPT,
   ADVISOR_MAX_FILES,
-  ADVISOR_MAX_FILES_BYTES,
   ADVISOR_MAX_HISTORY,
   ADVISOR_MAX_MESSAGE,
   type AdvisorFile,
@@ -14,6 +27,7 @@ import {
   type AdvisorTurn,
 } from "@/lib/fiscale/advisor-shared";
 import { btn, cx } from "../components/ui";
+import { AttachmentError, isImageFile, prepareFile, uploadAttachments } from "./attachments";
 import { Markdown } from "./markdown";
 import { ModelSelect } from "./model-select";
 
@@ -66,7 +80,9 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
   const [loaded, setLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
-  const [pending, setPending] = useState<{ startedAt: number } | null>(null);
+  const [preparing, setPreparing] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [pending, setPending] = useState<{ startedAt: number; uploading: boolean } | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
@@ -100,21 +116,30 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
 
   useEffect(() => () => abort.current?.abort(), []);
 
-  function addFiles(list: FileList | null) {
-    if (!list) return;
+  /** From the picker, a paste or a drop: photos are shrunk to JPEG before they are shown. */
+  async function addFiles(list: FileList | File[] | null) {
+    const picked = Array.from(list ?? []);
+    if (picked.length === 0) return;
     setError(null);
-    const next = [...files, ...Array.from(list)].slice(0, ADVISOR_MAX_FILES);
-    if (files.length + list.length > ADVISOR_MAX_FILES) setError(`Al massimo ${ADVISOR_MAX_FILES} allegati per messaggio.`);
-    else if (next.reduce((s, f) => s + f.size, 0) > ADVISOR_MAX_FILES_BYTES) {
-      setError("Allegati troppo grandi: al massimo 4 MB in tutto.");
-      return;
+    const room = ADVISOR_MAX_FILES - files.length - preparing;
+    if (picked.length > room) setError(`Al massimo ${ADVISOR_MAX_FILES} allegati per messaggio.`);
+    const take = picked.slice(0, Math.max(0, room));
+    setPreparing((n) => n + take.length);
+    for (const file of take) {
+      try {
+        const ready = await prepareFile(file);
+        setFiles((current) => [...current, ready]);
+      } catch (e) {
+        setError(e instanceof AttachmentError ? e.message : `Non riesco ad allegare "${file.name}".`);
+      } finally {
+        setPreparing((n) => n - 1);
+      }
     }
-    setFiles(next);
   }
 
   async function send(text: string) {
     const message = text.trim();
-    if (!message || pending) return;
+    if (!message || pending || preparing > 0) return;
     if (message.length > ADVISOR_MAX_MESSAGE) {
       setError(`Messaggio troppo lungo: al massimo ${ADVISOR_MAX_MESSAGE.toLocaleString("it-IT")} caratteri.`);
       return;
@@ -126,24 +151,35 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
       content: message,
       files: sentFiles.length ? sentFiles.map((f) => ({ name: f.name, text: "" })) : undefined,
     };
+    // Earlier files go back with their text, or with their stored copy for photos and scans.
     const history: AdvisorTurn[] = messages
       .slice(-ADVISOR_MAX_HISTORY * 2)
-      .map(({ role, content, files: f }) => ({ role, content, ...(f?.length ? { files: f.filter((x) => x.text) } : {}) }));
+      .map(({ role, content, files: f }) => ({
+        role,
+        content,
+        ...(f?.length ? { files: f.filter((x) => x.text || x.path) } : {}),
+      }));
 
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setFiles([]);
     setError(null);
-    setPending({ startedAt: Date.now() });
+    setPending({ startedAt: Date.now(), uploading: sentFiles.length > 0 });
 
-    const form = new FormData();
-    form.set("payload", JSON.stringify({ message, model: prefs.model, webSearch: prefs.webSearch, history }));
-    for (const f of sentFiles) form.append("files", f);
     const controller = new AbortController();
     abort.current = controller;
 
     try {
-      const res = await fetch("/api/fiscale/chat", { method: "POST", body: form, signal: controller.signal });
+      // Straight to the private bucket: phone photos would not fit in a request to the site.
+      const attachments = await uploadAttachments(sentFiles);
+      if (controller.signal.aborted) throw new Error("aborted");
+      setPending((p) => (p ? { ...p, uploading: false } : p));
+      const res = await fetch("/api/fiscale/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, model: prefs.model, webSearch: prefs.webSearch, history, attachments }),
+        signal: controller.signal,
+      });
       const data = (await res.json().catch(() => null)) as AdvisorReply | { ok: false; error: string } | null;
       if (!res.ok || !data || !data.ok) {
         throw new Error((data && !data.ok && data.error) || `Errore ${res.status}`);
@@ -177,8 +213,9 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
     textarea.current?.focus();
   }
 
-  const status =
-    elapsed < 6
+  const status = pending?.uploading
+    ? "Carico gli allegati…"
+    : elapsed < 6
       ? "Leggo i tuoi dati fiscali…"
       : prefs.webSearch && elapsed < 60
         ? "Ragiono e controllo le fonti ufficiali…"
@@ -220,7 +257,8 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
               <h2 className="mt-4 text-[17px] font-semibold">Fai una domanda sulla tua partita IVA</h2>
               <p className="mt-1.5 max-w-[52ch] text-pretty text-sm text-[var(--fi-ink-2)]">
                 Conosce fatture, incassi, F24 pagati e ricevute, crediti e scadenze, e può aprire i documenti del tuo archivio. Puoi
-                anche incollare un&apos;email o allegare un PDF, per esempio un avviso di pagamento.
+                anche incollare un&apos;email o allegare foto, PDF, Word, PowerPoint e file di testo, per esempio un avviso di
+                pagamento.
               </p>
               <div className="mt-6 grid w-full gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
@@ -274,23 +312,37 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
             </p>
           )}
 
-          <div className="rounded-xl border border-[var(--fi-rule)] bg-white shadow-[0_1px_2px_rgba(18,22,43,0.06)] transition-colors focus-within:border-[var(--fi-action)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--fi-action)_18%,transparent)]">
-            {files.length > 0 && (
+          <div
+            onDragOver={(e) => {
+              if (!e.dataTransfer.types.includes("Files")) return;
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+            }}
+            onDrop={(e) => {
+              if (!e.dataTransfer.files.length) return;
+              e.preventDefault();
+              setDragging(false);
+              void addFiles(e.dataTransfer.files);
+            }}
+            className={cx(
+              "rounded-xl border bg-white shadow-[0_1px_2px_rgba(18,22,43,0.06)] transition-colors focus-within:border-[var(--fi-action)] focus-within:shadow-[0_0_0_3px_color-mix(in_srgb,var(--fi-action)_18%,transparent)]",
+              dragging ? "border-dashed border-[var(--fi-action)] bg-[var(--fi-action-soft)]" : "border-[var(--fi-rule)]",
+            )}
+          >
+            {(files.length > 0 || preparing > 0) && (
               <ul className="flex flex-wrap gap-1.5 px-3 pt-3">
                 {files.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="flex max-w-full items-center gap-1.5 rounded-md bg-[var(--fi-fill)] py-1 pl-2 pr-1 text-xs">
-                    <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
-                    <span className="truncate">{f.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                      aria-label={`Rimuovi ${f.name}`}
-                      className={cx("rounded p-0.5 text-[var(--fi-muted)] hover:bg-black/5 hover:text-[var(--fi-ink)]", focus)}
-                    >
-                      <X aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
+                  <AttachmentChip key={`${f.name}-${f.size}-${i}`} file={f} onRemove={() => setFiles(files.filter((_, j) => j !== i))} />
                 ))}
+                {preparing > 0 && (
+                  <li className="flex items-center gap-1.5 rounded-md bg-[var(--fi-fill)] px-2 py-1 text-xs text-[var(--fi-muted)]">
+                    <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" />
+                    Preparo {preparing === 1 ? "il file" : `${preparing} file`}…
+                  </li>
+                )}
               </ul>
             )}
 
@@ -308,8 +360,15 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
                   send(input);
                 }
               }}
+              onPaste={(e) => {
+                // A pasted screenshot or copied file becomes an attachment; text pastes as usual.
+                const pasted = Array.from(e.clipboardData.files);
+                if (pasted.length === 0) return;
+                e.preventDefault();
+                void addFiles(pasted);
+              }}
               rows={2}
-              placeholder="Scrivi la tua domanda o incolla un'email…"
+              placeholder="Scrivi la tua domanda, incolla un'email o uno screenshot…"
               style={{ border: 0, boxShadow: "none", background: "transparent", resize: "none" }}
               className="block max-h-[40vh] min-h-[56px] px-3.5 pt-3 [field-sizing:content]"
             />
@@ -322,15 +381,16 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
                 accept={ADVISOR_ACCEPT}
                 className="hidden"
                 onChange={(e) => {
-                  addFiles(e.target.files);
+                  const list = Array.from(e.target.files ?? []);
                   e.target.value = "";
+                  void addFiles(list);
                 }}
               />
               <button
                 type="button"
                 onClick={() => fileInput.current?.click()}
-                disabled={files.length >= ADVISOR_MAX_FILES}
-                title="Allega PDF o testo"
+                disabled={files.length + preparing >= ADVISOR_MAX_FILES}
+                title="Allega foto, PDF, Word, PowerPoint o testo (puoi anche trascinarli o incollarli)"
                 aria-label="Allega file"
                 className={cx(
                   "grid h-8 w-8 place-items-center rounded-lg text-[var(--fi-ink-2)] transition-colors hover:bg-[var(--fi-fill)] hover:text-[var(--fi-ink)] disabled:opacity-40",
@@ -370,7 +430,7 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
                 ) : (
                   <button
                     type="submit"
-                    disabled={!input.trim()}
+                    disabled={!input.trim() || preparing > 0}
                     aria-label="Invia"
                     className={cx(
                       "grid h-8 w-8 place-items-center rounded-lg bg-[var(--fi-action)] text-white transition-colors hover:bg-[var(--fi-action-hover)] disabled:cursor-not-allowed disabled:opacity-40",
@@ -402,12 +462,54 @@ function UserMessage({ m }: { m: Message }) {
         <ul className="flex max-w-[85%] flex-wrap justify-end gap-1.5">
           {m.files.map((f, i) => (
             <li key={`${f.name}-${i}`} className="flex max-w-full items-center gap-1.5 rounded-md border border-[var(--fi-rule)] px-2 py-1 text-xs text-[var(--fi-ink-2)]">
-              <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+              {isImageFile(f) ? (
+                <ImageIcon aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+              ) : (
+                <FileText aria-hidden className="h-3.5 w-3.5 shrink-0 text-[var(--fi-muted)]" />
+              )}
               <span className="truncate">{f.name}</span>
             </li>
           ))}
         </ul>
       )}
+    </li>
+  );
+}
+
+/** A file ready to send: a thumbnail for photos, an icon for documents. */
+function AttachmentChip({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const image = isImageFile(file);
+  const [preview, setPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!image) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, image]);
+
+  return (
+    <li className="flex max-w-full items-center gap-1.5 rounded-md bg-[var(--fi-fill)] py-1 pl-1 pr-1 text-xs">
+      {preview ? (
+        // eslint-disable-next-line @next/next/no-img-element -- local preview of a file not uploaded yet
+        <img src={preview} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+      ) : (
+        <span className="grid h-6 w-6 shrink-0 place-items-center">
+          {image ? (
+            <ImageIcon aria-hidden className="h-3.5 w-3.5 text-[var(--fi-muted)]" />
+          ) : (
+            <FileText aria-hidden className="h-3.5 w-3.5 text-[var(--fi-muted)]" />
+          )}
+        </span>
+      )}
+      <span className="truncate">{file.name}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Rimuovi ${file.name}`}
+        className={cx("rounded p-0.5 text-[var(--fi-muted)] hover:bg-black/5 hover:text-[var(--fi-ink)]", focus)}
+      >
+        <X aria-hidden className="h-3.5 w-3.5" />
+      </button>
     </li>
   );
 }
