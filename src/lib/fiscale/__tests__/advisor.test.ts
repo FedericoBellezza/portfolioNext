@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AdvisorInputError, advisorSystem, buildAdvisorPrompt, capFiles, fiscalSnapshot, FILE_CHARS } from "../advisor";
+import { AdvisorInputError, advisorSystem, archiveFileName, buildAdvisorPrompt, capFiles, fiscalSnapshot, FILE_CHARS } from "../advisor";
 import { buildDashboard } from "../data/dashboard";
 import { demoDataset } from "../data/demo";
 import type { FiscalDataset } from "../data/types";
@@ -30,14 +30,20 @@ const asOf = "2026-11-06";
 const snapshot = fiscalSnapshot({
   data,
   dashboard: buildDashboard(data, asOf),
-  archive: [{ title: "Visura camerale", category: "chamber", year: 2026 }],
+  archive: [
+    { id: "d1", title: "Diritto camerale 2026 (quietanza banca)", category: "f24", year: 2026, file: "01-diritto-camerale-2026-quietanza-banca.pdf" },
+    { id: "v1", title: "Visura camerale", category: "chamber", year: 2026, file: "02-visura-camerale.pdf" },
+    { id: "old", title: "Vecchia comunicazione", category: "other", year: 2025, file: null },
+  ],
   asOf,
 }).replace(/ /g, " ");
 
 describe("fiscal snapshot", () => {
   it("shows a payment with its code, proof and what Claude read in the file", () => {
     expect(snapshot).toContain("02/07/2026 · Diritto camerale 2026 · Erario/altro · codice 3850 · 53,00 € · addebitato in banca · prova: confermato da ricevuta definitiva");
-    expect(snapshot).toContain('file "Diritto camerale 2026 (quietanza banca)": Claude lo ha letto: Quietanza della banca (definitivo), data 02/07/2026, importo 53,00 €');
+    expect(snapshot).toContain(
+      'file "Diritto camerale 2026 (quietanza banca)" (01-diritto-camerale-2026-quietanza-banca.pdf): Claude lo ha letto: Quietanza della banca (definitivo), data 02/07/2026, importo 53,00 €',
+    );
   });
 
   it("gives the calendar with the moved deadline and the item paid", () => {
@@ -45,8 +51,13 @@ describe("fiscal snapshot", () => {
     expect(snapshot).toContain("spostata al 20/07/2026");
   });
 
-  it("lists the archive by category and says the data are real", () => {
-    expect(snapshot).toContain("- Camera di commercio e visure: Visura camerale (2026)");
+  it("lists the archive with the file to open, and the title only when there is no file", () => {
+    expect(snapshot).toContain("da aprire con Read se servono");
+    expect(snapshot).toContain("- 02-visura-camerale.pdf · Camera di commercio e visure · Visura camerale (2026)");
+    expect(snapshot).toContain("- Altro · Vecchia comunicazione (2025)");
+  });
+
+  it("says the data are real", () => {
     expect(snapshot).toContain("Dati reali registrati");
     expect(snapshot).toContain("Oggi: 06/11/2026.");
   });
@@ -61,6 +72,21 @@ describe("system prompt", () => {
   it("asks for official sources only when web search is on", () => {
     expect(advisorSystem({ webSearch: true })).toContain("agenziaentrate.gov.it");
     expect(advisorSystem({ webSearch: false })).toContain("La ricerca web è disattivata");
+  });
+
+  it("tells Claude about the archive files only when they are there", () => {
+    expect(advisorSystem({ webSearch: true, documents: true })).toContain("strumento Read");
+    expect(advisorSystem({ webSearch: true })).not.toContain("strumento Read");
+  });
+});
+
+describe("archive file names", () => {
+  it("are numbered, ASCII and keep the extension", () => {
+    expect(archiveFileName(6, "Dichiarazione dei redditi 2026 (ricevuta d'invio) – più", "u/x/Dichiarazione.PDF")).toBe(
+      "07-dichiarazione-dei-redditi-2026-ricevuta-d-invio-piu.pdf",
+    );
+    expect(archiveFileName(0, "***", "u/a.png")).toBe("01-documento.png");
+    expect(archiveFileName(11, "x".repeat(200), "u/a.pdf")).toHaveLength(3 + 80 + 4);
   });
 });
 

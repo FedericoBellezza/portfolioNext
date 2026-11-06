@@ -4,7 +4,9 @@ import { DEFAULT_EFFORT, DEFAULT_MODEL, EFFORTS, MODELS } from "./constants";
 // Unico punto in cui il testo viene generato. Oggi: webhook n8n -> SSH -> `claude -p` sul server
 // (abbonamento, nessuna API Anthropic). Per passare ad altro basta riscrivere questa funzione:
 // riceve { system, prompt, model, effort, webSearch } e restituisce { text, model, costUsd, durationMs }.
-// webSearch: true fa usare a Claude solo la ricerca web (chat fiscale); senza, nessuno strumento.
+// webSearch: true fa usare a Claude la ricerca web (chat fiscale); senza, nessuno strumento.
+// files: [{ name, url }] link firmati di Supabase Storage: n8n li scarica in una cartella temporanea
+// e Claude li può aprire solo lì (chat fiscale, archivio documenti).
 
 // Sotto il maxDuration delle route (300 s), così l'errore è nostro e pulito invece di un timeout della piattaforma.
 const DEFAULT_TIMEOUT_MS = 290000;
@@ -12,7 +14,11 @@ const DEFAULT_TIMEOUT_MS = 290000;
 const MODEL_IDS = new Set(MODELS.map((item) => item.id));
 const EFFORT_IDS = new Set(EFFORTS.map((item) => item.id));
 
-export async function generate({ system, prompt, model, effort, webSearch = false, signal }) {
+/**
+ * @param {{ system: string, prompt: string, model?: string, effort?: string, webSearch?: boolean,
+ *   files?: { name: string, url: string }[], signal?: AbortSignal }} args
+ */
+export async function generate({ system, prompt, model, effort, webSearch = false, files = [], signal }) {
   const url = process.env.N8N_ASSISTANT_URL;
   const secret = process.env.N8N_ASSISTANT_SECRET;
   if (!url || !secret) {
@@ -33,6 +39,7 @@ export async function generate({ system, prompt, model, effort, webSearch = fals
         model: MODEL_IDS.has(model) ? model : DEFAULT_MODEL,
         effort: EFFORT_IDS.has(effort) ? effort : DEFAULT_EFFORT,
         webSearch: webSearch === true,
+        ...(files.length ? { files } : {}),
       }),
       signal: combined,
       cache: "no-store",

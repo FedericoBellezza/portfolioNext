@@ -4,6 +4,7 @@ import { generate } from "@/lib/assistant/generate";
 import {
   AdvisorInputError,
   advisorSystem,
+  archiveFileName,
   buildAdvisorPrompt,
   capFiles,
   fiscalSnapshot,
@@ -21,11 +22,14 @@ import {
 import { requireOwner } from "@/lib/fiscale/auth";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
+import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
 import { pdfText } from "@/lib/fiscale/file-text";
+import { createClient } from "@/lib/supabase/server";
 
 // Fiscal chat: the answer comes from Claude Code on the owner's server through
-// the n8n webhook of the study assistant, with web search turned on. 300 s is
-// the route limit; generate() stops just before it.
+// the n8n webhook of the study assistant, with web search and the archive
+// documents (downloaded by n8n into a folder Claude can read). 300 s is the
+// route limit; generate() stops just before it.
 export const maxDuration = 300;
 
 const ADVISOR_EFFORT = "medium";
@@ -82,19 +86,46 @@ async function readFile(file: File): Promise<AdvisorFile> {
   throw new HttpError(`"${name}": allega PDF o file di testo (txt, eml, md, xml, csv). Per le immagini incolla il testo.`, 415);
 }
 
-async function loadArchive(): Promise<ArchiveDocument[]> {
+/** Files n8n accepts per request: the most recent documents go to Claude's folder, the rest are listed by title. */
+const MAX_DOCUMENT_FILES = 80;
+/** Long enough for n8n to download the files before Claude starts, then useless. */
+const LINK_SECONDS = 600;
+/** n8n refuses links with spaces, quotes or backslashes (they end up in a shell command). */
+const safeUrl = (url: string) =>
+  url.replace(/[\s'"`\\]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0")}`);
+
+/**
+ * The owner's archive: titles for the snapshot and short-lived signed links,
+ * which n8n downloads into a temporary folder that Claude can read.
+ */
+async function loadArchive(): Promise<{ archive: ArchiveDocument[]; links: { name: string; url: string }[] }> {
   const db = await fiscaleDb();
   const { data, error } = await db
     .from("documents")
-    .select("title, category, year")
-    .order("year", { ascending: false, nullsFirst: false })
+    .select("id, title, category, year, file_path")
     .order("created_at", { ascending: false })
     .limit(300);
   if (error) {
     console.error("[fiscale] chat archive:", error.message);
-    return [];
+    return { archive: [], links: [] };
   }
-  return (data ?? []).map((d) => ({ title: String(d.title), category: String(d.category), year: d.year as number | null }));
+  const rows = data ?? [];
+  const withFile = rows.slice(0, MAX_DOCUMENT_FILES);
+  const supabase = await createClient();
+  const { data: signed, error: signError } = withFile.length
+    ? await supabase.storage.from(DOCUMENT_BUCKET).createSignedUrls(withFile.map((d) => String(d.file_path)), LINK_SECONDS)
+    : { data: [], error: null };
+  if (signError) console.error("[fiscale] chat signed links:", signError.message);
+  const urlOf = new Map((signed ?? []).filter((s) => s.path && s.signedUrl).map((s) => [s.path as string, s.signedUrl]));
+
+  const links: { name: string; url: string }[] = [];
+  const archive = rows.map((d, i): ArchiveDocument => {
+    const url = i < MAX_DOCUMENT_FILES ? urlOf.get(String(d.file_path)) : undefined;
+    const file = url ? archiveFileName(links.length, String(d.title), String(d.file_path)) : null;
+    if (url && file) links.push({ name: file, url: safeUrl(url) });
+    return { id: String(d.id), title: String(d.title), category: String(d.category), year: d.year as number | null, file };
+  });
+  return { archive, links };
 }
 
 export async function POST(request: Request) {
@@ -126,7 +157,7 @@ export async function POST(request: Request) {
       throw new HttpError("Allegati troppo grandi: al massimo 4 MB in tutto.", 413);
     }
 
-    const [files, data, archive] = await Promise.all([
+    const [files, data, { archive, links }] = await Promise.all([
       Promise.all(uploads.map(readFile)).then(capFiles),
       loadDataset(),
       loadArchive(),
@@ -134,7 +165,9 @@ export async function POST(request: Request) {
 
     const asOf = todayInRome();
     const snapshot = fiscalSnapshot({ data, dashboard: buildDashboard(data, asOf), archive, asOf });
-    const system = advisorSystem({ webSearch });
+    // Demo data have no files of their own: no folder to read.
+    const documents = data.source === "supabase" ? links : [];
+    const system = advisorSystem({ webSearch, documents: documents.length > 0 });
     const { prompt, turns } = buildAdvisorPrompt({
       system,
       snapshot,
@@ -143,12 +176,21 @@ export async function POST(request: Request) {
       files,
     });
 
-    const result = await generate({ system, prompt, model, effort: ADVISOR_EFFORT, webSearch, signal: request.signal });
+    const result = await generate({
+      system,
+      prompt,
+      model,
+      effort: ADVISOR_EFFORT,
+      webSearch,
+      files: documents,
+      signal: request.signal,
+    });
 
     console.log("[fiscale] chat", {
       model: result.model,
       webSearch,
       files: files.length,
+      documents: documents.length,
       turns,
       chars: system.length + prompt.length,
       durationMs: result.durationMs,

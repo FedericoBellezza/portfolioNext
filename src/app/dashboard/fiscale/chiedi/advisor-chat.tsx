@@ -219,8 +219,8 @@ export function AdvisorChat({ demo }: { demo: boolean }) {
               </span>
               <h2 className="mt-4 text-[17px] font-semibold">Fai una domanda sulla tua partita IVA</h2>
               <p className="mt-1.5 max-w-[52ch] text-pretty text-sm text-[var(--fi-ink-2)]">
-                Conosce fatture, incassi, F24 pagati e ricevute, crediti e scadenze. Puoi incollare un&apos;email o allegare un PDF, per
-                esempio un avviso di pagamento.
+                Conosce fatture, incassi, F24 pagati e ricevute, crediti e scadenze, e può aprire i documenti del tuo archivio. Puoi
+                anche incollare un&apos;email o allegare un PDF, per esempio un avviso di pagamento.
               </p>
               <div className="mt-6 grid w-full gap-2 sm:grid-cols-2">
                 {SUGGESTIONS.map((s) => (
