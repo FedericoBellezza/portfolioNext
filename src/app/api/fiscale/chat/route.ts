@@ -42,9 +42,13 @@ type Link = { name: string; url: string };
 
 const ADVISOR_EFFORT = "medium";
 const TEXT_FILE = /^(txt|eml|md|xml|csv)$/;
-/** n8n takes up to 80 files: the archive leaves room for the chat's photos and scans. */
-const MAX_DOCUMENT_FILES = 70;
-const MAX_OPENABLE_ATTACHMENTS = 10;
+/** Files n8n takes per request (MAX_FILES in the workflow): the chat's files first, then the archive. */
+const MAX_FOLDER_FILES = 150;
+const MAX_ARCHIVE_FILES = 100;
+/** Photos and long files of earlier turns that go back to the folder. */
+const MAX_EARLIER_FILES = 20;
+/** Files Claude opens whole with Read; Word and PowerPoint get a text copy instead. */
+const CLAUDE_READABLE = /^(pdf|txt|md|csv|xml|eml)$/;
 /** Long enough for n8n to download the files before Claude starts, then useless. */
 const LINK_SECONDS = 600;
 /** Chat attachments are removed this long after upload. */
@@ -139,10 +143,41 @@ async function readAttachment(supabase: Supabase, a: { path: string; name: strin
 }
 
 /**
- * The owner's archive: titles for the snapshot and signed links for the most
- * recent documents, which n8n downloads into Claude's working folder.
+ * A long attachment keeps an excerpt in the prompt and its whole text in
+ * Claude's folder: the file itself when Claude can read it, a text copy for
+ * Word and PowerPoint. Without a copy the excerpt alone goes on.
  */
-async function loadArchive(supabase: Supabase): Promise<{ archive: ArchiveDocument[]; links: Link[] }> {
+async function keepWholeText(
+  supabase: Supabase,
+  userId: string,
+  read: AdvisorFile,
+  capped: AdvisorFile,
+  original: string,
+): Promise<AdvisorFile> {
+  if (capped.path || capped.text === read.text) return capped;
+  if (CLAUDE_READABLE.test(extensionOf(original))) return { ...capped, path: original };
+  const base = read.name
+    .replace(/\.[^.]+$/, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^\w.-]+/g, "_")
+    .slice(0, 80);
+  const path = `${userId}/${crypto.randomUUID()}-${base || "testo"}.txt`;
+  const { error } = await supabase.storage
+    .from(ADVISOR_BUCKET)
+    .upload(path, new Blob([read.text], { type: "text/plain" }), { contentType: "text/plain" });
+  if (error) {
+    console.error("[fiscale] chat text copy:", error.message);
+    return capped;
+  }
+  return { ...capped, path };
+}
+
+/**
+ * The owner's archive: titles for the snapshot and signed links for the most
+ * recent documents (as many as `slots`), which n8n downloads into Claude's working folder.
+ */
+async function loadArchive(supabase: Supabase, slots: number): Promise<{ archive: ArchiveDocument[]; links: Link[] }> {
   const db = await fiscaleDb();
   const { data, error } = await db
     .from("documents")
@@ -154,7 +189,7 @@ async function loadArchive(supabase: Supabase): Promise<{ archive: ArchiveDocume
     return { archive: [], links: [] };
   }
   const rows = data ?? [];
-  const withFile = rows.slice(0, MAX_DOCUMENT_FILES);
+  const withFile = rows.slice(0, slots);
   const { data: signed, error: signError } = withFile.length
     ? await supabase.storage.from(DOCUMENT_BUCKET).createSignedUrls(withFile.map((d) => String(d.file_path)), LINK_SECONDS)
     : { data: [], error: null };
@@ -163,7 +198,7 @@ async function loadArchive(supabase: Supabase): Promise<{ archive: ArchiveDocume
 
   const links: Link[] = [];
   const archive = rows.map((d, i): ArchiveDocument => {
-    const url = i < MAX_DOCUMENT_FILES ? urlOf.get(String(d.file_path)) : undefined;
+    const url = i < slots ? urlOf.get(String(d.file_path)) : undefined;
     const file = url ? archiveFileName(links.length, String(d.title), String(d.file_path)) : null;
     if (url && file) links.push({ name: file, url: safeUrl(url) });
     return { id: String(d.id), title: String(d.title), category: String(d.category), year: d.year as number | null, file };
@@ -226,19 +261,31 @@ export async function POST(request: Request) {
     }));
 
     const supabase = await createClient();
-    const [files, data, { archive, links: archiveLinks }] = await Promise.all([
-      Promise.all(attachments.map((a) => readAttachment(supabase, a))).then(capFiles),
+    const [read, data] = await Promise.all([
+      Promise.all(attachments.map((a) => readAttachment(supabase, a))),
       loadDataset(),
-      loadArchive(supabase),
       removeOldAttachments(supabase, userId),
     ]);
+    // Many or long files share the text room: what is cut stays readable whole in the folder.
+    const capped = capFiles(read);
+    const files = await Promise.all(
+      capped.map((f, i) => keepWholeText(supabase, userId, read[i], f, attachments[i].path)),
+    );
 
-    // Photos and scans of this message first, then those of earlier turns (newest first).
-    const toOpen = [
-      ...files.map((f) => f.path),
-      ...history.flatMap((t) => t.files ?? []).reverse().map((f) => (f.text ? undefined : f.path)),
-    ].filter((p, i, all): p is string => Boolean(p) && all.indexOf(p) === i);
-    const { openable, links: attachmentFiles } = await attachmentLinks(supabase, toOpen.slice(0, MAX_OPENABLE_ATTACHMENTS));
+    // Files of this message first, then those of earlier turns (newest first).
+    const current = files.map((f) => f.path).filter((p): p is string => Boolean(p));
+    const earlier = history
+      .flatMap((t) => t.files ?? [])
+      .reverse()
+      .map((f) => f.path)
+      .filter((p): p is string => Boolean(p) && !current.includes(p as string))
+      .filter((p, i, all) => all.indexOf(p) === i)
+      .slice(0, MAX_EARLIER_FILES);
+    const toOpen = [...current, ...earlier].slice(0, MAX_FOLDER_FILES);
+    const [{ openable, links: attachmentFiles }, { archive, links: archiveLinks }] = await Promise.all([
+      attachmentLinks(supabase, toOpen),
+      loadArchive(supabase, Math.max(0, Math.min(MAX_ARCHIVE_FILES, MAX_FOLDER_FILES - toOpen.length))),
+    ]);
 
     // Demo data have no files of their own: only the chat's photos go to the folder.
     const folder = [...(data.source === "supabase" ? archiveLinks : []), ...attachmentFiles];

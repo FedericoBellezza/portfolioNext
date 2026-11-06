@@ -1,7 +1,8 @@
 /** Limits and types of the fiscal chat shared by page and route (client-safe, no server deps). */
 
 export const ADVISOR_MAX_MESSAGE = 12_000;
-export const ADVISOR_MAX_FILES = 5;
+/** Safety cap only: Claude's folder takes up to 150 files, archive included (see the chat route). */
+export const ADVISOR_MAX_FILES = 100;
 /** Per file, after photos are shrunk in the browser (the bucket allows 20 MB). */
 export const ADVISOR_MAX_FILE_BYTES = 15 * 1024 * 1024;
 /** Turns of the conversation sent back with each question. */
@@ -34,9 +35,9 @@ export const isAdvisorFile = (name: string) => advisorFileType(name) !== null ||
 
 export interface AdvisorFile {
   name: string;
-  /** Text read from the file, kept so follow-up questions can still use it; empty for photos and scans. */
+  /** Text read from the file (an excerpt when it is long), kept for follow-up questions; empty for photos and scans. */
   text: string;
-  /** Stored file Claude opens by itself (photos, scans): set when there is no text to read. */
+  /** Stored file Claude opens by itself: photos, scans, and the whole text when `text` is only an excerpt. */
   path?: string;
 }
 

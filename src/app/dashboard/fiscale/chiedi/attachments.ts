@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 const MAX_SIDE = 2000;
 /** PNG and JPEG under this size and within MAX_SIDE are uploaded as they are. */
 const KEEP_BYTES = 1.5 * 1024 * 1024;
+const UPLOAD_PARALLEL = 6;
 
 export class AttachmentError extends Error {}
 
@@ -78,14 +79,24 @@ export async function uploadAttachments(files: File[]): Promise<{ path: string; 
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new AttachmentError("Sessione scaduta: ricarica la pagina.");
   const userId = data.user.id;
-  return Promise.all(
-    files.map(async (file) => {
-      const path = `${userId}/${crypto.randomUUID()}-${slug(file.name)}`;
-      const { error } = await supabase.storage
-        .from(ADVISOR_BUCKET)
-        .upload(path, file, { contentType: advisorFileType(file.name) ?? file.type });
-      if (error) throw new AttachmentError(`"${file.name}": caricamento non riuscito (${error.message}).`);
-      return { path, name: file.name };
-    }),
-  );
+  const upload = async (file: File) => {
+    const path = `${userId}/${crypto.randomUUID()}-${slug(file.name)}`;
+    const { error } = await supabase.storage
+      .from(ADVISOR_BUCKET)
+      .upload(path, file, { contentType: advisorFileType(file.name) ?? file.type });
+    if (error) throw new AttachmentError(`"${file.name}": caricamento non riuscito (${error.message}).`);
+    return { path, name: file.name };
+  };
+
+  // A few at a time: dozens of photos would otherwise open dozens of connections at once.
+  const out: { path: string; name: string }[] = new Array(files.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < files.length) {
+      const i = next++;
+      out[i] = await upload(files[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(UPLOAD_PARALLEL, files.length) }, worker));
+  return out;
 }

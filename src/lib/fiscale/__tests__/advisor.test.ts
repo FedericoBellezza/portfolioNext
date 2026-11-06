@@ -160,3 +160,26 @@ describe("chat file types", () => {
     expect(advisorFileType("Relazione.DOCX")).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
   });
 });
+
+describe("long attachments", () => {
+  it("send an excerpt and point to the whole text in the folder", () => {
+    const doc = { name: "contratto.docx", text: "estratto", path: "u/9-contratto.txt" };
+    const withFile = buildAdvisorPrompt({
+      system: "S",
+      snapshot: "dati",
+      history: [],
+      message: "riassumi",
+      files: [doc],
+      openable: new Map([[doc.path, "allegato-01.txt"]]),
+    });
+    expect(withFile.prompt).toContain("<<<\nestratto\n>>>\n(Estratto: il testo completo è nel file allegato-01.txt");
+
+    const gone = buildAdvisorPrompt({ system: "S", snapshot: "dati", history: [], message: "riassumi", files: [doc] });
+    expect(gone.prompt).toContain("(Estratto: il testo completo non è più disponibile.)");
+  });
+
+  it("keep short files whole, with no note", () => {
+    const { prompt } = buildAdvisorPrompt({ system: "S", snapshot: "dati", history: [], message: "?", files: [{ name: "n.txt", text: "breve" }] });
+    expect(prompt).toContain("### n.txt\n<<<\nbreve\n>>>\n</allegati>");
+  });
+});
