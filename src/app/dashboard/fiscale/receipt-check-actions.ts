@@ -7,7 +7,6 @@ import type { FileCheck } from "@/lib/fiscale/data/types";
 import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
 import { pdfText } from "@/lib/fiscale/file-text";
 import { loadDataset } from "@/lib/fiscale/data/load";
-import { pdfText } from "@/lib/fiscale/pdf-text";
 import { formatEUR as eurText } from "@/lib/fiscale/money";
 import {
   CHECK_BATCH,

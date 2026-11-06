@@ -21,7 +21,7 @@ import {
 import { requireOwner } from "@/lib/fiscale/auth";
 import { buildDashboard, todayInRome } from "@/lib/fiscale/data/dashboard";
 import { fiscaleDb, loadDataset } from "@/lib/fiscale/data/load";
-import { pdfText } from "@/lib/fiscale/pdf-text";
+import { pdfText } from "@/lib/fiscale/file-text";
 
 // Fiscal chat: the answer comes from Claude Code on the owner's server through
 // the n8n webhook of the study assistant, with web search turned on. 300 s is
