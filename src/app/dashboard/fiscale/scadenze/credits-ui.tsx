@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { btn, cx } from "../components/ui";
 import { createCreditAction, updateCreditAmountAction, type CreditState } from "./credit-actions";
+import { Spinner } from "../components/form-buttons";
 
 const fieldLabel = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 
@@ -28,7 +29,7 @@ export function CreditForm({ defaultYear, demo }: { defaultYear: number; demo: b
     if (state?.ok) ref.current?.reset();
   }, [state]);
   return (
-    <form ref={ref} onSubmit={submit(action)} className="grid gap-3 sm:grid-cols-2">
+    <form ref={ref} onSubmit={submit(action)} className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div>
         <label htmlFor="cr-kind" className={fieldLabel}>Tipo</label>
         <select id="cr-kind" name="kind" defaultValue="irpef">
@@ -59,6 +60,7 @@ export function CreditForm({ defaultYear, demo }: { defaultYear: number; demo: b
       </div>
       <div className="sm:col-span-2">
         <button type="submit" className={btn.primary} disabled={pending || demo}>
+          {pending && <Spinner className="h-4 w-4" />}
           {pending ? "Salvataggio…" : "Aggiungi credito"}
         </button>
       </div>
@@ -90,6 +92,7 @@ export function CreditAmountEdit({ id, amount }: { id: string; amount: number })
         <input id={`cr-edit-${id}`} name="amount" inputMode="decimal" defaultValue={(amount / 100).toFixed(2).replace(".", ",")} />
       </div>
       <button type="submit" className={btn.outline} disabled={pending}>
+        {pending && <Spinner className="h-4 w-4" />}
         Salva
       </button>
       <button type="button" className="text-xs text-[var(--fi-ink-2)] underline" onClick={() => setOpen(false)}>

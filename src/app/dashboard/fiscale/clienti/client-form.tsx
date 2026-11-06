@@ -5,6 +5,7 @@ import { UserPlus } from "lucide-react";
 import { CLIENT_KIND_LABEL, CLIENT_KINDS, type ClientKind } from "@/lib/fiscale/client-kinds";
 import { btn, cx } from "../components/ui";
 import { createClientAction, type ClientFormState } from "./actions";
+import { Spinner } from "../components/form-buttons";
 
 const label = "mb-1 block text-xs font-medium text-[var(--fi-ink-2)]";
 const hint = "mt-1 text-xs text-[var(--fi-muted)]";
@@ -47,7 +48,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
       </div>
 
       {kind === "individual" ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="firstName" className={label}>Nome</label>
             <input id="firstName" name="firstName" autoComplete="off" aria-invalid={invalid("firstName")} />
@@ -64,7 +65,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="vatNumber" className={label}>{foreign ? "Partita IVA / VAT number" : "Partita IVA"}</label>
           <input id="vatNumber" name="vatNumber" autoComplete="off" aria-invalid={invalid("vatNumber")} />
@@ -78,7 +79,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
       </div>
 
       {!foreign && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="sdiCode" className={label}>{pa ? "Codice univoco ufficio (6 caratteri)" : "Codice destinatario SDI"}</label>
             <input id="sdiCode" name="sdiCode" autoComplete="off" maxLength={7} aria-invalid={invalid("sdiCode")} />
@@ -91,7 +92,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-6">
         <div className="sm:col-span-4">
           <label htmlFor="address" className={label}>Indirizzo</label>
           <input id="address" name="address" autoComplete="off" aria-invalid={invalid("address")} />
@@ -121,7 +122,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="email" className={label}>Email (facoltativa)</label>
           <input id="email" name="email" type="email" autoComplete="off" aria-invalid={invalid("email")} />
@@ -141,7 +142,7 @@ export function ClientForm({ demo }: { demo: boolean }) {
         </p>
       )}
       <button type="submit" className={btn.primary} disabled={pending || demo}>
-        <UserPlus aria-hidden className="h-4 w-4" />
+        {pending ? <Spinner className="h-4 w-4" /> : <UserPlus aria-hidden className="h-4 w-4" />}
         {pending ? "Salvataggio…" : demo ? "Crea il profilo fiscale per salvare" : "Aggiungi cliente"}
       </button>
     </form>

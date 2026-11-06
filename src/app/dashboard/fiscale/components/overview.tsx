@@ -20,6 +20,7 @@ import { btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, TextLink
 import { YearFlowChart } from "./year-flow-chart";
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? `1 ${one}` : `${n} ${many}`);
+const months = (n: number) => new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 }).format(n);
 
 type Tone = "critical" | "warning" | "neutral" | "good";
 interface Todo {
@@ -59,13 +60,7 @@ export function Overview({
   const toSend = data.invoices.filter((i) => i.status === "issued" && i.sdiStatus === "not_sent");
   const next = m.reserve.upcoming.find((i) => (i.amount > 0 || i.unknownAmount) && daysBetween(asOf, i.dueDate) <= 30);
   const limitWarning = m.projected.revenueLimit.status !== "ok";
-  // Invoiced this year, stamp duty charged to the client included (it is income too, as in
-  // collections). Taxes and the threshold stay on collections: the forfettario is cash-based.
-  const invoicedYtd = sumCents(
-    data.invoices
-      .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === m.year && i.issueDate <= asOf)
-      .map((i) => i.total),
-  );
+  const invoicedYtd = m.invoicedYtd;
 
   const todos: Todo[] = [];
   if (m.overdue.length > 0)
@@ -191,7 +186,7 @@ export function Overview({
 
       <div className="space-y-6">
         {/* Headline figures */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Stat
             label={`Fatturato nel ${m.year}`}
             value={eur(invoicedYtd)}
@@ -211,15 +206,32 @@ export function Overview({
             value={eur(m.reserveAfterCredit)}
             hint={
               m.availableCredit > 0
-                ? `Per gli F24 fino al 30/6/${m.year + 1}, già scalato il credito`
-                : `Per gli F24 fino al 30/6/${m.year + 1}`
+                ? `Tutti gli F24 fino al 30/6/${m.year + 1}, acconti compresi, meno il credito`
+                : `Tutti gli F24 fino al 30/6/${m.year + 1}, acconti compresi`
             }
           />
-          <Stat label="Ti resta" value={eur(year.netAccrual)} hint="Dopo imposta sostitutiva e contributi INPS dell'anno" />
+          <Stat
+            label="Ti resta"
+            value={eur(year.netAccrual)}
+            hint={
+              <div className="space-y-1.5">
+                <p>Sull&apos;incassato, dopo imposta sostitutiva e contributi INPS dell&apos;anno</p>
+                {m.monthlyNet && (
+                  <p
+                    className="border-t border-[var(--fi-rule)] pt-1.5"
+                    title={`Fatturato in ${months(m.monthlyNet.monthsElapsed)} mesi, come se fosse tutto incassato, con imposta e contributi dell'anno ripartiti sui mesi.`}
+                  >
+                    In media <span className="fi-num font-medium text-[var(--fi-ink)]">{eur(m.monthlyNet.monthly)}</span> netti al
+                    mese, calcolati sul fatturato (come se fosse tutto incassato)
+                  </p>
+                )}
+              </div>
+            }
+          />
         </div>
 
         {/* Da fare + prossime scadenze */}
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <section className={cx(card, "lg:col-span-3")} aria-labelledby="todo-title">
             <div className="flex items-baseline justify-between px-5 pt-5 pb-3">
               <h2 id="todo-title" className="text-[15px] font-semibold">Da fare</h2>
@@ -310,6 +322,14 @@ export function Overview({
                       eur(year.inpsDue.total),
                     ],
                     ["Su ogni 1.000 € incassati, tra imposta e INPS", eur(Math.round(year.effectiveBurdenRate * 100_000))],
+                    ...(m.monthlyNet
+                      ? [
+                          [
+                            `Netto medio al mese: fatturato di ${months(m.monthlyNet.monthsElapsed)} mesi, imposta e contributi dell'anno ripartiti sui mesi`,
+                            eur(m.monthlyNet.monthly),
+                          ],
+                        ]
+                      : []),
                     ...(m.availableCredit > 0
                       ? [["Credito d'imposta disponibile, scalato da quanto tenere da parte", eur(m.availableCredit)]]
                       : []),

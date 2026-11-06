@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, FileUp, XCircle } from "lucide-react";
 import { btn, cx } from "../../components/ui";
 import { importInvoicesAction, type ImportState } from "./actions";
+import { Spinner } from "../../components/form-buttons";
 
 export function ImportForm({ demo }: { demo: boolean }) {
   const [state, action, pending] = useActionState<ImportState, FormData>(importInvoicesAction, null);
@@ -36,7 +37,7 @@ export function ImportForm({ demo }: { demo: boolean }) {
           />
         </div>
         <button type="submit" className={btn.primary} disabled={pending || demo}>
-          <FileUp aria-hidden className="h-4 w-4" />
+          {pending ? <Spinner className="h-4 w-4" /> : <FileUp aria-hidden className="h-4 w-4" />}
           {pending ? "Importazione…" : demo ? "Crea il profilo fiscale per importare" : "Importa"}
         </button>
       </form>

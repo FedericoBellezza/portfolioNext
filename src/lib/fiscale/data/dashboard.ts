@@ -3,9 +3,11 @@ import {
   buildF24Schedule,
   computeSavingsReserve,
   computeTaxYear,
+  monthlyNetAverage,
   projectYearRevenue,
   yearOf,
   type F24Item,
+  type MonthlyNet,
   type SavingsReserve,
   type TaxYearResult,
 } from "../tax-calculator";
@@ -34,6 +36,10 @@ export interface DashboardModel {
   yearEndOnCurrentRevenue: TaxYearResult;
   /** Linear projection of revenue to 31/12. */
   projected: TaxYearResult;
+  /** Invoiced this year up to today, stamp duty charged to the client included. */
+  invoicedYtd: Cents;
+  /** Average net per month on what was invoiced (as if all collected); null in the first 30 days. */
+  monthlyNet: MonthlyNet | null;
   schedule: F24Item[];
   reserve: SavingsReserve;
   monthlyRevenue: Cents[];
@@ -52,8 +58,14 @@ export interface DashboardModel {
   overdueTasks: TaskItem[];
   /** Residual of the credits meant for F24 compensation. */
   availableCredit: Cents;
-  /** Cash to keep aside once the available credit is used: max(0, matured − credit). */
+  /**
+   * Cash to keep aside once the available credit is used: every F24 still to pay
+   * until 30/6 of next year, next year's advances and fixed INPS included (they
+   * are due whatever happens), minus the credit.
+   */
   reserveAfterCredit: Cents;
+  /** Part of the F24 until 30/6 of next year that is for next year (advances, fixed INPS). */
+  nextYearShare: Cents;
 }
 
 export function buildDashboard(data: FiscalDataset, asOf: string): DashboardModel {
@@ -99,6 +111,16 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     profile,
   });
 
+  // Invoiced this year, stamp duty charged to the client included (it is income too, as in
+  // collections). Taxes and the threshold stay on collections: the forfettario is cash-based.
+  const invoicedYtd = sumCents(
+    data.invoices
+      .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === C && i.issueDate <= asOf)
+      .map((i) => i.total),
+  );
+  // The owner reads the monthly average on what was invoiced, as if it were all collected.
+  const monthlyNet = monthlyNetAverage({ ytdRevenue: invoicedYtd, asOf, inpsDeducted: inpsDeductedYearEnd, profile });
+
   const schedule = [
     ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile, inail }),
     ...buildF24Schedule({ calendarYear: C + 1, figures, stampDutyByQuarter: stamps, profile, inail, provisionalFrom: C }),
@@ -133,6 +155,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     ytd,
     yearEndOnCurrentRevenue,
     projected,
+    invoicedYtd,
+    monthlyNet,
     schedule,
     reserve,
     monthlyRevenue,
@@ -147,7 +171,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     doneTasks,
     overdueTasks: tasks.filter((t) => t.dueDate < asOf && !doneTasks.has(t.key)),
     availableCredit,
-    reserveAfterCredit: Math.max(0, reserve.matured - availableCredit),
+    reserveAfterCredit: Math.max(0, reserve.cashOutUntilHorizon - availableCredit),
+    nextYearShare: reserve.cashOutUntilHorizon - reserve.matured,
   };
 }
 

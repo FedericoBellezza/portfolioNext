@@ -24,7 +24,7 @@ export default async function ImportaPage() {
         }
       />
       <DemoNotice show={demo} />
-      <div className="grid gap-6 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         <Panel title="Carica i file" className="xl:col-span-3">
           <ImportForm demo={demo} />
         </Panel>

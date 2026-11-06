@@ -56,7 +56,7 @@ export function YearFlowChart({
         </span>
       </div>
 
-      <div className="flex gap-1.5" role="img" aria-label={`Incassi e F24 per mese nel ${year}`} onMouseLeave={() => setHover(null)}>
+      <div className="flex gap-1 sm:gap-1.5" role="img" aria-label={`Incassi e F24 per mese nel ${year}`} onMouseLeave={() => setHover(null)}>
         {incoming.map((inc, i) => (
           <button
             key={i}
@@ -66,7 +66,7 @@ export function YearFlowChart({
             onFocus={() => setHover(i)}
             onBlur={() => setHover(null)}
             className={cx(
-              "group flex flex-1 flex-col items-stretch rounded-md px-0.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[var(--fi-action)]",
+              "group flex min-w-0 flex-1 flex-col items-stretch rounded-md px-0.5 transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-[var(--fi-action)]",
               shown === i && "bg-[var(--fi-fill)]/70",
             )}
           >
@@ -95,13 +95,15 @@ export function YearFlowChart({
         ))}
       </div>
 
-      <div className="mt-2 flex gap-1.5" aria-hidden>
+      <div className="mt-2 flex gap-1 sm:gap-1.5" aria-hidden>
         {MONTHS.map((m, i) => (
           <span
             key={m}
-            className={cx("flex-1 text-center text-[11px] text-[var(--fi-muted)]", i === currentMonth && "font-semibold text-[var(--fi-ink)]")}
+            className={cx("min-w-0 flex-1 text-center text-[11px] text-[var(--fi-muted)]", i === currentMonth && "font-semibold text-[var(--fi-ink)]")}
           >
-            {m}
+            {/* Very narrow screens: the initial only ("Dic" would push the row wider). */}
+            <span className="min-[360px]:hidden">{m.charAt(0)}</span>
+            <span className="hidden min-[360px]:inline">{m}</span>
           </span>
         ))}
       </div>

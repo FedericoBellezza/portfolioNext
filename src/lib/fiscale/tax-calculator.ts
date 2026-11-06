@@ -328,6 +328,54 @@ export function projectYearRevenue(
   return roundCents((ytdRevenue * total) / elapsed);
 }
 
+export interface MonthlyNet {
+  /** Average net per month of activity. */
+  monthly: Cents;
+  /** Months of activity elapsed in the year (1 Jan or the start date → asOf). */
+  monthsElapsed: number;
+}
+
+/**
+ * Average net per month on the revenue so far: collected, or invoiced as if
+ * it were all collected (the caller chooses; the dashboard uses invoiced). The
+ * yearly costs (fixed INPS on the minimale, excess INPS over it, substitute
+ * tax) are spread over the year and charged for the months elapsed only:
+ * dividing the year-to-date net by the months would charge the whole year's
+ * fixed INPS to fewer months. With costs pro rata this is the same as the
+ * year's net at the current collection pace divided by the months of activity.
+ * Null in the first 30 days, when an average says nothing yet.
+ */
+export function monthlyNetAverage(args: {
+  /** Revenue of the year up to `asOf`. */
+  ytdRevenue: Cents;
+  asOf: string;
+  /** INPS deductible in the year (paid within it). */
+  inpsDeducted: Cents;
+  profile?: FiscalProfile;
+}): MonthlyNet | null {
+  const profile = args.profile ?? DEFAULT_PROFILE;
+  const year = yearOf(args.asOf);
+  const day = (iso: string) => Date.UTC(yearOf(iso), monthOf(iso) - 1, Number(iso.slice(8, 10)));
+  const yearStart = Math.max(Date.UTC(year, 0, 1), day(profile.activityStartDate));
+  const yearEnd = Date.UTC(year, 11, 31);
+  const elapsed = (day(args.asOf) - yearStart) / 86_400_000 + 1;
+  const total = (yearEnd - yearStart) / 86_400_000 + 1;
+  if (elapsed < 30 || total <= 0 || elapsed > total) return null;
+
+  const daysInYear = (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 86_400_000;
+  const monthOfDays = daysInYear / 12;
+  const atPace = computeTaxYear({
+    year,
+    grossRevenue: roundCents((args.ytdRevenue * total) / elapsed),
+    inpsDeducted: args.inpsDeducted,
+    profile,
+  });
+  return {
+    monthly: roundCents(atPace.netAccrual / (total / monthOfDays)),
+    monthsElapsed: elapsed / monthOfDays,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Advances (acconti) — metodo storico
 // ---------------------------------------------------------------------------

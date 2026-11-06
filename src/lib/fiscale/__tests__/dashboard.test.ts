@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { monthlyNetAverage } from "../tax-calculator";
 import { buildDashboard } from "../data/dashboard";
 import { demoDataset } from "../data/demo";
 import type { FiscalDataset } from "../data/types";
@@ -54,10 +55,23 @@ describe("dashboard model", () => {
     };
     const withCredit = buildDashboard({ ...data, credits: [credit] }, "2026-11-04");
     expect(withCredit.availableCredit).toBe(84_300);
-    expect(withCredit.reserveAfterCredit).toBe(Math.max(0, withCredit.reserve.matured - 84_300));
+    expect(withCredit.reserveAfterCredit).toBe(Math.max(0, withCredit.reserve.cashOutUntilHorizon - 84_300));
     const refund = buildDashboard({ ...data, credits: [{ ...credit, destination: "refund" as const }] }, "2026-11-04");
     expect(refund.availableCredit).toBe(0);
-    expect(refund.reserveAfterCredit).toBe(refund.reserve.matured);
+    expect(refund.reserveAfterCredit).toBe(refund.reserve.cashOutUntilHorizon);
+  });
+
+  it("averages the monthly net on what was invoiced, not on what was collected", () => {
+    expect(m.monthlyNet).toEqual(
+      monthlyNetAverage({ ytdRevenue: m.invoicedYtd, asOf: m.asOf, inpsDeducted: m.yearEndOnCurrentRevenue.inpsDeducted, profile: data.profile }),
+    );
+  });
+
+  it("keeps aside next year's advances too, since they are due anyway", () => {
+    const advance = m.reserve.upcoming.find((i) => i.key === "tax:advance_1:2027" || i.key === "inps:fixed_q1:2027");
+    expect(advance).toBeDefined();
+    expect(m.reserveAfterCredit).toBe(m.reserve.cashOutUntilHorizon - m.availableCredit);
+    expect(m.nextYearShare).toBeGreaterThanOrEqual(advance!.amount);
   });
 
   it("estimates next INAIL with the last premium paid", () => {

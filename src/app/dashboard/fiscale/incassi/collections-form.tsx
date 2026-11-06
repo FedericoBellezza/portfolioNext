@@ -5,6 +5,7 @@ import Link from "next/link";
 import { date as fmtDate, eur } from "../components/format";
 import { btn, cx } from "../components/ui";
 import { registerCollectionsAction, type BulkState } from "./actions";
+import { Spinner } from "../components/form-buttons";
 
 export interface OpenInvoice {
   id: string;
@@ -114,6 +115,7 @@ export function CollectionsForm({ invoices, today }: { invoices: OpenInvoice[]; 
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <button type="submit" className={btn.primary} disabled={pending || selected.size === 0}>
+          {pending && <Spinner className="h-4 w-4" />}
           {pending ? "Salvataggio…" : `Registra ${selected.size || ""} incass${selected.size === 1 ? "o" : "i"}`}
         </button>
         {selected.size > 0 && <span className="fi-num text-sm text-[var(--fi-ink-2)]">Totale {eur(total)}</span>}

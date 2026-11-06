@@ -9,6 +9,7 @@ import {
   computeTaxYear,
   computeTaxYearFromLedger,
   estimateInvoiceNet,
+  monthlyNetAverage,
   projectYearRevenue,
   shiftToBusinessDay,
   substituteTaxRate,
@@ -217,6 +218,27 @@ describe("projection and per-invoice estimate", () => {
     // 183 of 365 days elapsed
     expect(projectYearRevenue(toCents(10_000), "2026-07-02")).toBe(1_994_536);
     expect(projectYearRevenue(toCents(500), "2026-01-15")).toBe(toCents(500)); // too early
+  });
+
+  it("averages the net per month with the yearly costs spread over the months", () => {
+    const p = profile({ inpsReduction50NewEnrollmentActive: true });
+    const ytd = toCents(24_950.57);
+    const deducted = toCents(2_400.68);
+    const avg = monthlyNetAverage({ ytdRevenue: ytd, asOf: "2026-11-05", inpsDeducted: deducted, profile: p })!;
+    // 1/1 → 5/11 = 309 days of 365
+    expect(avg.monthsElapsed).toBeCloseTo(309 / (365 / 12), 6);
+
+    // Same figure the long way: what was collected, minus the costs of the
+    // elapsed share of the year (yearly costs at the current pace × share).
+    const share = 309 / 365;
+    const year = computeTaxYear({ year: 2026, grossRevenue: Math.round(ytd / share), inpsDeducted: deducted, profile: p });
+    const costsSoFar = (year.inpsDue.total + year.substituteTax) * share;
+    expect(Math.abs(avg.monthly - (ytd - costsSoFar) / avg.monthsElapsed)).toBeLessThan(200); // within 2 €
+
+    // Dividing the year-to-date net by the months would charge the whole year's fixed INPS to 10 months.
+    const naive = computeTaxYear({ year: 2026, grossRevenue: ytd, inpsDeducted: deducted, profile: p }).netAccrual / avg.monthsElapsed;
+    expect(avg.monthly).toBeGreaterThan(naive);
+    expect(monthlyNetAverage({ ytdRevenue: ytd, asOf: "2026-01-20", inpsDeducted: 0, profile: p })).toBeNull();
   });
 
   it("estimates INPS + tax on a single invoice", () => {
