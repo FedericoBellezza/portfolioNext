@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, FileText, FolderOpen, LayoutDashboard, Plus, Users } from "lucide-react";
+import { CalendarClock, FileText, FolderOpen, LayoutDashboard, MessagesSquare, Plus, Users } from "lucide-react";
 
 const TABS = [
   { href: "/dashboard/fiscale", label: "Panoramica", icon: LayoutDashboard, match: [] as string[] },
@@ -20,6 +20,7 @@ const TABS = [
     match: ["/dashboard/fiscale/scadenze", "/dashboard/fiscale/inps-spese", "/dashboard/fiscale/export"],
   },
   { href: "/dashboard/fiscale/documenti", label: "Documenti", icon: FolderOpen, match: ["/dashboard/fiscale/documenti"] },
+  { href: "/dashboard/fiscale/chiedi", label: "Chiedi", icon: MessagesSquare, match: ["/dashboard/fiscale/chiedi"] },
 ];
 
 const focus = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70";

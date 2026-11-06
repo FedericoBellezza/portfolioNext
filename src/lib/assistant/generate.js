@@ -3,7 +3,8 @@ import { DEFAULT_EFFORT, DEFAULT_MODEL, EFFORTS, MODELS } from "./constants";
 
 // Unico punto in cui il testo viene generato. Oggi: webhook n8n -> SSH -> `claude -p` sul server
 // (abbonamento, nessuna API Anthropic). Per passare ad altro basta riscrivere questa funzione:
-// riceve { system, prompt, model, effort } e restituisce { text, model, costUsd, durationMs }.
+// riceve { system, prompt, model, effort, webSearch } e restituisce { text, model, costUsd, durationMs }.
+// webSearch: true fa usare a Claude solo la ricerca web (chat fiscale); senza, nessuno strumento.
 
 // Sotto il maxDuration delle route (300 s), così l'errore è nostro e pulito invece di un timeout della piattaforma.
 const DEFAULT_TIMEOUT_MS = 290000;
@@ -11,7 +12,7 @@ const DEFAULT_TIMEOUT_MS = 290000;
 const MODEL_IDS = new Set(MODELS.map((item) => item.id));
 const EFFORT_IDS = new Set(EFFORTS.map((item) => item.id));
 
-export async function generate({ system, prompt, model, effort, signal }) {
+export async function generate({ system, prompt, model, effort, webSearch = false, signal }) {
   const url = process.env.N8N_ASSISTANT_URL;
   const secret = process.env.N8N_ASSISTANT_SECRET;
   if (!url || !secret) {
@@ -31,6 +32,7 @@ export async function generate({ system, prompt, model, effort, signal }) {
         prompt,
         model: MODEL_IDS.has(model) ? model : DEFAULT_MODEL,
         effort: EFFORT_IDS.has(effort) ? effort : DEFAULT_EFFORT,
+        webSearch: webSearch === true,
       }),
       signal: combined,
       cache: "no-store",

@@ -6,6 +6,7 @@ import { requireOwner } from "@/lib/fiscale/auth";
 import type { FileCheck } from "@/lib/fiscale/data/types";
 import { DOCUMENT_BUCKET } from "@/lib/fiscale/documents";
 import { loadDataset } from "@/lib/fiscale/data/load";
+import { pdfText } from "@/lib/fiscale/pdf-text";
 import { formatEUR as eurText } from "@/lib/fiscale/money";
 import {
   CHECK_BATCH,
@@ -21,18 +22,6 @@ import { paymentEntries, paymentLabel, settlement, uncheckedFiles, type PaymentE
 import { createClient } from "@/lib/supabase/server";
 
 export type CheckState = { ok: boolean; checked: number; remaining: number; message: string };
-
-async function pdfText(data: ArrayBuffer): Promise<string> {
-  // The worker must be loaded before pdf-parse (serverless), as in the assistant.
-  await import("pdf-parse/worker");
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: new Uint8Array(data) });
-  try {
-    return (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
-}
 
 function describePayment(e: PaymentEntry): string {
   const s = settlement(e);
