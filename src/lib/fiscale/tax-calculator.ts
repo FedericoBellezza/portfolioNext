@@ -351,6 +351,8 @@ export function monthlyNetAverage(args: {
   asOf: string;
   /** INPS deductible in the year (paid within it). */
   inpsDeducted: Cents;
+  /** Other costs of the year that reduce the net but not the taxes (e.g. the INAIL premium). */
+  otherCosts?: Cents;
   profile?: FiscalProfile;
 }): MonthlyNet | null {
   const profile = args.profile ?? DEFAULT_PROFILE;
@@ -371,7 +373,7 @@ export function monthlyNetAverage(args: {
     profile,
   });
   return {
-    monthly: roundCents(atPace.netAccrual / (total / monthOfDays)),
+    monthly: roundCents((atPace.netAccrual - (args.otherCosts ?? 0)) / (total / monthOfDays)),
     monthsElapsed: elapsed / monthOfDays,
   };
 }

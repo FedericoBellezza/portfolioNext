@@ -212,10 +212,13 @@ export function Overview({
           />
           <Stat
             label="Ti resta"
-            value={eur(year.netAccrual)}
+            value={eur(m.net)}
             hint={
               <div className="space-y-1.5">
-                <p>Sull&apos;incassato, dopo imposta sostitutiva e contributi INPS dell&apos;anno</p>
+                <p>
+                  Sull&apos;incassato, dopo imposta sostitutiva e contributi INPS
+                  {m.inail.amount > 0 ? " e premio INAIL" : ""} dell&apos;anno
+                </p>
                 {m.monthlyNet && (
                   <p
                     className="border-t border-[var(--fi-rule)] pt-1.5"
@@ -300,9 +303,12 @@ export function Overview({
                 </p>
                 <SplitBar
                   parts={[
-                    { label: "Ti resta", amount: year.netAccrual, tone: "bg-[var(--fi-series-in)]" },
+                    { label: "Ti resta", amount: m.net, tone: "bg-[var(--fi-series-in)]" },
                     { label: "Imposta sostitutiva", amount: year.substituteTax, tone: "bg-[var(--fi-series-out)]" },
                     { label: "Contributi INPS", amount: year.inpsDue.total, tone: "bg-[var(--fi-series-inps)]" },
+                    ...(m.inail.amount > 0
+                      ? [{ label: m.inail.estimate ? "Premio INAIL (stima)" : "Premio INAIL", amount: m.inail.amount, tone: "bg-[var(--fi-series-inail)]" }]
+                      : []),
                   ]}
                 />
               </div>
@@ -321,11 +327,19 @@ export function Overview({
                       `Contributi INPS dell'anno: fissi ${eur(year.inpsDue.fixedTotal)} + eccedenza ${eur(year.inpsDue.excess)}`,
                       eur(year.inpsDue.total),
                     ],
+                    ...(m.inail.amount > 0
+                      ? [
+                          [
+                            `Premio INAIL ${m.inail.estimate ? "stimato (ultimo pagato)" : `pagato nel ${m.year}`}: non deducibile, toglie dal netto`,
+                            eur(m.inail.amount),
+                          ],
+                        ]
+                      : []),
                     ["Su ogni 1.000 € incassati, tra imposta e INPS", eur(Math.round(year.effectiveBurdenRate * 100_000))],
                     ...(m.monthlyNet
                       ? [
                           [
-                            `Netto medio al mese: fatturato di ${months(m.monthlyNet.monthsElapsed)} mesi, imposta e contributi dell'anno ripartiti sui mesi`,
+                            `Netto medio al mese: fatturato di ${months(m.monthlyNet.monthsElapsed)} mesi, imposta, contributi${m.inail.amount > 0 ? " e INAIL" : ""} dell'anno ripartiti sui mesi`,
                             eur(m.monthlyNet.monthly),
                           ],
                         ]

@@ -27,7 +27,7 @@ export function SplitBar({ parts }: { parts: SplitPart[] }) {
             <div key={p.label} className={p.tone} style={{ width: `${(Math.max(0, p.amount) / total) * 100}%` }} />
           ))}
       </div>
-      <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-3">
+      <dl className={cx("mt-3 grid grid-cols-1 gap-x-8 gap-y-2", parts.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}>
         {parts.map((p) => (
           <div key={p.label} className="flex items-baseline gap-2">
             <span aria-hidden className={cx("size-2.5 shrink-0 translate-y-[1px] rounded-full", p.tone)} />

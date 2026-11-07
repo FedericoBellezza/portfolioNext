@@ -40,6 +40,14 @@ export interface DashboardModel {
   invoicedYtd: Cents;
   /** Average net per month on what was invoiced (as if all collected); null in the first 30 days. */
   monthlyNet: MonthlyNet | null;
+  /**
+   * INAIL premium of the year: what was paid in it, else the estimate of the
+   * calendar (last premium). Not deductible in the forfettario, so it lowers
+   * what is left, not the taxes.
+   */
+  inail: { amount: Cents; estimate: boolean };
+  /** What is left of this year's collections after imposta, INPS and INAIL. */
+  net: Cents;
   schedule: F24Item[];
   reserve: SavingsReserve;
   monthlyRevenue: Cents[];
@@ -118,13 +126,24 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
       .filter((i) => i.status === "issued" && i.issueDate && yearOf(i.issueDate) === C && i.issueDate <= asOf)
       .map((i) => i.total),
   );
-  // The owner reads the monthly average on what was invoiced, as if it were all collected.
-  const monthlyNet = monthlyNetAverage({ ytdRevenue: invoicedYtd, asOf, inpsDeducted: inpsDeductedYearEnd, profile });
-
   const schedule = [
     ...buildF24Schedule({ calendarYear: C, figures, stampDutyByQuarter: stamps, profile, inail }),
     ...buildF24Schedule({ calendarYear: C + 1, figures, stampDutyByQuarter: stamps, profile, inail, provisionalFrom: C }),
   ];
+
+  const inailPaid = data.taxPayments.filter((p) => p.kind === "inail_premium" && yearOf(p.paidAt) === C);
+  const inailYear = inailPaid.length
+    ? { amount: sumCents(inailPaid.map((p) => p.amount)), estimate: false }
+    : { amount: schedule.find((i) => i.key === `inail:${C}`)?.amount ?? 0, estimate: true };
+
+  // The owner reads the monthly average on what was invoiced, as if it were all collected.
+  const monthlyNet = monthlyNetAverage({
+    ytdRevenue: invoicedYtd,
+    asOf,
+    inpsDeducted: inpsDeductedYearEnd,
+    otherCosts: inailYear.amount,
+    profile,
+  });
   const reserve = computeSavingsReserve({ asOf, items: schedule, paidKeys: paid });
 
   const tasks = buildTasks({
@@ -157,6 +176,8 @@ export function buildDashboard(data: FiscalDataset, asOf: string): DashboardMode
     projected,
     invoicedYtd,
     monthlyNet,
+    inail: inailYear,
+    net: yearEndOnCurrentRevenue.netAccrual - inailYear.amount,
     schedule,
     reserve,
     monthlyRevenue,

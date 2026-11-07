@@ -88,4 +88,23 @@ describe("dashboard model", () => {
     expect(withInail.schedule.find((i) => i.key === "inail:2027")).toMatchObject({ amount: 9_726, dueDate: "2027-02-16" });
     expect(withInail.reserve.upcoming.some((i) => i.key === "inail:2027")).toBe(true);
   });
+
+  it("takes the INAIL premium of the year off what is left, not off the taxes", () => {
+    const withInail = buildDashboard(
+      {
+        ...data,
+        taxPayments: [
+          { id: "i", paidAt: "2026-02-16", competenceYear: 2026, kind: "inail_premium", tributeCode: null, amount: 58_534, receiptPath: null },
+        ],
+      },
+      "2026-11-04",
+    );
+    expect(withInail.inail).toEqual({ amount: 58_534, estimate: false });
+    expect(withInail.yearEndOnCurrentRevenue.substituteTax).toBe(m.yearEndOnCurrentRevenue.substituteTax);
+    expect(withInail.net).toBe(m.yearEndOnCurrentRevenue.netAccrual - 58_534);
+    expect(withInail.monthlyNet!.monthly).toBeLessThan(m.monthlyNet!.monthly);
+    // No premium paid yet in the start year: nothing to take off.
+    expect(m.inail.amount).toBe(0);
+    expect(m.net).toBe(m.yearEndOnCurrentRevenue.netAccrual);
+  });
 });
