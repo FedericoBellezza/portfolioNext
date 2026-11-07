@@ -29,6 +29,7 @@ import { date, dayDate, eur, MONTHS } from "../components/format";
 import { OverdueBanner } from "../components/overdue-banner";
 import { Badge, btn, card, cx, DemoNotice, Disclosure, PageTitle, Panel, Stat, Tabs } from "../components/ui";
 import { deleteCreditAction } from "./credit-actions";
+import { deletePaymentAction } from "../obligations-actions";
 import { CreditAmountEdit, CreditForm } from "./credits-ui";
 import { deleteDocumentAction, setDocumentProvisionalAction } from "../documenti/actions";
 import { recheckFileAction } from "../receipt-check-actions";
@@ -579,7 +580,23 @@ export default async function ScadenzePage({ searchParams }: { searchParams: Pro
                         )}
                         <PaymentProof p={p} asOf={asOf} links={links} demo={demo} />
                       </div>
-                      <span className="fi-num text-right font-medium">{eur(p.amount)}</span>
+                      <div className="text-right">
+                        <span className="fi-num block font-medium">{eur(p.amount)}</span>
+                        {!demo && (
+                          <form action={deletePaymentAction} className="mt-1">
+                            <input type="hidden" name="table" value={p.table} />
+                            <input type="hidden" name="id" value={p.id} />
+                            <ConfirmSubmit
+                              question={p.files.length > 0 ? "Annullare il pagamento? Vengono eliminati anche i suoi file." : "Annullare il pagamento?"}
+                              confirmLabel="Sì, annulla"
+                              pendingLabel="Annullamento…"
+                              className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical-text)] hover:underline"
+                            >
+                              Annulla
+                            </ConfirmSubmit>
+                          </form>
+                        )}
+                      </div>
                     </li>
                   );
                 })}

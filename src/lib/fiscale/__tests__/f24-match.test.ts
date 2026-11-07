@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseReadReply } from "../document-read";
+import { parseF24Reply, parseReadReply } from "../document-read";
 import { matchF24, type F24Row } from "../f24-match";
 
 const row = (r: Partial<F24Row> & Pick<F24Row, "code">): F24Row => ({
@@ -49,6 +49,32 @@ describe("F24 lines to calendar items", () => {
     expect(m.obligations.map((o) => o.key)).toEqual(["inps:fixed_q4:2025", "inps:fixed_q2:2026"]);
   });
 
+  it("takes the AF installment from the date when the period is the whole year", () => {
+    const af = (date: string, period: string | null) =>
+      matchF24({ kind: "f24_versato", date, rows: [row({ section: "inps", code: "AF", period, debit: 741.62 })] }).obligations[0]?.key;
+    expect(af("2026-05-18", "01/2026-12/2026")).toBe("inps:fixed_q1:2026");
+    expect(af("2026-08-20", "1 2026 12 2026")).toBe("inps:fixed_q2:2026");
+    expect(af("2023-11-16", "01/2023-12/2023")).toBe("inps:fixed_q3:2023");
+    expect(af("2026-02-16", "01/2025-12/2025")).toBe("inps:fixed_q4:2025");
+    // No period read: the year follows from the date too.
+    expect(af("2022-02-16", null)).toBe("inps:fixed_q4:2021");
+    expect(af("2024-08-20", null)).toBe("inps:fixed_q2:2024");
+  });
+
+  it("leaves INPS installment plans to the owner", () => {
+    const m = matchF24({
+      kind: "f24_versato",
+      date: "2024-08-20",
+      rows: [
+        row({ section: "inps", code: "APR", period: "01/2023-12/2023", debit: 882.25 }),
+        row({ section: "inps", code: "API", period: "01/2024-12/2024", debit: 1.59 }),
+        row({ section: "inps", code: "AF", period: "01/2024-12/2024", debit: 722.54 }),
+      ],
+    });
+    expect(m.obligations).toEqual([{ key: "inps:fixed_q2:2024", amount: 72254, codes: ["AF"] }]);
+    expect(m.unmatched.map((u) => u.reason)).toEqual(["contributi rateizzati: registrali a mano", "contributi rateizzati: registrali a mano"]);
+  });
+
   it("tells the second INPS acconto from the first by the month", () => {
     const m = matchF24({ kind: "f24_versato", date: "2026-11-30", rows: [row({ section: "inps", code: "AP", period: "01/2026-12/2026", debit: 60 })] });
     expect(m.obligations[0].key).toBe("inps:excess_advance_2:2026");
@@ -78,7 +104,7 @@ describe("F24 lines to calendar items", () => {
         row({ code: "1792", year: 2025, installment: "0203", debit: 300 }),
         row({ code: "1668", year: 2025, debit: 1.2 }),
         row({ section: "inps", code: "CF", period: "04/2026-06/2026", debit: 1000 }),
-        row({ section: "inps", code: "AF", debit: 1000 }),
+        row({ section: "inps", code: "AP", debit: 1000 }),
         row({ code: "1790", debit: 100 }),
         row({ section: "inail", code: "INAIL", debit: 10 }),
       ],
@@ -113,11 +139,9 @@ describe("F24 lines to calendar items", () => {
 
 describe("payment lines in Claude's reading", () => {
   it("reads the lines of an F24 and drops the malformed ones", () => {
-    const reply = JSON.stringify({
-      titolo: "F24 saldo e acconto",
-      categoria: "f24",
-      anno: 2026,
-      pagamento: {
+    const reply =
+      "Ecco: " +
+      JSON.stringify({
         tipo: "f24_versato",
         data: "2026-06-30",
         righe: [
@@ -126,9 +150,8 @@ describe("payment lines in Claude's reading", () => {
           { sezione: "erario", codice: "", debito: 5 },
           "riga strana",
         ],
-      },
-    });
-    expect(parseReadReply(reply)?.payment).toEqual({
+      });
+    expect(parseF24Reply(reply)).toEqual({
       kind: "f24_versato",
       date: "2026-06-30",
       rows: [
@@ -138,9 +161,9 @@ describe("payment lines in Claude's reading", () => {
     });
   });
 
-  it("keeps the payment only for payment files", () => {
-    const reply = '{"titolo":"Visura","categoria":"chamber","anno":2026,"pagamento":{"tipo":"f24_versato","data":"2026-01-01","righe":[]}}';
-    expect(parseReadReply(reply)?.payment).toBeNull();
-    expect(parseReadReply('{"titolo":"F24","categoria":"f24","anno":2026,"pagamento":"no"}')?.payment).toBeNull();
+  it("leaves the payment to the second reading and survives bad replies", () => {
+    expect(parseReadReply('{"titolo":"F24","categoria":"f24","anno":2026}')?.payment).toBeNull();
+    expect(parseF24Reply("non so")).toBeNull();
+    expect(parseF24Reply('{"tipo":"f24_versato","data":"31/07/2024","righe":"no"}')).toEqual({ kind: "f24_versato", date: null, rows: [] });
   });
 });

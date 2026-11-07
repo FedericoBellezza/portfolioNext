@@ -67,13 +67,35 @@ function installments(field: string | null): number {
   return m ? Number(m[2]) : 1;
 }
 
-/** Start of an INPS period: "04/2026-06/2026" or "042026 062026" → { month: 4, year: 2026 }. */
-function periodStart(period: string | null): { month: number; year: number } | null {
-  const m = /(\d{2})\s*\/?\s*(\d{4})/.exec(period ?? "");
-  if (!m) return null;
-  const month = Number(m[1]);
-  const year = Number(m[2]);
-  return month >= 1 && month <= 12 && year >= 2000 && year <= 2100 ? { month, year } : null;
+type MonthYear = { month: number; year: number };
+
+/** Start and end of an INPS period: "01/2024-12/2024", "1 2024 12 2024" or "042026 062026". */
+function periodBounds(period: string | null): { start: MonthYear; end: MonthYear | null } | null {
+  const found = [...(period ?? "").matchAll(/(\d{1,2})\s*\/?\s*(\d{4})/g)]
+    .map((m) => ({ month: Number(m[1]), year: Number(m[2]) }))
+    .filter((p) => p.month >= 1 && p.month <= 12 && p.year >= 2000 && p.year <= 2100);
+  return found.length ? { start: found[0], end: found[1] ?? null } : null;
+}
+
+/**
+ * Installment of the INPS fixed contributions (AF). The F24 gives the whole
+ * year as period ("1 2024 12 2024"), so the installment follows from the date
+ * of payment: May → 1ª, August → 2ª, November → 3ª, February of the year
+ * after → 4ª. A period of one quarter, when given, settles it directly.
+ */
+function fixedKey(bounds: ReturnType<typeof periodBounds>, date: string | null): { key: string } | { reason: string } {
+  const { start, end } = bounds ?? {};
+  if (start && end && end.year === start.year && end.month - start.month === 2 && start.month % 3 === 1) {
+    return { key: `inps:fixed_q${(start.month + 2) / 3}:${start.year}` };
+  }
+  if (!date) return { reason: "data del versamento non letta" };
+  const paidYear = Number(date.slice(0, 4));
+  const paidMonth = Number(date.slice(5, 7));
+  const year = start?.year ?? (paidMonth <= 3 ? paidYear - 1 : paidYear);
+  if (paidYear === year + 1 && paidMonth <= 6) return { key: `inps:fixed_q4:${year}` };
+  if (paidYear !== year) return { reason: "anno del periodo diverso da quello del versamento" };
+  if (paidMonth <= 3) return { reason: "rata dei contributi fissi non riconoscibile dalla data" };
+  return { key: `inps:fixed_q${paidMonth <= 6 ? 1 : paidMonth <= 9 ? 2 : 3}:${year}` };
 }
 
 function rowKey(row: F24Row, date: string | null): { key: string } | { reason: string } {
@@ -88,11 +110,13 @@ function rowKey(row: F24Row, date: string | null): { key: string } | { reason: s
 
   if (row.section === "inps" || code === "AF" || code === "AP") {
     if (code === "CF" || code === "CP") return { reason: "Gestione Commercianti non gestita" };
+    if (code === "APR" || code === "API") return { reason: "contributi rateizzati: registrali a mano" };
     if (code !== "AF" && code !== "AP") return { reason: "causale INPS non gestita" };
-    const start = periodStart(row.period);
-    if (!start) return { reason: "periodo di riferimento non letto" };
-    if (code === "AF") return { key: `inps:fixed_q${Math.ceil(start.month / 3)}:${start.year}` };
+    const bounds = periodBounds(row.period);
+    if (code === "AF") return fixedKey(bounds, date);
     // AP: the year of the period is the income year; paid the year after = saldo.
+    const start = bounds?.start;
+    if (!start) return { reason: "periodo di riferimento non letto" };
     if (!date) return { reason: "data del versamento non letta" };
     const paidYear = Number(date.slice(0, 4));
     if (paidYear > start.year) return { key: `inps:excess_balance:${start.year}` };

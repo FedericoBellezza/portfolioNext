@@ -197,3 +197,33 @@ export async function dismissObligation(_prev: ActionState, formData: FormData):
   revalidatePath("/dashboard/fiscale", "layout");
   return { ok: true, message: "Segnato come non dovuto." };
 }
+
+/**
+ * Cancels a recorded payment (e.g. put on the wrong item): the row goes, with
+ * the credit uses tied to it and its files, so the item is open again and its
+ * F24 can be uploaded anew.
+ */
+export async function deletePaymentAction(formData: FormData): Promise<void> {
+  const ctx = await ownerContext();
+  const table: PaymentTable | null =
+    formData.get("table") === "inps" ? "inps_payments" : formData.get("table") === "tax" ? "tax_payments" : null;
+  const id = String(formData.get("id") ?? "");
+  if (!table || !/^[0-9a-f-]{36}$/.test(id)) return;
+
+  // Read through RLS: only the user's own payment and files are found.
+  const { data: row } = await ctx.db.from(table).select("receipt_path").eq("id", id).maybeSingle();
+  if (!row) return;
+  const { data: docs } = await ctx.db.from("documents").select("id, file_path").eq(linkColumn(table), id);
+
+  const { error } = await ctx.db.from(table).delete().eq("id", id);
+  if (error) {
+    console.error("[fiscale] delete payment:", error.message);
+    return;
+  }
+  if (docs?.length) {
+    await ctx.db.from("documents").delete().in("id", docs.map((d) => d.id));
+    await ctx.supabase.storage.from(DOCUMENT_BUCKET).remove(docs.map((d) => String(d.file_path)));
+  }
+  if (row.receipt_path) await ctx.supabase.storage.from("fiscale-f24").remove([String(row.receipt_path)]);
+  revalidatePath("/dashboard/fiscale", "layout");
+}

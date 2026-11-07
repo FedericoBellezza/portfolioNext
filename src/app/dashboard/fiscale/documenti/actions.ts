@@ -5,12 +5,16 @@ import { requireFiscaleUser } from "@/lib/fiscale/auth";
 import { fiscaleDb } from "@/lib/fiscale/data/load";
 import { generate } from "@/lib/assistant/generate";
 import {
+  F24_EFFORT,
+  F24_MODEL,
+  F24_SYSTEM,
   MIN_TEXT_CHARS,
   READ_EFFORT,
   READ_MODEL,
   READ_SYSTEM,
   buildReadPrompt,
   documentText,
+  parseF24Reply,
   parseReadReply,
   xmlText,
   type DocumentFields,
@@ -171,7 +175,30 @@ export async function readDocumentAction(input: { path: string; name: string }):
     return { ok: false, message: "Claude non risponde: compila i campi a mano." };
   }
   const fields = parseReadReply(reply);
-  return fields ? { ok: true, fields } : { ok: false, message: "Risposta di Claude non valida: compila i campi a mano." };
+  if (!fields) return { ok: false, message: "Risposta di Claude non valida: compila i campi a mano." };
+  if (fields.category === "f24") fields.payment = await readPayment(input.name, text);
+  return { ok: true, fields };
+}
+
+/**
+ * Second reading of a payment file, by a stronger model: its date and F24
+ * lines record payments in Scadenze. Null when it fails: the file is still
+ * archived, only nothing gets recorded.
+ */
+async function readPayment(name: string, text: string): Promise<DocumentPayment | null> {
+  try {
+    const { text: reply } = await generate({
+      system: F24_SYSTEM,
+      prompt: buildReadPrompt({ fileName: name, text }),
+      model: F24_MODEL,
+      effort: F24_EFFORT,
+      signal: undefined,
+    });
+    return parseF24Reply(reply);
+  } catch (e) {
+    console.error("[fiscale] F24 read:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 /** Marks a payment file as provisional (final receipt still due) or as the final one. */
@@ -197,5 +224,30 @@ export async function deleteDocumentAction(formData: FormData): Promise<void> {
   const { error } = await db.from("documents").delete().eq("id", id);
   if (error) console.error("[fiscale] delete document:", error.message);
   // Payment files live in the archive too: refresh Scadenze as well.
+  revalidatePath("/dashboard/fiscale", "layout");
+}
+
+/**
+ * Deletes every document of one category, files included. Payments linked to
+ * them stay recorded (they just lose the file).
+ */
+export async function deleteCategoryAction(formData: FormData): Promise<void> {
+  await requireFiscaleUser();
+  const category = String(formData.get("category") ?? "");
+  if (!DOCUMENT_CATEGORIES.some((c) => c.id === category)) return;
+  const db = await fiscaleDb();
+  const { data } = await db.from("documents").select("id, file_path").eq("category", category);
+  if (!data?.length) return;
+  const supabase = await createClient();
+  const { error } = await db.from("documents").delete().in("id", data.map((d) => d.id));
+  if (error) {
+    console.error("[fiscale] delete category:", error.message);
+    return;
+  }
+  const paths = data.map((d) => String(d.file_path));
+  for (let i = 0; i < paths.length; i += 100) {
+    const { error: e } = await supabase.storage.from(DOCUMENT_BUCKET).remove(paths.slice(i, i + 100));
+    if (e) console.error("[fiscale] delete category files:", e.message);
+  }
   revalidatePath("/dashboard/fiscale", "layout");
 }

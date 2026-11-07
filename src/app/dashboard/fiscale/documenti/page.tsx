@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { date } from "../components/format";
 import { ConfirmSubmit } from "../components/form-buttons";
 import { DemoNotice, PageTitle, Panel, Section } from "../components/ui";
-import { deleteDocumentAction } from "./actions";
+import { deleteCategoryAction, deleteDocumentAction } from "./actions";
 import { UploadForm } from "./upload-form";
 
 export const metadata = { title: "Documenti | Fiscale" };
@@ -54,7 +54,22 @@ export default async function DocumentiPage() {
           <p className="text-sm text-[var(--fi-ink-2)]">Ancora nessun documento.</p>
         ) : (
           DOCUMENT_CATEGORIES.filter((c) => docs.some((d) => d.category === c.id)).map((c) => (
-            <Section key={c.id} title={c.label}>
+            <Section
+              key={c.id}
+              title={c.label}
+              action={
+                <form action={deleteCategoryAction}>
+                  <input type="hidden" name="category" value={c.id} />
+                  <ConfirmSubmit
+                    question={`Eliminare tutti i ${docs.filter((d) => d.category === c.id).length} documenti di questa categoria?`}
+                    confirmLabel="Sì, elimina tutti"
+                    className="text-xs text-[var(--fi-ink-2)] underline-offset-4 hover:text-[var(--fi-critical)] hover:underline"
+                  >
+                    Elimina tutti
+                  </ConfirmSubmit>
+                </form>
+              }
+            >
               <ul className="divide-y divide-[var(--fi-rule)] rounded-xl border border-[var(--fi-rule)] bg-[var(--fi-surface)]">
                 {docs
                   .filter((d) => d.category === c.id)
