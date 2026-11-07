@@ -187,7 +187,7 @@ export const PROJECTS = [
     "Foto, voce o testo diventano un diario alimentare compilato in automatico, condiviso con il nutrizionista.",
     image: "/alma-screenshot.jpg",
     alt: "Interfaccia di Alma, assistente nutrizionale per professionisti",
-    url: "https://alma-sandy.vercel.app/",
+    url: "https://alma-nutritio.com/",
     tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
     type: "Web app con AI",
   },
