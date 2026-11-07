@@ -60,8 +60,8 @@ export default async function ImportaPage() {
             </li>
           </ol>
           <p className="mt-4 text-xs text-[var(--fi-muted)]">
-            Per ora si importano fatture (TD01) e parcelle (TD06) non indirizzate alla PA. Se lo stesso file viene caricato due volte,
-            la seconda viene ignorata.
+            Per ora si importano fatture (TD01) e parcelle (TD06) non indirizzate alla PA. Se c&apos;è già una fattura con lo
+            stesso numero e anno, viene saltata.
           </p>
         </Panel>
       </div>
