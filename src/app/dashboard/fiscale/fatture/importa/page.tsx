@@ -6,6 +6,8 @@ import { ImportForm } from "./import-form";
 
 export const metadata = { title: "Importa fatture | Fiscale" };
 
+const FATTURE_EMESSE_URL = "https://ivaservizi.agenziaentrate.gov.it/cons/cons-web/fatture/emesse";
+
 export default async function ImportaPage() {
   await connection();
   const db = await fiscaleDb();
@@ -31,8 +33,16 @@ export default async function ImportaPage() {
         <Panel title="Come funziona" className="xl:col-span-2">
           <ol className="list-decimal space-y-2.5 pl-4 text-sm text-[var(--fi-ink-2)]">
             <li>
-              Scarica gli XML delle tue fatture dal servizio che usavi, oppure da Fatture e Corrispettivi →
-              Consultazione → Fatture emesse.
+              Scarica gli XML delle tue fatture dal servizio che usavi, oppure da{" "}
+              <a
+                href={FATTURE_EMESSE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-[var(--fi-action)] underline underline-offset-4"
+              >
+                Fatture e Corrispettivi
+              </a>{" "}
+              → Consultazione → Fatture emesse.
             </li>
             <li>
               Caricali qui. Ogni fattura viene salvata con il suo <b className="text-[var(--fi-ink)]">numero e data
