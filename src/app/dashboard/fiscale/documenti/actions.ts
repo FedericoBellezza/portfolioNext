@@ -236,14 +236,15 @@ export async function deleteCategoryAction(formData: FormData): Promise<void> {
   const category = String(formData.get("category") ?? "");
   if (!DOCUMENT_CATEGORIES.some((c) => c.id === category)) return;
   const db = await fiscaleDb();
-  const { data } = await db.from("documents").select("id, file_path").eq("category", category);
-  if (!data?.length) return;
-  const supabase = await createClient();
-  const { error } = await db.from("documents").delete().in("id", data.map((d) => d.id));
+  // One request filtered by category (a list of ids would make the URL too
+  // long with hundreds of files); it returns the paths of the rows it removed.
+  const { data, error } = await db.from("documents").delete().eq("category", category).select("file_path");
   if (error) {
     console.error("[fiscale] delete category:", error.message);
     return;
   }
+  if (!data?.length) return;
+  const supabase = await createClient();
   const paths = data.map((d) => String(d.file_path));
   for (let i = 0; i < paths.length; i += 100) {
     const { error: e } = await supabase.storage.from(DOCUMENT_BUCKET).remove(paths.slice(i, i + 100));
