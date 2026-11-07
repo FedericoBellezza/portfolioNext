@@ -7,11 +7,11 @@ import { DOCUMENT_BUCKET, DOCUMENT_MAX_BYTES, documentMime } from "@/lib/fiscale
 import { toEuro, toCents } from "@/lib/fiscale/money";
 import { obligationTarget } from "@/lib/fiscale/obligations";
 import { fileKind, fileTitle } from "@/lib/fiscale/receipts";
+import { COMPENSATED_NOTE, insertObligationPayment, linkColumn } from "@/lib/fiscale/payment-write";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = { ok: boolean; message: string } | null;
 
-const COMPENSATED_NOTE = "Pagato in compensazione con un credito d'imposta";
 const MAX_FILES = 10;
 
 const RegisterSchema = z.object({
@@ -36,8 +36,6 @@ async function ownerContext() {
 type OwnerContext = Awaited<ReturnType<typeof ownerContext>>;
 type PaymentTable = "inps_payments" | "tax_payments";
 type FileMeta = { path: string; mime: string; size: number; name: string };
-
-const linkColumn = (table: PaymentTable) => (table === "inps_payments" ? "inps_payment_id" : "tax_payment_id");
 
 /** Archive rows (category F24) for files already in the private bucket, linked to one payment. */
 async function linkFiles(ctx: OwnerContext, table: PaymentTable, paymentId: string, year: number, files: FileMeta[]): Promise<boolean> {
@@ -94,31 +92,10 @@ export async function registerF24(_prev: ActionState, formData: FormData): Promi
     if (!documentMime(f)) return { ok: false, message: `${f.name}: formati ammessi PDF, JPG, PNG, XML o P7M.` };
   }
 
-  const euro = toEuro(toCents(amount));
-  const insert =
-    target.table === "inps_payments"
-      ? ctx.db.from("inps_payments").insert({
-          paid_at: paidAt,
-          competence_year: target.competenceYear,
-          kind: target.kind,
-          amount: euro,
-          f24_causale: target.causale,
-          f24_reference: reference ?? null,
-          notes,
-        }).select("id").single()
-      : ctx.db.from("tax_payments").insert({
-          paid_at: paidAt,
-          competence_year: target.competenceYear,
-          kind: target.kind,
-          tribute_code: target.tributeCode ?? null,
-          amount: euro,
-          f24_reference: reference ?? null,
-          notes,
-        }).select("id").single();
-  const { data: inserted, error } = await insert;
-  if (error || !inserted) {
-    if (error?.code === "23505") return { ok: false, message: "Questo adempimento risulta già registrato." };
-    console.error("[fiscale] insert F24:", error?.message);
+  const inserted = await insertObligationPayment(ctx.db, target, { paidAt, amount: toCents(amount), reference, notes });
+  if (!("id" in inserted)) {
+    if (inserted.duplicate) return { ok: false, message: "Questo adempimento risulta già registrato." };
+    console.error("[fiscale] insert F24:", inserted.error);
     return { ok: false, message: "Salvataggio non riuscito." };
   }
 

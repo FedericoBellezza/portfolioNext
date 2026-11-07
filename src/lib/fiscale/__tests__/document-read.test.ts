@@ -23,7 +23,7 @@ describe("document read with Claude", () => {
 
   it("reads the fields, tidying the title", () => {
     const reply = 'Ecco: {"titolo":"  Visura   camerale ","categoria":"chamber","anno":"2026"}';
-    expect(parseReadReply(reply)).toEqual({ title: "Visura camerale", category: "chamber", year: 2026 });
+    expect(parseReadReply(reply)).toEqual({ title: "Visura camerale", category: "chamber", year: 2026, payment: null });
   });
 
   it("falls back to other and no year, and survives bad replies", () => {
@@ -31,6 +31,7 @@ describe("document read with Claude", () => {
       title: "Contratto",
       category: "other",
       year: null,
+      payment: null,
     });
     expect(parseReadReply('{"titolo":"  ","categoria":"inps","anno":null}')).toBeNull();
     expect(parseReadReply("non so")).toBeNull();

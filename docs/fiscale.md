@@ -41,6 +41,10 @@ Il legame tra scadenze del calendario e righe del DB è in `src/lib/fiscale/obli
 
 Dalla pagina Scadenze si registrano anche le scadenze future già pagate. La ricevuta è facoltativa. L'**INAIL** (autoliquidazione del 16 febbraio, dall'anno dopo l'avvio) è nel calendario come le altre voci: importo stimato con l'ultimo premio pagato, "da verificare" finché non ce n'è uno. Non è dedotto dal reddito.
 
+### Caricamento multiplo in Documenti
+
+In Documenti si possono scegliere più file insieme: Claude legge ognuno (titolo, categoria, anno) e lo archivia senza conferma. Per un file di pagamento (categoria F24) legge anche il tipo di ricevuta, la data del versamento e le righe dell'F24. `src/lib/fiscale/f24-match.ts` (testato) abbina le righe alle scadenze: 1790/1791/1792 + anno, AF + periodo (trimestre), AP + periodo e mese del pagamento, 3850, 2521–2524, sezione INAIL di febbraio. `applyDocumentPayment` (`src/lib/fiscale/payment-write.ts`) registra il pagamento se la scadenza è libera e il file prova il pagamento (quietanza, F24 versato, attestazione), altrimenti collega solo il file. Un F24 con più righe viene copiato su ogni scadenza. Restano fuori, e sono elencati nel risultato: saldi a rate, interessi, ravvedimenti, Gestione Commercianti, rate INAIL successive.
+
 ## Fatture: emissione e invio (portale gratuito AdE)
 
 1. **Nuova fattura** salva una bozza (totali ricalcolati sul server).
