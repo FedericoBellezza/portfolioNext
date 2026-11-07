@@ -26,11 +26,11 @@ describe("F24 lines to calendar items", () => {
       ],
     });
     expect(m.obligations).toEqual([
-      { key: "tax:balance:2025", amount: 81240, codes: ["1792"] },
-      { key: "tax:advance_1:2026", amount: 40620, codes: ["1790"] },
-      { key: "inps:excess_balance:2025", amount: 12000, codes: ["AP"] },
-      { key: "inps:excess_advance_1:2026", amount: 6000, codes: ["AP"] },
-      { key: "chamber:2026", amount: 5300, codes: ["3850"] },
+      { key: "tax:balance:2025", amount: 81240, codes: ["1792"], installment: false },
+      { key: "tax:advance_1:2026", amount: 40620, codes: ["1790"], installment: false },
+      { key: "inps:excess_balance:2025", amount: 12000, codes: ["AP"], installment: false },
+      { key: "inps:excess_advance_1:2026", amount: 6000, codes: ["AP"], installment: false },
+      { key: "chamber:2026", amount: 5300, codes: ["3850"], installment: false },
     ]);
     expect(m.unmatched).toEqual([]);
     expect(m.final).toBe(true);
@@ -61,18 +61,50 @@ describe("F24 lines to calendar items", () => {
     expect(af("2024-08-20", null)).toBe("inps:fixed_q2:2024");
   });
 
-  it("leaves INPS installment plans to the owner", () => {
+  it("matches installments to their item and leaves interest out (F24 of 20/08/2024)", () => {
     const m = matchF24({
       kind: "f24_versato",
       date: "2024-08-20",
       rows: [
-        row({ section: "inps", code: "APR", period: "01/2023-12/2023", debit: 882.25 }),
-        row({ section: "inps", code: "API", period: "01/2024-12/2024", debit: 1.59 }),
-        row({ section: "inps", code: "AF", period: "01/2024-12/2024", debit: 722.54 }),
+        row({ code: "1792", year: 2023, installment: "0204", debit: 20.5 }),
+        row({ code: "1790", year: 2024, installment: "0204", debit: 245.63 }),
+        row({ section: "inps", code: "APR", period: "1 2023 12 2023", debit: 882.25 }),
+        row({ section: "inps", code: "API", period: "1 2024 12 2024", debit: 1.59 }),
+        row({ section: "inps", code: "AF", period: "1 2024 12 2024", debit: 722.54 }),
+        row({ section: "inps", code: "APR", period: "1 2024 12 2024", debit: 481.92 }),
       ],
     });
-    expect(m.obligations).toEqual([{ key: "inps:fixed_q2:2024", amount: 72254, codes: ["AF"] }]);
-    expect(m.unmatched.map((u) => u.reason)).toEqual(["contributi rateizzati: registrali a mano", "contributi rateizzati: registrali a mano"]);
+    expect(m.obligations).toEqual([
+      { key: "tax:balance:2023", amount: 2050, codes: ["1792"], installment: true },
+      { key: "tax:advance_1:2024", amount: 24563, codes: ["1790"], installment: true },
+      { key: "inps:excess_balance:2023", amount: 88225, codes: ["APR"], installment: true },
+      { key: "inps:fixed_q2:2024", amount: 72254, codes: ["AF"], installment: false },
+      { key: "inps:excess_advance_1:2024", amount: 48192, codes: ["APR"], installment: true },
+    ]);
+    expect(m.unmatched).toEqual([{ code: "API", reason: "interessi della rateizzazione: non vanno nelle scadenze" }]);
+  });
+
+  it("sums a lump sum and the first installment of the same item (F24 of 31/07/2024 and 21/07/2025)", () => {
+    const jul24 = matchF24({
+      kind: "f24_versato",
+      date: "2024-07-31",
+      rows: [
+        row({ code: "1792", year: 2023, installment: "0101", debit: 984 }),
+        row({ code: "1792", year: 2023, installment: "0104", debit: 20.5 }),
+        row({ section: "inps", code: "4001", period: null, credit: 984 }),
+      ],
+    });
+    expect(jul24.obligations).toEqual([{ key: "tax:balance:2023", amount: 100450, codes: ["1792"], installment: true }]);
+
+    const jul25 = matchF24({
+      kind: "f24_versato",
+      date: "2025-07-21",
+      rows: [
+        row({ section: "inps", code: "AP", period: "1 2025 12 2025", debit: 476.5 }),
+        row({ section: "inps", code: "APR", period: "1 2025 12 2025", debit: 410.52 }),
+      ],
+    });
+    expect(jul25.obligations).toEqual([{ key: "inps:excess_advance_1:2025", amount: 88702, codes: ["AP", "APR"], installment: true }]);
   });
 
   it("tells the second INPS acconto from the first by the month", () => {
@@ -91,18 +123,18 @@ describe("F24 lines to calendar items", () => {
       ],
     });
     expect(m.obligations).toEqual([
-      { key: "stamp:q4:2025", amount: 600, codes: ["2524"] },
-      { key: "inail:2026", amount: 3012, codes: ["INAIL"] },
+      { key: "stamp:q4:2025", amount: 600, codes: ["2524"], installment: false },
+      { key: "inail:2026", amount: 3012, codes: ["INAIL"], installment: false },
     ]);
   });
 
-  it("leaves out installments, interest, Commercianti and lines it cannot place", () => {
+  it("leaves out interest, Commercianti and lines it cannot place", () => {
     const m = matchF24({
       kind: "f24_versato",
       date: "2026-08-20",
       rows: [
-        row({ code: "1792", year: 2025, installment: "0203", debit: 300 }),
         row({ code: "1668", year: 2025, debit: 1.2 }),
+        row({ code: "3944", year: 2026, debit: 107 }),
         row({ section: "inps", code: "CF", period: "04/2026-06/2026", debit: 1000 }),
         row({ section: "inps", code: "AP", debit: 1000 }),
         row({ code: "1790", debit: 100 }),
@@ -111,7 +143,7 @@ describe("F24 lines to calendar items", () => {
     });
     expect(m.obligations).toEqual([]);
     expect(m.unmatched.map((u) => u.reason)).toEqual([
-      "pagato a rate: registralo a mano",
+      "interessi della rateizzazione: non vanno nelle scadenze",
       "codice non gestito",
       "Gestione Commercianti non gestita",
       "periodo di riferimento non letto",
@@ -126,7 +158,7 @@ describe("F24 lines to calendar items", () => {
       date: "2026-06-30",
       rows: [row({ code: "1790", year: 2026, installment: "0101", debit: 200 }), row({ code: "1792", year: 2025, credit: 200 })],
     });
-    expect(m.obligations).toEqual([{ key: "tax:advance_1:2026", amount: 20000, codes: ["1790"] }]);
+    expect(m.obligations).toEqual([{ key: "tax:advance_1:2026", amount: 20000, codes: ["1790"], installment: false }]);
     expect(m.unmatched).toEqual([]);
     expect(m.compensated).toBe(true);
   });

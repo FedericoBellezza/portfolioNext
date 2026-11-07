@@ -3,7 +3,7 @@ import type { createClient } from "@/lib/supabase/server";
 import type { FileCheck } from "./data/types";
 import { DOCUMENT_BUCKET, storedFileName } from "./documents";
 import { matchF24, type DocumentPayment } from "./f24-match";
-import { formatEUR, toEuro, type Cents } from "./money";
+import { formatEUR, toCents, toEuro, type Cents } from "./money";
 import { obligationTarget, type ObligationTarget } from "./obligations";
 import { CHECK_KINDS, paymentLabel } from "./receipts";
 
@@ -37,10 +37,43 @@ async function existingPayment(db: Db, target: ObligationTarget): Promise<string
   return data ? String(data.id) : null;
 }
 
+/** The file of this F24 (same date) is already linked to the payment: its installment is counted. */
+async function installmentCounted(db: Db, target: ObligationTarget, paymentId: string, date: string): Promise<boolean> {
+  const { data } = await db.from("documents").select("id").eq(linkColumn(target.table), paymentId).eq("ai_check->>date", date).limit(1);
+  return Boolean(data?.length);
+}
+
+/**
+ * Adds an installment to a recorded payment: amount summed, date moved to the
+ * latest installment. The update only applies if the amount has not changed
+ * since it was read (files are processed two at a time), else it retries.
+ * Returns the new total, or null.
+ */
+async function addInstallment(db: Db, target: ObligationTarget, paymentId: string, amount: Cents, date: string): Promise<Cents | null> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: row } = await db.from(target.table).select("amount, paid_at").eq("id", paymentId).maybeSingle();
+    if (!row) return null;
+    const total = toCents(row.amount) + amount;
+    const paidAt = String(row.paid_at) > date ? String(row.paid_at) : date;
+    const { data, error } = await db
+      .from(target.table)
+      .update({ amount: toEuro(total), paid_at: paidAt })
+      .eq("id", paymentId)
+      .eq("amount", row.amount)
+      .select("id");
+    if (error) {
+      console.error("[fiscale] add installment:", error.message);
+      return null;
+    }
+    if (data?.length) return total;
+  }
+  return null;
+}
+
 export interface PaymentOutcome {
   /** e.g. "INPS fissi 2ª rata 2026" or the F24 code when not matched. */
   label: string;
-  result: "registered" | "linked" | "skipped";
+  result: "registered" | "added" | "linked" | "skipped";
   detail: string;
 }
 
@@ -49,7 +82,8 @@ export interface PaymentOutcome {
  * a calendar item gets its payment recorded (when the file proves it was paid
  * and none is recorded yet) and the file linked to it. The first payment gets
  * the archive row itself, the others a copy of the file, as when the owner
- * uploads the same F24 on each item by hand.
+ * uploads the same F24 on each item by hand. An installment (rateazione, APR)
+ * of an item already recorded is added to its amount, once per F24.
  */
 export async function applyDocumentPayment(
   supabase: Supabase,
@@ -59,8 +93,15 @@ export async function applyDocumentPayment(
 ): Promise<PaymentOutcome[]> {
   const db = supabase.schema("fiscale");
   const match = matchF24(payment);
-  const outcomes: PaymentOutcome[] = match.unmatched.map((u) => ({ label: `Codice ${u.code}`, result: "skipped", detail: u.reason }));
   const kindLabel = CHECK_KINDS[payment.kind]?.label ?? "Documento";
+  // Lines of a file that does not prove a payment (e.g. the F24 form alone) are not worth listing.
+  const outcomes: PaymentOutcome[] = match.final
+    ? match.unmatched.map((u) => ({ label: `Codice ${u.code}`, result: "skipped", detail: u.reason }))
+    : match.obligations.length === 0
+      ? [{ label: kindLabel, result: "skipped", detail: "non prova il pagamento: nessuna scadenza toccata" }]
+      : [];
+  const paidOn = match.date ? `${match.date.slice(8, 10)}/${match.date.slice(5, 7)}/${match.date.slice(0, 4)}` : "";
+  const usable = match.final && match.date !== null && match.date <= today;
   let docUsed = false;
 
   for (const ob of match.obligations) {
@@ -70,6 +111,7 @@ export async function applyDocumentPayment(
 
     let paymentId = await existingPayment(db, target);
     let registered = false;
+    let added: Cents | null = null;
     if (!paymentId) {
       const why = !match.final
         ? `${kindLabel.toLowerCase()}: non prova il pagamento, registralo quando hai la quietanza`
@@ -98,6 +140,14 @@ export async function applyDocumentPayment(
       }
       if (!paymentId) {
         outcomes.push({ label, result: "skipped", detail: "salvataggio non riuscito" });
+        continue;
+      }
+    }
+
+    if (!registered && ob.installment && usable && !(await installmentCounted(db, target, paymentId, match.date!))) {
+      added = await addInstallment(db, target, paymentId, ob.amount, match.date!);
+      if (added === null) {
+        outcomes.push({ label, result: "skipped", detail: "rata non sommata: aggiungila a mano" });
         continue;
       }
     }
@@ -145,11 +195,13 @@ export async function applyDocumentPayment(
     }
 
     const amount = formatEUR(ob.amount);
-    const paidOn = match.date ? `${match.date.slice(8, 10)}/${match.date.slice(5, 7)}/${match.date.slice(0, 4)}` : "";
+    const fileNote = linked ? "" : " (file non collegato)";
     outcomes.push(
       registered
-        ? { label, result: "registered", detail: `${amount}, pagato il ${paidOn}${linked ? "" : " (file non collegato)"}` }
-        : linked
+        ? { label, result: "registered", detail: `${amount}${ob.installment ? " (prima rata)" : ""}, pagato il ${paidOn}${fileNote}` }
+        : added !== null
+          ? { label, result: "added", detail: `+${amount} (rata del ${paidOn}), totale ${formatEUR(added)}${fileNote}` }
+          : linked
           ? { label, result: "linked", detail: "già registrato: file collegato" }
           : { label, result: "skipped", detail: "file non collegato" },
     );

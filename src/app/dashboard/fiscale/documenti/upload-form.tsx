@@ -335,6 +335,7 @@ export function UploadForm({ currentYear }: { currentYear: number }) {
 
 const RESULT = {
   registered: { text: "Registrato", className: "text-[var(--fi-good-text)]" },
+  added: { text: "Rata aggiunta", className: "text-[var(--fi-good-text)]" },
   linked: { text: "Collegato", className: "text-[var(--fi-action)]" },
   skipped: { text: "Non registrato", className: "text-[var(--fi-warning-text)]" },
 } as const;

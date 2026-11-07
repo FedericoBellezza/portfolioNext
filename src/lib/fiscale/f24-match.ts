@@ -37,6 +37,12 @@ export interface MatchedObligation {
   key: string;
   amount: Cents;
   codes: string[];
+  /**
+   * Paid in installments (erario "rateazione" like 0104, INPS causale APR):
+   * this F24 holds only part of the amount, which adds up to the payment of
+   * the same item recorded by the other F24 of the plan.
+   */
+  installment: boolean;
 }
 
 export interface F24Match {
@@ -60,6 +66,9 @@ const ERARIO: Record<string, string> = {
   "2524": "stamp:q4",
   "3850": "chamber",
 };
+
+/** Interest of an installment plan: a cost, not part of the tax or contribution. */
+const INTEREST = new Set(["1668", "API"]);
 
 /** "0103" → 3 installments; "0101", empty or other content (region, month) → 1. */
 function installments(field: string | null): number {
@@ -98,8 +107,11 @@ function fixedKey(bounds: ReturnType<typeof periodBounds>, date: string | null):
   return { key: `inps:fixed_q${paidMonth <= 6 ? 1 : paidMonth <= 9 ? 2 : 3}:${year}` };
 }
 
-function rowKey(row: F24Row, date: string | null): { key: string } | { reason: string } {
+type RowHit = { key: string; installment?: boolean } | { reason: string };
+
+function rowKey(row: F24Row, date: string | null): RowHit {
   const code = row.code.trim().toUpperCase();
+  if (INTEREST.has(code)) return { reason: "interessi della rateizzazione: non vanno nelle scadenze" };
 
   if (row.section === "inail" || code === "INAIL") {
     if (!date) return { reason: "data del versamento non letta" };
@@ -108,10 +120,9 @@ function rowKey(row: F24Row, date: string | null): { key: string } | { reason: s
     return month <= 3 ? { key: `inail:${date.slice(0, 4)}` } : { reason: "rata INAIL successiva alla prima" };
   }
 
-  if (row.section === "inps" || code === "AF" || code === "AP") {
+  if (row.section === "inps" || code === "AF" || code === "AP" || code === "APR") {
     if (code === "CF" || code === "CP") return { reason: "Gestione Commercianti non gestita" };
-    if (code === "APR" || code === "API") return { reason: "contributi rateizzati: registrali a mano" };
-    if (code !== "AF" && code !== "AP") return { reason: "causale INPS non gestita" };
+    if (code !== "AF" && code !== "AP" && code !== "APR") return { reason: "causale INPS non gestita" };
     const bounds = periodBounds(row.period);
     if (code === "AF") return fixedKey(bounds, date);
     // AP: the year of the period is the income year; paid the year after = saldo.
@@ -119,16 +130,18 @@ function rowKey(row: F24Row, date: string | null): { key: string } | { reason: s
     if (!start) return { reason: "periodo di riferimento non letto" };
     if (!date) return { reason: "data del versamento non letta" };
     const paidYear = Number(date.slice(0, 4));
-    if (paidYear > start.year) return { key: `inps:excess_balance:${start.year}` };
+    // APR: an installment of the saldo or of the 1st acconto (the plans run June to November).
+    const installment = code === "APR";
+    if (paidYear > start.year) return { key: `inps:excess_balance:${start.year}`, installment };
     if (paidYear < start.year) return { reason: "periodo successivo alla data del versamento" };
+    if (installment) return { key: `inps:excess_advance_1:${start.year}`, installment };
     return { key: `inps:${Number(date.slice(5, 7)) <= 9 ? "excess_advance_1" : "excess_advance_2"}:${start.year}` };
   }
 
   const prefix = ERARIO[code];
   if (!prefix) return { reason: "codice non gestito" };
   if (!row.year) return { reason: "anno di riferimento non letto" };
-  if (installments(row.installment) > 1) return { reason: "pagato a rate: registralo a mano" };
-  return { key: `${prefix}:${row.year}` };
+  return { key: `${prefix}:${row.year}`, installment: installments(row.installment) > 1 };
 }
 
 export function matchF24(p: DocumentPayment): F24Match {
@@ -152,9 +165,10 @@ export function matchF24(p: DocumentPayment): F24Match {
     const prev = byKey.get(hit.key);
     if (prev) {
       prev.amount += d;
+      prev.installment ||= Boolean(hit.installment);
       if (!prev.codes.includes(row.code)) prev.codes.push(row.code);
     } else {
-      byKey.set(hit.key, { key: hit.key, amount: d, codes: [row.code] });
+      byKey.set(hit.key, { key: hit.key, amount: d, codes: [row.code], installment: Boolean(hit.installment) });
     }
   }
 
