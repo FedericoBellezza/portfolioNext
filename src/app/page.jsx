@@ -9,7 +9,27 @@ import Pricing from "./components/landing/Pricing";
 import Contact from "./components/landing/Contact";
 import SiteFooter from "./components/landing/SiteFooter";
 import MobileCta from "./components/landing/MobileCta";
-import { homeGraph } from "@/lib/structured-data";
+import { SEO, SITE } from "@/lib/site-data";
+import { homeGraph, jsonLd } from "@/lib/structured-data";
+
+export const metadata = {
+  title: { absolute: SEO.title },
+  description: SEO.description,
+  alternates: {
+    canonical: "/",
+    languages: { "it-IT": "/", "x-default": "/" },
+    // Points assistants that look for it to the same page in plain Markdown.
+    types: { "text/markdown": "/llms.txt" },
+  },
+  openGraph: {
+    title: SEO.title,
+    description: SEO.description,
+    url: "/",
+    siteName: SITE.name,
+    locale: SITE.locale,
+    type: "website",
+  },
+};
 
 /**
  * Order follows the questions a buyer asks, in sequence: what do you do for
@@ -22,7 +42,7 @@ export default function Home() {
           layout: they describe this page, not the site. */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeGraph()) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(homeGraph()) }}
       />
 
       <a href="#contenuto" className="fb-skip">

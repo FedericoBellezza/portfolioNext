@@ -5,7 +5,8 @@ import { ImageResponse } from "next/og";
 // No edge runtime: on edge this image is rendered per request, which is a
 // cold start in front of every scraper that fetches it. On the default
 // runtime Next bakes it into a static PNG at build time.
-export const alt = "Federico Bellezza - Siti web e automazioni professionali";
+export const alt =
+  "Federico Bellezza, sviluppatore web freelance: automazioni, assistenti AI, siti e software su misura";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

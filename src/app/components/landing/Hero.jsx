@@ -78,20 +78,25 @@ export default function Hero() {
 
       <div className="relative mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-14 lg:grid-cols-12 lg:gap-10">
         <div className="lg:col-span-7">
-          <p
-            className="hero-eyebrow mb-6 font-mono text-xs uppercase tracking-[0.18em]"
-            style={{ color: "var(--fb-ink-3)" }}
-          >
-            {HERO.eyebrow}
-          </p>
-
-          <h1
-            className="hero-sub mb-7 text-[2.4rem] font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl xl:text-[3.6rem]"
-            style={delay(HEADLINE_START)}
-          >
-            {HERO.headline.lead}{" "}
-            <span className="lg:block" style={{ color: "var(--fb-accent)" }}>
-              {HERO.headline.accent}
+          {/* One <h1> holding both lines: the eyebrow says what I am (the
+              words people search for), the headline says what they get.
+              Visually unchanged, two blocks with their own intro timing. */}
+          <h1 className="mb-7">
+            <span
+              className="hero-eyebrow mb-6 block font-mono text-xs font-normal uppercase leading-normal tracking-[0.18em]"
+              style={{ color: "var(--fb-ink-3)" }}
+            >
+              {HERO.eyebrow}
+            </span>
+            <span className="sr-only">: </span>
+            <span
+              className="hero-sub block text-[2.4rem] font-semibold leading-[1.06] tracking-tight text-balance sm:text-5xl xl:text-[3.6rem]"
+              style={delay(HEADLINE_START)}
+            >
+              {HERO.headline.lead}{" "}
+              <span className="lg:block" style={{ color: "var(--fb-accent)" }}>
+                {HERO.headline.accent}
+              </span>
             </span>
           </h1>
 

@@ -1,9 +1,11 @@
 import {
+  ABOUT,
   CONTACT,
   PLANS,
   PRICING_FAQ,
   PROCESS,
   PROJECTS,
+  PROOF,
   SERVICES,
   SITE,
 } from "@/lib/site-data";
@@ -49,6 +51,15 @@ function body() {
       }. ${project.description} Stack: ${project.tags.join(", ")}.`,
   ).join("\n");
 
+  const proof = PROOF.map((item) => `- **${item.value}** ${item.label}`).join(
+    "\n",
+  );
+
+  const about = ABOUT.body.join("\n\n");
+
+  // Build date: the file is static, so this is when its facts were last true.
+  const updated = new Date().toISOString().slice(0, 10);
+
   const faq = PRICING_FAQ.map((item) => `### ${item.q}\n\n${item.a}`).join(
     "\n\n",
   );
@@ -58,6 +69,16 @@ function body() {
 > ${SITE.role}. Realizza automazioni dei processi, assistenti AI, siti web e software su misura per PMI e professionisti, lavorando da remoto in tutta ${SITE.areaServed}. La prima call di 30 minuti è gratuita.
 
 Sviluppatore singolo, non un'agenzia: chi scrive il codice è la stessa persona con cui parli. Stack principale Next.js, React, Node.js, Supabase e n8n. Sito ufficiale: ${SITE.url}
+
+Ultimo aggiornamento: ${updated}
+
+## Chi è
+
+${about}
+
+## In breve
+
+${proof}
 
 ## Servizi
 
@@ -95,6 +116,13 @@ ${faq}
 ## Pagine
 
 - [Home](${SITE.url}) — servizi, metodo, progetti, prezzi e contatti
+  - [Servizi](${SITE.url}/#servizi)
+  - [Progetti](${SITE.url}/#progetti)
+  - [Metodo di lavoro](${SITE.url}/#metodo)
+  - [Chi sono](${SITE.url}/#chi-sono)
+  - [Prezzi](${SITE.url}/#prezzi)
+  - [Domande frequenti](${SITE.url}/#faq)
+  - [Contatti](${SITE.url}/#contatti)
 - [Privacy e cookie policy](${SITE.url}/privacy)
 `;
 }

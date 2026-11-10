@@ -115,17 +115,21 @@ export default function Services() {
                     }`}
                   >
                     <div className={wide ? "lg:col-span-7" : undefined}>
-                      <p
+                      {/* The service name is the heading (what people
+                          search for); the situation under it stays the
+                          biggest text on the card. */}
+                      <h3
+                        id={`servizio-${service.id}`}
                         className="flex items-center gap-2 text-sm font-medium"
                         style={{ color: "var(--fb-accent)" }}
                       >
-                        <Icon size={18} weight="duotone" />
+                        <Icon size={18} weight="duotone" aria-hidden="true" />
                         {service.label}
-                      </p>
-
-                      <h3 className="mt-5 max-w-[24ch] text-2xl font-semibold leading-tight tracking-tight text-balance sm:text-[1.7rem]">
-                        {service.title}
                       </h3>
+
+                      <p className="mt-5 max-w-[24ch] text-2xl font-semibold leading-tight tracking-tight text-balance sm:text-[1.7rem]">
+                        {service.title}
+                      </p>
 
                       <p
                         className="mt-4 max-w-[54ch] leading-relaxed"

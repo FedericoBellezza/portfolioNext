@@ -5,11 +5,18 @@ export const metadata = {
   description:
     "Informativa sulla privacy e sull'utilizzo dei cookie del sito federicobellezza.dev",
   alternates: {
-    canonical: "https://federicobellezza.dev/privacy",
+    canonical: "/privacy",
   },
+  openGraph: {
+    title: "Privacy Policy & Cookie Policy | Federico Bellezza",
+    url: "/privacy",
+    type: "website",
+    locale: "it_IT",
+  },
+  // follow stays on: the links back to the home page pass on to it.
   robots: {
     index: true,
-    follow: false,
+    follow: true,
   },
 };
 

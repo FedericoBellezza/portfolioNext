@@ -24,6 +24,34 @@ export const SITE = {
   areaServedCode: "IT",
 };
 
+/**
+ * What search engines and AI assistants show for the home page: the <title>,
+ * the meta description, the share card and the WebPage node in JSON-LD all
+ * read these two strings, so the snippet is the same everywhere.
+ * The title leads with the query a buyer types and ends with the name, which
+ * people type too once they know it. Keep it under ~60 characters and the
+ * description under ~160, or Google cuts them.
+ */
+export const SEO = {
+  title: "Sviluppatore Web Freelance e Automazioni AI | Federico Bellezza",
+  description:
+    "Sviluppatore web freelance per PMI in tutta Italia: automazioni n8n, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
+  // Ignored by Google, still read by some smaller engines and directories.
+  keywords: [
+    "sviluppatore web freelance",
+    "sviluppatore web Italia",
+    "automazioni aziendali",
+    "automazioni n8n",
+    "assistente AI per aziende",
+    "intelligenza artificiale per PMI",
+    "sviluppo web app su misura",
+    "gestionale su misura",
+    "siti web professionali",
+    "next.js developer freelance",
+    "Federico Bellezza",
+  ],
+};
+
 export const CONTACT = {
   email: "federico.bellezza.dev@gmail.com",
   // Same number behind the WhatsApp link, in E.164 for schema.org.
@@ -56,7 +84,9 @@ export const NAV_LINKS = [
 ];
 
 export const HERO = {
-  eyebrow: "Sviluppatore freelance per PMI",
+  // Rendered inside the <h1>, so it carries the words people search for
+  // while the big headline carries the promise.
+  eyebrow: "Sviluppatore web freelance per PMI",
   // Split so the accent can sit on the benefit, not on the problem.
   headline: {
     lead: "Meno lavoro ripetitivo,",
@@ -179,6 +209,8 @@ export const PROCESS = [
 /**
  * Ordered by how much they say to a company: AI products first, then
  * corporate work. The first one is shown large.
+ * `appCategory` (a schema.org applicationCategory) marks the ones that are
+ * applications rather than websites; the JSON-LD types them from it.
  */
 export const PROJECTS = [
   {
@@ -190,6 +222,7 @@ export const PROJECTS = [
     url: "https://alma-nutritio.com/",
     tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
     type: "Web app con AI",
+    appCategory: "HealthApplication",
   },
   {
     title: "AI.Bandi",
@@ -200,6 +233,7 @@ export const PROJECTS = [
     url: "https://ai-bandi.com/",
     tags: ["Next.js", "Supabase", "OpenAI", "Stripe"],
     type: "Piattaforma SaaS con AI",
+    appCategory: "BusinessApplication",
   },
   {
     title: "Zoan",
@@ -222,6 +256,7 @@ export const PROJECTS = [
     url: "https://anduma-cyan.vercel.app/",
     tags: ["Next.js", "Supabase", "Leaflet", "Stripe"],
     type: "Web app",
+    appCategory: "TravelApplication",
   },
   {
     title: "Federica Autretto",
@@ -245,7 +280,9 @@ export const TESTIMONIALS = [];
 export const ABOUT = {
   title: "Parli sempre con chi scrive il codice",
   body: [
-    "Sono Federico, sviluppatore full stack. Niente account manager e niente passaggi di mano: la persona della prima call è la stessa che costruisce, consegna e risponde dopo.",
+    // Full name, role and area in one sentence: this is the line an AI
+    // assistant quotes when someone asks who Federico Bellezza is.
+    "Sono Federico Bellezza, sviluppatore web full stack freelance: lavoro da remoto con PMI e professionisti in tutta Italia. Niente account manager e niente passaggi di mano: la persona della prima call è la stessa che costruisce, consegna e risponde dopo.",
     "Uso strumenti diffusi e documento quello che faccio, così il progetto non dipende da me. Codice, account e dati sono intestati a te dal primo giorno.",
   ],
   photo: {

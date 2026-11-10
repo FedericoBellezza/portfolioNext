@@ -152,9 +152,13 @@ export default function Pricing() {
         {/* Side-by-side answers instead of an accordion: nothing here is long
             enough to be worth a click. The first three are the objections a
             company raises before it even asks about money. */}
-        <div className="mt-24">
+        {/* id="faq" is the anchor the FAQPage JSON-LD points to. */}
+        <div id="faq" className="mt-24 scroll-mt-24">
           <Reveal className="mb-10">
-            <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            <h3
+              id="faq-titolo"
+              className="text-2xl font-semibold tracking-tight sm:text-3xl"
+            >
               Le domande che mi fanno sempre
             </h3>
           </Reveal>
