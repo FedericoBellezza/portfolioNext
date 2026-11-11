@@ -109,9 +109,9 @@ export default async function Image() {
             marginBottom: 52,
           }}
         >
-          Meno lavoro ripetitivo,{" "}
+          Strumenti web pensati{" "}
           <span style={{ color: "#79af9b", fontWeight: 600 }}>
-            più tempo per i tuoi clienti
+            attorno al vostro modo di lavorare
           </span>
         </div>
 

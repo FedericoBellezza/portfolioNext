@@ -35,7 +35,7 @@ export const SITE = {
 export const SEO = {
   title: "Sviluppatore Web Freelance e Automazioni AI | Federico Bellezza",
   description:
-    "Sviluppatore web freelance per PMI in tutta Italia: automazioni n8n, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
+    "Sviluppatore web freelance in tutta Italia: automazioni n8n, assistenti AI, siti e web app su misura. Call gratuita, preventivo chiuso in 3 giorni.",
   // Ignored by Google, still read by some smaller engines and directories.
   keywords: [
     "sviluppatore web freelance",
@@ -86,11 +86,11 @@ export const NAV_LINKS = [
 export const HERO = {
   // Rendered inside the <h1>, so it carries the words people search for
   // while the big headline carries the promise.
-  eyebrow: "Sviluppatore web freelance per PMI",
+  eyebrow: "Sviluppatore web freelance",
   // Split so the accent can sit on the benefit, not on the problem.
   headline: {
-    lead: "Meno lavoro ripetitivo,",
-    accent: "più tempo per i tuoi clienti.",
+    lead: "Strumenti web pensati",
+    accent: "attorno al vostro modo di lavorare.",
   },
   sub: "Automazioni, AI e software su misura che lavorano con gli strumenti che usi già. Un solo interlocutore, preventivo chiuso.",
   // Real screenshots of shipped work stand where the portrait used to be:
