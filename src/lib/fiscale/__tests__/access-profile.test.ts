@@ -15,12 +15,12 @@ describe("dashboard access", () => {
     expect(accessOf("someone@example.com")).toBeNull();
     expect(accessOf(null)).toBeNull();
 
-    expect(canAccessPath("owner", "/dashboard/trader")).toBe(true);
+    expect(canAccessPath("owner", "/dashboard/assistant")).toBe(true);
     expect(canAccessPath("fiscale", "/dashboard/fiscale")).toBe(true);
     expect(canAccessPath("fiscale", "/dashboard/fiscale/chiedi")).toBe(true);
     expect(canAccessPath("fiscale", "/api/fiscale/chat")).toBe(true);
     expect(canAccessPath("fiscale", "/dashboard")).toBe(false);
-    expect(canAccessPath("fiscale", "/dashboard/trader")).toBe(false);
+    expect(canAccessPath("fiscale", "/dashboard/assistant")).toBe(false);
     expect(canAccessPath("fiscale", "/dashboard/fiscalefake")).toBe(false);
     expect(canAccessPath(null, "/dashboard/fiscale")).toBe(false);
     expect(homeOf("fiscale")).toBe("/dashboard/fiscale");

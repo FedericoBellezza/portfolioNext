@@ -31,7 +31,7 @@ function profileFromRow(row: Row): FiscalProfile {
 
 /**
  * Loads the signed-in user's fiscal data. Until a row exists in
- * `fiscale.fiscal_profiles` the dashboard shows demo data (like the Trader page).
+ * `fiscale.fiscal_profiles` the dashboard shows demo data.
  */
 export async function loadDataset(): Promise<FiscalDataset> {
   const db = await fiscaleDb();

@@ -1,6 +1,6 @@
 # Fiscale — dashboard forfettario
 
-Sezione privata `/dashboard/fiscale` (solo `OWNER_EMAIL`, come Assistente e Trader): regime forfettario, INPS Gestione Artigiani, fatture, scadenze F24, export per il commercialista.
+Sezione privata `/dashboard/fiscale` (solo `OWNER_EMAIL`, come Assistente): regime forfettario, INPS Gestione Artigiani, fatture, scadenze F24, export per il commercialista.
 
 ## Struttura
 
