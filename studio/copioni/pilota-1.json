@@ -1,0 +1,124 @@
+{
+  "titolo": "WhatsApp dello studio che risponde da solo",
+  "pilastro": "settore",
+  "didascalia": "Orari, prezzi, posti liberi: in uno studio le domande su WhatsApp sono quasi sempre le stesse, e arrivano spesso a studio chiuso.\n\nUn assistente può leggere listino e agenda, proporre solo gli orari liberi, fissare l'appuntamento e mandare il promemoria. Le domande delicate passano a te, con la conversazione già pronta.\n\nI numeri nel video sono una stima su uno studio che riceve 20 messaggi al giorno.\n\nVuoi sapere cosa si può automatizzare nel tuo studio? Call gratuita di 30 minuti, link in bio.",
+  "hashtag": [
+    "automazione",
+    "nutrizionista",
+    "studiomedico",
+    "whatsappbusiness",
+    "intelligenzaartificiale",
+    "liberoprofessionista",
+    "pmi",
+    "n8n"
+  ],
+  "scene": [
+    {
+      "tipo": "aggancio",
+      "sopratitolo": "Studi e ambulatori",
+      "titolo": "Rispondi ancora *a mano* su WhatsApp?",
+      "voce": "Hai uno studio? Quante volte al giorno rispondi alla stessa domanda su WhatsApp?"
+    },
+    {
+      "tipo": "chat",
+      "app": "whatsapp",
+      "intestazione": "Giulia R.",
+      "messaggi": [
+        {
+          "da": "loro",
+          "testo": "Ciao! Avete posto giovedì per una prima visita?",
+          "ora": "21:47"
+        },
+        {
+          "da": "noi",
+          "testo": "Ciao Giulia! Giovedì ho libero alle 10:30 o alle 16:00. Quale preferisci?",
+          "ora": "21:47"
+        },
+        {
+          "da": "loro",
+          "testo": "Le 10:30, grazie!",
+          "ora": "21:48"
+        },
+        {
+          "da": "noi",
+          "testo": "Fatto! Ti mando un promemoria mercoledì.",
+          "ora": "21:48"
+        }
+      ],
+      "voce": "Orari, prezzi, posti liberi. Sempre le stesse domande, spesso alle dieci di sera."
+    },
+    {
+      "tipo": "workflow",
+      "titolo": "Come funziona",
+      "nodi": [
+        {
+          "icona": "whatsapp",
+          "etichetta": "Messaggio WhatsApp",
+          "dettaglio": "Arriva a qualsiasi ora"
+        },
+        {
+          "icona": "ai",
+          "etichetta": "Assistente AI",
+          "dettaglio": "Legge listino e domande frequenti"
+        },
+        {
+          "icona": "calendario",
+          "etichetta": "Agenda dello studio",
+          "dettaglio": "Propone solo gli orari liberi"
+        },
+        {
+          "icona": "campanella",
+          "etichetta": "Conferma e promemoria",
+          "dettaglio": "Il giorno prima, in automatico"
+        }
+      ],
+      "voce": "Un assistente legge listino e agenda, propone gli orari liberi e fissa l'appuntamento. Poi manda il promemoria."
+    },
+    {
+      "tipo": "confronto",
+      "titolo": "Tempo passato sui messaggi",
+      "prima": {
+        "valore": 60,
+        "unita": "min",
+        "etichetta": "al giorno, tutto a mano"
+      },
+      "dopo": {
+        "valore": 10,
+        "unita": "min",
+        "etichetta": "al giorno, solo i casi particolari"
+      },
+      "nota": "Stima: 20 messaggi al giorno, circa 3 minuti l'uno",
+      "voce": "Con venti messaggi al giorno è circa un'ora. Ne restano dieci minuti, solo per i casi particolari."
+    },
+    {
+      "tipo": "schermata",
+      "titolo": "E le domande difficili?",
+      "app": "Agenda dello studio",
+      "righe": [
+        {
+          "testo": "Giovedì 10:30 · Giulia R.",
+          "dettaglio": "Prima visita, prenotata da WhatsApp",
+          "stato": "ok"
+        },
+        {
+          "testo": "Promemoria inviato",
+          "dettaglio": "Mercoledì alle 18:00",
+          "stato": "ok"
+        },
+        {
+          "testo": "Domanda su un referto",
+          "dettaglio": "Passata a te, con tutta la conversazione",
+          "stato": "attesa"
+        }
+      ],
+      "voce": "E le domande difficili? Passano a te, con tutta la conversazione già pronta."
+    },
+    {
+      "tipo": "cta",
+      "titolo": "Questo video l'ha fatto un'automazione.",
+      "sottotitolo": "Vuoi sapere cosa si può automatizzare nel tuo studio? Call gratuita di 30 minuti.",
+      "handle": "federicobellezza.dev",
+      "voce": "Anche questo video l'ha fatto un'automazione che ho costruito. Cosa si può automatizzare nel tuo studio? Link in bio."
+    }
+  ]
+}

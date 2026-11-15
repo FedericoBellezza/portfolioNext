@@ -1,0 +1,30 @@
+{
+  "name": "studio-instagram",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reel Instagram generati da codice (Remotion): scene modello + voce AI + sottotitoli.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "voce": "node scripts/voce.mjs",
+    "render": "node scripts/render.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.543",
+    "@remotion/cli": "4.0.543",
+    "@remotion/google-fonts": "4.0.543",
+    "@remotion/renderer": "4.0.543",
+    "dotenv": "18.0.10",
+    "lucide-react": "0.503.0",
+    "openai": "7.56.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.543"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "typescript": "7.0.2"
+  }
+}

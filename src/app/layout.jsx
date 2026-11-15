@@ -40,11 +40,13 @@ export const metadata = {
   // iOS turns any long digit run into a phone link; prices and dates on this
   // site are not phone numbers.
   formatDetection: { telephone: false, address: false, email: false },
-  // favicon.ico is picked up from the app folder on its own. Listing icons
-  // here switches off the automatic apple-icon tag, so it is listed too.
+  // favicon.ico is picked up from the app folder on its own. The apple icon is
+  // a PNG (iOS ignores SVG): green logo on white, used by "Aggiungi a Home".
   icons: {
     icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
     title: SEO.title,

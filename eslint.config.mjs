@@ -9,6 +9,10 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends("next/core-web-vitals")];
+const eslintConfig = [
+  // studio/ è un progetto Remotion separato, con il suo package.json.
+  { ignores: ["studio/**"] },
+  ...compat.extends("next/core-web-vitals"),
+];
 
 export default eslintConfig;

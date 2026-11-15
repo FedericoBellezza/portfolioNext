@@ -1,0 +1,4 @@
+node_modules
+out
+# Audio e timeline generati da scripts/voce.mjs: si rigenerano dal copione.
+public/reel

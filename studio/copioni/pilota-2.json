@@ -1,0 +1,114 @@
+{
+  "titolo": "Preventivi pronti dalla mail del cliente",
+  "pilastro": "numeri",
+  "didascalia": "Una richiesta di preventivo arriva quasi sempre allo stesso modo: una mail con misure e materiali. Poi si apre il listino, si fanno i conti e si compila il modello.\n\nQuesta parte può farla un'automazione: l'AI legge la mail, prende i prezzi dal listino che usi già e prepara il PDF con il tuo modello. Tu controlli, correggi se serve e invii.\n\nNel video: esempio con 10 preventivi a settimana, da 30 a 5 minuti l'uno.\n\nVuoi capire cosa conviene automatizzare nella tua azienda? Call gratuita di 30 minuti, link in bio.",
+  "hashtag": [
+    "automazione",
+    "preventivi",
+    "artigiani",
+    "pmi",
+    "intelligenzaartificiale",
+    "serramenti",
+    "digitalizzazione",
+    "n8n"
+  ],
+  "scene": [
+    {
+      "tipo": "aggancio",
+      "sopratitolo": "Artigiani e PMI",
+      "titolo": "Mezz'ora per *ogni* preventivo?",
+      "voce": "Mezz'ora per ogni preventivo? Guarda come diventa una bozza pronta in meno di un minuto."
+    },
+    {
+      "tipo": "chat",
+      "app": "email",
+      "intestazione": "Marco Ferri",
+      "messaggi": [
+        {
+          "da": "loro",
+          "etichetta": "Richiesta preventivo finestre",
+          "testo": "Buongiorno, mi servirebbe un preventivo per 3 finestre in PVC 120x140, con posa. Grazie, Marco"
+        },
+        {
+          "da": "noi",
+          "etichetta": "Bozza pronta da controllare",
+          "testo": "Preventivo n. 142: 3 finestre PVC 120x140, posa inclusa. PDF allegato."
+        }
+      ],
+      "voce": "Arriva una richiesta via email, con misure e materiali."
+    },
+    {
+      "tipo": "workflow",
+      "titolo": "Cosa succede in automatico",
+      "nodi": [
+        {
+          "icona": "email",
+          "etichetta": "Email del cliente",
+          "dettaglio": "Misure e materiali nel testo"
+        },
+        {
+          "icona": "ai",
+          "etichetta": "L'AI estrae i dati",
+          "dettaglio": "Prodotti, misure, quantità"
+        },
+        {
+          "icona": "excel",
+          "etichetta": "Prezzi dal tuo listino",
+          "dettaglio": "Il file che usi già"
+        },
+        {
+          "icona": "doc",
+          "etichetta": "Preventivo col tuo modello",
+          "dettaglio": "PDF pronto, con il tuo logo"
+        }
+      ],
+      "voce": "L'AI legge la mail, estrae misure e quantità, prende i prezzi dal tuo listino e compila il tuo modello."
+    },
+    {
+      "tipo": "schermata",
+      "titolo": "L'ultima parola resta tua",
+      "app": "Preventivi",
+      "righe": [
+        {
+          "testo": "Preventivo n. 142 · Marco Ferri",
+          "dettaglio": "3 finestre PVC 120x140, posa inclusa",
+          "stato": "nuovo"
+        },
+        {
+          "testo": "Prezzi dal listino",
+          "dettaglio": "Lo stesso file che usi oggi",
+          "stato": "ok"
+        },
+        {
+          "testo": "Posa al terzo piano?",
+          "dettaglio": "Da verificare prima dell'invio",
+          "stato": "attesa"
+        }
+      ],
+      "voce": "Tu controlli, correggi se serve e invii. L'ultima parola resta tua."
+    },
+    {
+      "tipo": "confronto",
+      "titolo": "Tempo per ogni preventivo",
+      "prima": {
+        "valore": 30,
+        "unita": "min",
+        "etichetta": "scritto a mano"
+      },
+      "dopo": {
+        "valore": 5,
+        "unita": "min",
+        "etichetta": "controllo e invio"
+      },
+      "nota": "Esempio: 10 preventivi a settimana",
+      "voce": "Da mezz'ora a cinque minuti. Con dieci preventivi a settimana, sono più di quattro ore risparmiate."
+    },
+    {
+      "tipo": "cta",
+      "titolo": "Questo video l'ha fatto un'automazione.",
+      "sottotitolo": "Ti dico cosa conviene automatizzare nella tua azienda. Call gratuita di 30 minuti.",
+      "handle": "federicobellezza.dev",
+      "voce": "Anche questo video l'ha fatto un'automazione che ho costruito. Cosa conviene automatizzare da te? Link in bio."
+    }
+  ]
+}

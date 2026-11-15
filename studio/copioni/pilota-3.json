@@ -1,0 +1,101 @@
+{
+  "titolo": "AI e dati dei clienti: dove finiscono",
+  "pilastro": "miti",
+  "didascalia": "È la domanda che mi fanno più spesso: se uso l'AI, i dati dei miei clienti dove finiscono?\n\nCome lavoro io:\n- decidiamo insieme quali dati può vedere ogni automazione, solo quelli necessari;\n- uso le API aziendali di OpenAI e Anthropic, che non usano i dati inviati per addestrare i modelli;\n- dove serve scelgo servizi con server in Europa;\n- codice, account e dati sono intestati a te dal primo giorno.\n\nHai altri dubbi sull'AI nella tua azienda? Call gratuita di 30 minuti, link in bio.",
+  "hashtag": [
+    "intelligenzaartificiale",
+    "privacy",
+    "gdpr",
+    "pmi",
+    "automazione",
+    "aziendeitaliane",
+    "digitalizzazione",
+    "ai"
+  ],
+  "scene": [
+    {
+      "tipo": "aggancio",
+      "sopratitolo": "La domanda più frequente",
+      "titolo": "Con l'AI, i dati dei miei clienti *dove finiscono?*",
+      "voce": "La domanda che mi fanno più spesso: se uso l'intelligenza artificiale, i dati dei miei clienti dove finiscono?"
+    },
+    {
+      "tipo": "workflow",
+      "titolo": "Prima si decide cosa può vedere",
+      "nodi": [
+        {
+          "icona": "doc",
+          "etichetta": "I tuoi documenti",
+          "dettaglio": "Manuali, listini, procedure"
+        },
+        {
+          "icona": "filtro",
+          "etichetta": "Solo i dati necessari",
+          "dettaglio": "Li scegliamo insieme"
+        },
+        {
+          "icona": "ai",
+          "etichetta": "AI via API aziendali",
+          "dettaglio": "Niente addestramento sui tuoi dati"
+        },
+        {
+          "icona": "check",
+          "etichetta": "Risposta con la fonte",
+          "dettaglio": "Sempre verificabile"
+        }
+      ],
+      "voce": "Prima decidiamo insieme quali dati può vedere ogni automazione. Solo quelli che servono, niente di più."
+    },
+    {
+      "tipo": "schermata",
+      "titolo": "Le regole che seguo",
+      "app": "Impostazioni",
+      "righe": [
+        {
+          "testo": "API di OpenAI e Anthropic",
+          "dettaglio": "I dati inviati non addestrano i modelli",
+          "stato": "ok",
+          "etichetta": "Attivo"
+        },
+        {
+          "testo": "Server in Europa",
+          "dettaglio": "Dove serve, scelti progetto per progetto",
+          "stato": "ok",
+          "etichetta": "Attivo"
+        },
+        {
+          "testo": "Accessi per ruolo",
+          "dettaglio": "Ognuno vede solo quello che gli serve",
+          "stato": "ok",
+          "etichetta": "Attivo"
+        }
+      ],
+      "voce": "Uso le API di OpenAI e Anthropic, che non usano i dati inviati per addestrare i modelli. E dove serve, scelgo server in Europa."
+    },
+    {
+      "tipo": "chat",
+      "app": "whatsapp",
+      "intestazione": "Assistente interno",
+      "messaggi": [
+        {
+          "da": "loro",
+          "testo": "Qual è la procedura per un reso?",
+          "ora": "09:12"
+        },
+        {
+          "da": "noi",
+          "testo": "Dal Manuale resi, pagina 4: entro 14 giorni, con il modulo compilato. Ti allego il link.",
+          "ora": "09:12"
+        }
+      ],
+      "voce": "Così un assistente può rispondere ai colleghi su manuali e procedure, citando sempre la fonte."
+    },
+    {
+      "tipo": "cta",
+      "titolo": "Questo video l'ha fatto un'automazione.",
+      "sottotitolo": "Codice, account e dati restano tuoi dal primo giorno.",
+      "handle": "federicobellezza.dev",
+      "voce": "Codice, account e dati restano tuoi dal primo giorno. Altri dubbi sull'AI? Link in bio."
+    }
+  ]
+}
