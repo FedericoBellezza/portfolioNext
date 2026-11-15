@@ -9,6 +9,10 @@ export const metadata = {
   title: "Fiscale | Dashboard",
   description: "Regime forfettario, INPS Artigiani, fatture e scadenze F24",
   robots: { index: false, follow: false },
+  // "Aggiungi a Home" from here installs the fiscal section as its own app (white icon, opens on
+  // /dashboard/fiscale, full screen) instead of the portfolio.
+  manifest: "/fiscale.webmanifest",
+  appleWebApp: { capable: true, title: "Fiscale", statusBarStyle: "default" },
 };
 
 // Autenticazione: middleware + layout di /dashboard (owner e utenti della sola sezione Fiscale,

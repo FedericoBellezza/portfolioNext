@@ -52,8 +52,11 @@ export async function middleware(request) {
   // Protected routes - dashboard: the owner sees everything, fiscale users only their section.
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
+      // Remember the page, so login brings the user back to it (e.g. the Fiscale home-screen app).
       const url = request.nextUrl.clone()
       url.pathname = '/login'
+      url.search = ''
+      url.searchParams.set('next', request.nextUrl.pathname)
       return NextResponse.redirect(url)
     }
 
@@ -75,8 +78,10 @@ export async function middleware(request) {
   if (request.nextUrl.pathname === '/login' && user) {
     const access = accessOf(user.email)
     if (access) {
+      const next = request.nextUrl.searchParams.get('next')
       const url = request.nextUrl.clone()
-      url.pathname = homeOf(access)
+      url.pathname = next?.startsWith('/dashboard') && canAccessPath(access, next) ? next : homeOf(access)
+      url.search = ''
       return NextResponse.redirect(url)
     }
   }

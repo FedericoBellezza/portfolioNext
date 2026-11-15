@@ -28,7 +28,10 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      // Back to the page that asked for login (set by the middleware); only dashboard paths,
+      // so the parameter cannot send anyone off-site. The middleware still checks access.
+      const next = new URLSearchParams(window.location.search).get('next')
+      router.push(next?.startsWith('/dashboard') ? next : '/dashboard')
       router.refresh()
     }
   }
