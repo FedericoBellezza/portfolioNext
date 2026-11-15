@@ -26,6 +26,9 @@ export default function DashboardNav({ user, access }) {
     router.refresh();
   };
 
+  // The fiscal section reads as its own app: its rail has the way back, the account and logout.
+  if (pathname?.startsWith("/dashboard/fiscale")) return null;
+
   return (
     <nav className="sticky top-0 z-50 border-b border-[var(--dashboard-border)] bg-[var(--dashboard-card-bg)] px-3 py-2.5 shadow-sm sm:px-6">
       <div className="container mx-auto flex items-center justify-between gap-2">
